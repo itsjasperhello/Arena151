@@ -1,0 +1,140 @@
+<main class="app">
+  <header class="hud" id="hud">
+    <svg class="wave" id="wave" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <div class="side left" id="sideA">
+      <div class="pcol"><div class="portrait" id="portA"><canvas id="portraitA" width="64" height="64"></canvas></div><canvas class="mini" id="miniA" width="16" height="16"></canvas></div>
+      <div>
+        <div class="mon-name" id="nameA">—</div>
+        <div class="chips" id="chipsA"></div>
+        <div class="hpbar"><div class="hpfill" id="barA"></div><div class="hpnum" id="hpA"></div></div>
+        <div class="tokens" id="tokA"></div>
+      </div>
+    </div>
+    <div class="center"><div class="timer" id="timer">0:00</div><div class="turn" id="turnNo">Live battle</div></div>
+    <div class="side right" id="sideB">
+      <div class="pcol"><div class="portrait" id="portB"><canvas id="portraitB" width="64" height="64"></canvas></div><canvas class="mini" id="miniB" width="16" height="16"></canvas></div>
+      <div>
+        <div class="mon-name" id="nameB">—</div>
+        <div class="chips" id="chipsB"></div>
+        <div class="hpbar"><div class="hpfill" id="barB"></div><div class="hpnum" id="hpB"></div></div>
+        <div class="tokens" id="tokB"></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="arena" id="arena" aria-label="Battle arena">
+    <canvas id="scene"></canvas>
+    <div class="pill left" id="pillA"></div>
+    <div class="pill right" id="pillB"></div>
+    <div class="paused-tag" id="pausedTag">PAUSED</div>
+
+    <div class="touch-ui" id="touchUI" hidden>
+      <div class="tbar"><button class="ticon" id="tPause" aria-label="Pause">❚❚</button><button class="ticon" id="tMenu" aria-label="Menu">☰</button></div>
+      <div class="stick" id="stick" aria-label="Movement joystick"><div class="knob" id="knob"></div></div>
+      <div class="tright"><button class="btn redb" id="tMega" disabled>MEGA</button><div id="tMovesSlot"></div></div>
+      <div class="troster" id="tRosterSlot"></div>
+    </div>
+
+    <div class="overlay show" id="ovTitle">
+      <div class="logo">ARENA 151<span id="titleStage">Storm Summit</span></div>
+      <p class="tagline">Two trainers, six Pokémon each, six arenas. Build your team below or jump straight in.</p>
+      <div class="btnrow">
+        <button class="btn hot" id="tStart">Start battle</button>
+        <button class="btn" id="tContinue" hidden>Continue last battle</button>
+        <button class="btn" id="tRandom">Random matchup</button>
+        <button class="btn ghost" id="tTeams">Edit teams</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="ovVs">
+      <div class="vs-card a"><canvas class="trainer" id="vsTrainerA" width="128" height="192"></canvas><div class="vs-name">RED</div><div class="vs-team" id="vsTeamA"></div></div>
+      <div class="vs-mark">VS</div>
+      <div class="vs-card b"><canvas class="trainer" id="vsTrainerB" width="128" height="192"></canvas><div class="vs-name">GOLD</div><div class="vs-team" id="vsTeamB"></div></div>
+      <div class="skip-hint">Click or press Space to skip</div>
+    </div>
+
+    <div class="overlay" id="ovResults">
+      <div class="banner" id="resBanner">RED WINS!</div>
+      <div class="res-card">
+        <canvas id="resMvp" width="80" height="80"></canvas>
+        <div>
+          <div class="res-title" id="resTitle">Victory</div>
+          <div class="res-sub" id="resSub"></div>
+          <div class="res-stats" id="resStats"></div>
+        </div>
+        <div class="btnrow res-actions">
+          <button class="btn hot" id="rRematch">Rematch</button>
+          <button class="btn" id="rRandom">New random battle</button>
+          <button class="btn ghost" id="rTeams">Edit teams</button>
+        </div>
+      </div>
+      <div class="res-foot">WHO SHOULD FIGHT NEXT?<em>Pick new teams in the builder</em></div>
+    </div>
+
+    <div class="overlay" id="ovSwitch">
+      <h3 id="pickTitle">Choose your next Pokémon</h3>
+      <div class="pick-grid" id="pickGrid"></div>
+    </div>
+  </section>
+
+  <div class="deck">
+    <section class="panel" aria-label="Battle commands">
+      <div class="prompt" id="prompt">Start a battle to give commands.</div>
+      <div class="help">Attacks fire as soon as they're ready: press 1–4 or tap a move. Your Pokémon moves on its own; steer it with WASD or the arrow keys to dodge. Press M to Mega Evolve when the button lights up.</div>
+      <div class="moves" id="moves"></div>
+      <div class="roster" id="rosterA" aria-label="Your team"></div>
+      <div class="ctrls">
+        <button class="btn" id="bPause">Pause</button>
+        <button class="btn" id="bSpeed">Speed 1×</button>
+        <button class="btn" id="bWatch" aria-pressed="false">Watch mode: off</button>
+        <button class="btn redb" id="bMega" disabled>Mega Evolve</button>
+        <button class="btn" id="bCam">Camera: dynamic</button>
+        <button class="btn" id="bRematch">Rematch</button>
+        <button class="btn" id="bNew">New battle</button>
+        <button class="btn ghost" id="bQuick">Quick save</button>
+      </div>
+    </section>
+    <section class="panel opp" aria-label="Opponent team and battle log">
+      <h2>Gold's team</h2>
+      <div class="roster" id="rosterB"></div>
+      <div class="log" id="log" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <details class="panel" id="builder">
+    <summary>Team builder and saves</summary>
+    <div class="builder-grid">
+      <div class="bteam"><h3 style="color:var(--red)">Red — your team</h3><div id="pickA"></div></div>
+      <div class="bteam"><h3 style="color:var(--gold)">Gold — opponent</h3><div id="pickB"></div></div>
+      <div class="saves">
+        <h3>Saved battles</h3>
+        <div id="slots"></div>
+        <div class="btnrow" style="justify-content:flex-start;margin:6px 0">
+          <button class="btn" id="bExport">Download save file</button>
+          <button class="btn" id="bImport">Open save file</button>
+          <input type="file" id="importFile" accept=".json,application/json" hidden>
+        </div>
+        <label class="small">Arena
+          <select id="stageSel"><option value="random">Random arena</option><option value="summit">Storm Summit</option><option value="cavern">Crystal Cavern</option><option value="hall">Champion Hall</option><option value="castle">Sky Castle</option><option value="grand">Grand Hall</option><option value="meteor">Meteor Cave</option></select>
+        </label><br>
+        <label class="small">Time limit
+          <select id="timeLimit"><option value="0">Off (like the reference video)</option><option value="180">3:00</option><option value="300">5:00</option><option value="600">10:00</option></select>
+        </label>
+        <p class="small">The battle autosaves every 10 seconds and whenever a Pokémon faints. Saves keep teams, HP, status conditions, stat changes, cooldowns, positions, the active Pokémon, clock and log.</p>
+        <label class="small app-only"><input type="checkbox" id="optHaptics" checked> Vibrate on big hits</label>
+        <p class="small">Custom sprite pack: place PNG files named by Pokédex number (001.png … 151.png) in a <b>sprites</b> folder next to index.html and they replace the generated art.</p>
+        <div class="btnrow" style="justify-content:flex-start">
+          <button class="btn hot" id="bApply">Apply teams and battle</button>
+          <button class="btn" id="bRandom">Random teams</button>
+          <button class="btn ghost" id="bClear">Clear all saves</button>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="foot">Keyboard: 1–4 attack · WASD / arrows move · M mega evolve · T watch mode · C camera · Shift+1–6 switch · P pause · F speed · R rematch · Space skip intro<br>
+  Fan-made educational prototype with original pixel art. Not affiliated with Nintendo, Game Freak, Creatures Inc. or The Pokémon Company.</div>
+</main>
+<div class="toast" id="toast"></div>
+<aside class="drawer" id="drawer" aria-label="Menu"><div class="drawer-head"><b>Arena 151</b><button class="ticon" id="drawerClose" aria-label="Close menu">✕</button></div><div id="drawerBody"></div></aside>
+<div class="rotate" id="rotate"><div>↻</div><p>Turn your device sideways to battle</p></div>

@@ -1,0 +1,525 @@
+/* =====================================================================
+   Section 7: real-time battle simulation
+   Both Pokémon act at the same time. Each move has its own cooldown;
+   attacks are physical objects in the arena — dashes, projectiles,
+   beams, ground markers and shockwaves — so positioning dodges them.
+   ===================================================================== */
+const WW = 1000, WH = 560;
+const HP_MULT = 8, DMG_MULT = 2.0;           // ~5–10 hits to knock out a Pokémon
+const PINCH = { Fire: 'Blaze', Water: 'Torrent', Grass: 'Overgrow', Bug: 'Swarm' };
+const TOUCH = 52;                              // body radius for contact and collisions
+
+function cooldownOf(mv) {
+  if (mv.cat === 'X') return (mv.e.heal || mv.e.rest) ? 9000 : 6500;
+  if (mv.pri > 0) return 1500;
+  return Math.round(1300 + mv.pow * 22 + (mv.e.rch ? 1500 : 0));
+}
+// Shared recovery after any attack, so a Pokémon cannot chain all four moves back to back.
+function recoveryOf(mv) { return mv.cat === 'X' ? 1000 : mv.pri > 0 ? 900 : 1100 + mv.pow * 6; }
+function makeBattleMon(name) {
+  const m = makeMon(name); if (!m) return null;
+  // Arena balance: pull extreme stats toward the middle so fragile Pokémon survive several hits
+  // while strong ones still feel strong. Base stats keep their shape; the spread is 65% as wide.
+  const AVG = { hp: 140, atk: 90, def: 90, spa: 90, spd: 90, spe: 90 };
+  for (const k of Object.keys(AVG)) m.stats[k] = Math.round(m.stats[k] * .65 + AVG[k] * .35);
+  m.max = m.stats.hp * HP_MULT; m.hp = m.max;
+  m.cd = m.moves.map(() => 0); m.stT = 0; m.thawT = 0; m.dotT = 0; m.lefT = 0; m.conf = 0;
+  m.ability = PINCH[m.types[0]] || ''; m.pinchShown = false;
+  return m;
+}
+function newSide(key, picks) {
+  return { key, team: picks.map(makeBattleMon), active: 0, x: ENTRY[key].x, y: ENTRY[key].y, vx: 0, vy: 0, face: key === 'A' ? 1 : -1,
+    state: 'out', stateT: 0, cast: null, stun: 0, stunKind: '', gcd: 0, switchCd: 0, aiT: 500, strafe: 1, strafeT: 0,
+    manual: { x: 0, y: 0 }, manualT: 0, queued: null, queuedT: 0, pendingSwitch: null, kbx: 0, kby: 0, hit: 0, hop: 0, dig: false,
+    throwT: -9999, pillT: 0, pill: '', walk: 0, prefDist: 260, megaUsed: false, plotUsed: false, sinceIn: 0 };
+}
+function newBattle(picksA, picksB, opts = {}) {
+  return {
+    picks: { A: picksA.slice(), B: picksB.slice() }, sides: { A: newSide('A', picksA), B: newSide('B', picksB) },
+    shots: [], marks: [], waves: [], beams: [], time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
+    timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
+    stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
+  };
+}
+let G = null;
+const side = s => G.sides[s];
+const act = s => side(s).team[side(s).active];
+const stageMult = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
+const accMult = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
+const effSpe = m => m.stats.spe * stageMult(m.stages.spe) * (m.status === 'par' ? .5 : 1);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const present = s => { const sd = side(s); return sd.state === 'idle' && !sd.dig && act(s).hp > 0; };
+const controlledByAI = s => s === 'B' || G.auto;
+function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
+
+function calcDamage(u, t, mv, crit, eff, roll = true) {
+  const phys = mv.cat === 'P';
+  let aS = phys ? u.stages.atk : u.stages.spa, dS = phys ? t.stages.def : t.stages.spd;
+  if (crit) { aS = Math.max(0, aS); dS = Math.min(0, dS); }
+  const A = (phys ? u.stats.atk : u.stats.spa) * stageMult(aS) * (u.item === 'Light Ball' ? 2 : 1);
+  const D = (phys ? t.stats.def : t.stats.spd) * stageMult(dS);
+  const base = Math.floor(Math.floor(22 * mv.pow * A / D) / 50) + 2;
+  const stab = u.types.includes(mv.type) ? 1.5 : 1;
+  const pinch = u.ability && u.hp < u.max / 3 && mv.type === u.types[0] ? 1.5 : 1;
+  const burn = phys && u.status === 'brn' ? .5 : 1;
+  const r = roll ? .85 + Math.random() * .15 : .925;
+  const od = G && G.overtime ? G.overtime : 1;
+  return Math.max(1, Math.floor(base * stab * eff * pinch * (crit ? 1.5 : 1) * r * burn * DMG_MULT * od));
+}
+function statusImmune(m, st) {
+  if (st === 'brn') return m.types.includes('Fire');
+  if (st === 'par') return m.types.includes('Electric');
+  if (st === 'psn' || st === 'tox') return m.types.includes('Poison') || m.types.includes('Steel');
+  if (st === 'frz') return m.types.includes('Ice');
+  return false;
+}
+
+/* ---------- status and stat changes ---------- */
+function inflict(S, st, announce) {
+  const m = act(S); if (m.hp <= 0) return;
+  if (m.status) { if (announce) VFX.text(S, 'FAILED', '#e6ecff'); return; }
+  if (statusImmune(m, st)) { if (announce) VFX.text(S, 'NO EFFECT', '#c9d3ee'); return; }
+  m.status = st; m.dotT = 0;
+  if (st === 'slp') m.stT = 2500 + Math.random() * 2000;
+  if (st === 'frz') { m.stT = 6000; m.thawT = 0; }
+  if (st === 'tox') m.tox = 1;
+  if (st === 'slp' || st === 'frz') cancelCast(S);
+  logLine(st === 'slp' ? `${m.name} fell asleep!` : `${m.name} is ${STATUS_INFO[st].name}!`);
+  VFX.status(S, st); G.hudDirty = true;
+  VFX.banner(`${displayName(m)} ${st === 'slp' ? 'FELL ASLEEP' : st === 'frz' ? 'WAS FROZEN SOLID' : st === 'par' ? 'WAS PARALYZED' : st === 'brn' ? 'WAS BURNED' : 'WAS POISONED'}!`, STATUS_INFO[st].color);
+}
+function confuse(S, ms, announce) {
+  const m = act(S); if (m.hp <= 0) return;
+  if (m.conf > 0) { if (announce) VFX.text(S, 'FAILED', '#e6ecff'); return; }
+  m.conf = ms || 4000 + Math.random() * 4000; logLine(`${m.name} became confused!`); VFX.text(S, 'CONFUSED!', '#ffe86b'); G.hudDirty = true;
+}
+function stageChange(S, changes) {
+  const m = act(S);
+  for (const [k, d] of Object.entries(changes)) {
+    const cur = m.stages[k], nv = clamp(cur + d, -6, 6);
+    if (nv === cur) { VFX.text(S, 'NO CHANGE', '#e6ecff'); continue; }
+    m.stages[k] = nv; const real = nv - cur;
+    const word = real >= 2 ? 'rose sharply' : real > 0 ? 'rose' : real <= -2 ? 'harshly fell' : 'fell';
+    logLine(`${m.name}'s ${STAT_LABEL[k]} ${word}!`);
+    VFX.stage(S, k, real); VFX.banner(`${displayName(m)}'S ${STAT_LABEL[k].toUpperCase()} ${word.toUpperCase()}!`, real > 0 ? '#ffb347' : '#8fb8ff');
+  }
+  G.hudDirty = true;
+}
+function stun(S, ms, kind) { const sd = side(S); sd.stun = Math.max(sd.stun, ms); sd.stunKind = kind; cancelCast(S); }
+function cancelCast(S) { const sd = side(S); if (sd.cast) { sd.cast = null; sd.dig = false; } }
+
+/* ---------- hits ---------- */
+function applyHit(S, mv, u, opts = {}) {
+  const fs = other(S); if (!present(fs)) return false;
+  const t = act(fs), ts = side(fs);
+  if (G.phase !== 'battle') return false;
+  const eff = mv.e.fix ? (typeEff(mv.type, t.types) === 0 ? 0 : 1) : typeEff(mv.type, t.types);
+  if (eff === 0) { VFX.text(fs, 'NO EFFECT', '#c9d3ee'); logLine(`It doesn't affect ${t.name}...`); return true; }
+  const crit = !mv.e.fix && Math.random() < (mv.e.hc ? 1 / 8 : 1 / 24);
+  let dmg = mv.e.fix ? mv.e.fix * HP_MULT : calcDamage(u, t, mv, crit, eff);
+  if (opts.scale) dmg = Math.max(1, Math.round(dmg * opts.scale));
+  if (dmg >= t.hp && t.hp > t.max * .25 && !ts.plotUsed && Math.random() < .12) { ts.plotUsed = true; dmg = t.hp - 1; VFX.plotArmor(fs); logLine(`${t.name} hung on with 1 HP!`, 't'); }
+  dmg = Math.min(dmg, t.hp); t.hp -= dmg;
+  if (opts.combo) VFX.combo(fs, opts.combo);
+  if (crit || eff > 1 || t.hp <= 0) VFX.crowd(t.hp <= 0 ? 2 : 1);
+  const st = G.stats[S]; st.dmg += dmg; u.dmg += dmg; if (crit) st.crits++;
+  if (!G.stats.best || dmg > G.stats.best.amt) G.stats.best = { amt: dmg, mon: u.name, move: mv.name, side: S };
+  G.lastDmgT = G.time; G.hudDirty = true;
+  // knockback away from the attacker
+  const a = side(S), ang = Math.atan2(ts.y - a.y, ts.x - a.x), kb = (crit ? 260 : 150) * (mv.cat === 'P' ? 1.2 : 1);
+  ts.kbx += Math.cos(ang) * kb; ts.kby += Math.sin(ang) * kb; ts.hit = 330;
+  VFX.hit(fs, mv, dmg, eff, crit);
+  logLine(`${u.name}'s ${mv.name} hit ${t.name} for ${dmg}.${crit ? ' Critical hit!' : ''}${eff > 1 ? ' Super effective!' : eff < 1 ? ' Not very effective.' : ''}`);
+  if (t.ability && !t.pinchShown && t.hp > 0 && t.hp < t.max / 3) { t.pinchShown = true; VFX.ability(fs, t.ability); logLine(`${t.name}'s ${t.ability} activated!`); }
+  if (t.hp <= 0) { u.kos++; st.kos++; }
+  else {
+    const e = mv.e;
+    if (e.st && Math.random() * 100 < e.st[1]) inflict(fs, e.st[0], false);
+    if (e.fl && Math.random() * 100 < e.fl) { stun(fs, 600, 'flinch'); VFX.text(fs, 'FLINCHED', '#ffffff'); }
+    if (e.cf && Math.random() * 100 < e.cf) confuse(fs);
+    if (e.tg && Math.random() * 100 < (e.ch ?? 100)) stageChange(fs, e.tg);
+    if (t.status === 'frz' && mv.type === 'Fire') { t.status = ''; VFX.text(fs, 'THAWED', '#bfffd0'); logLine(`${t.name} thawed out!`); }
+  }
+  if (u.hp > 0 && mv.e.dr) { const h = Math.min(u.max - u.hp, Math.max(1, Math.floor(dmg * mv.e.dr))); if (h > 0) { u.hp += h; VFX.heal(S, h); } }
+  if (u.hp > 0 && mv.e.rc) { const rc = Math.min(u.hp, Math.max(1, Math.floor(dmg * mv.e.rc))); u.hp -= rc; VFX.recoil(S, rc); logLine(`${u.name} was hurt by recoil (${rc}).`); }
+  if (u.hp > 0 && mv.e.self && Math.random() * 100 < (mv.e.sch ?? 100) && side(S).team[side(S).active] === u) stageChange(S, mv.e.self);
+  if (u.hp > 0 && mv.e.ucf && side(S).team[side(S).active] === u && u.conf <= 0) confuse(S, 3500);
+  return true;
+}
+function missAt(x, y, S) { VFX.missAt(x, y); logLine(`${act(S).name}'s attack missed!`); }
+
+/* ---------- casting ---------- */
+function tryCast(S, idx) {
+  const sd = side(S), m = act(S), mv = MOVES[m.moves[idx]];
+  if (!mv || sd.state !== 'idle' || sd.cast || sd.stun > 0 || sd.gcd > 0 || m.cd[idx] > 0) return false;
+  if (m.status === 'slp' || m.status === 'frz') return false;
+  if (m.vol.recharge) return false;
+  const fs = other(S);
+  if (m.conf > 0 && Math.random() < .3) {
+    const dmg = Math.min(m.hp, calcDamage(m, m, { pow: 40, cat: 'P', type: '???' }, false, 1)); m.hp -= dmg;
+    VFX.selfHit(S, dmg); logLine(`${m.name} hurt itself in its confusion! (${dmg})`); stun(S, 650, 'conf'); m.cd[idx] = 900; G.hudDirty = true; return true;
+  }
+  if (m.status === 'par' && Math.random() < .2) { stun(S, 700, 'par'); VFX.text(S, 'FULLY PARALYZED', '#ffe04a'); logLine(`${m.name} is fully paralyzed!`); m.cd[idx] = 700; return true; }
+  const t = side(fs);
+  const accOk = mv.acc == null || Math.random() * 100 < mv.acc * accMult(m.stages.acc - (present(fs) ? act(fs).stages.eva : 0));
+  sd.cast = { idx, mv, t: 0, phase: 'wind', accOk, landed: false, aim: { x: t.x, y: t.y }, spawn: 0, group: G.nextShotGroup++ };
+  sd.pill = mv.name; sd.pillT = 1200; G.stats[S].moves++;
+  logLine(`${m.name} used ${mv.name}!`);
+  VFX.windup(S, mv);
+  return true;
+}
+const WINDUP = mv => mv.cat === 'X' ? 260 : mv.pri > 0 ? 110 : 250;
+function aimPoint(S, accOk, spread = 95) {
+  const t = side(other(S));
+  const lead = .18; let x = t.x + t.vx * lead, y = t.y + t.vy * lead;
+  if (!accOk) { const a = Math.random() * Math.PI * 2; x += Math.cos(a) * spread; y += Math.sin(a) * spread; }
+  return { x: clamp(x, BOUND.x0 - 40, BOUND.x1 + 40), y: clamp(y, BOUND.y0 - 40, BOUND.y1 + 40) };
+}
+function shoot(S, mv, opts) {
+  const sd = side(S), from = { x: sd.x + sd.face * 20, y: sd.y - 30 };
+  const to = opts.to || aimPoint(S, opts.accOk);
+  const ang = Math.atan2(to.y + 30 - from.y - 30, to.x - from.x) + (opts.spread || 0);
+  G.shots.push({ owner: S, mv, u: act(S), x: from.x, y: from.y, vx: Math.cos(ang) * opts.speed, vy: Math.sin(ang) * opts.speed, speed: opts.speed,
+    ttl: opts.ttl || 1600, r: opts.r || 18, home: mv.acc == null && opts.accOk, shape: opts.shape || 'orb', group: opts.group, damage: opts.damage !== false,
+    scale: opts.scale, burst: opts.burst, dest: opts.burst ? to : null, t: 0, combo: opts.combo || null });
+}
+function updateCast(S, dt) {
+  const sd = side(S), c = sd.cast, mv = c.mv, m = act(S), fs = other(S), t = side(fs);
+  c.t += dt;
+  if (c.phase === 'wind') { if (c.t < WINDUP(mv)) return; c.phase = 'go'; c.t = 0; c.aim = aimPoint(S, c.accOk); startExec(S, c); return; }
+  const end = (extra = 0) => {
+    m.cd[c.idx] = cooldownOf(mv); sd.gcd = recoveryOf(mv) + extra; sd.cast = null; sd.dig = false;
+    if (mv.e.rch && c.landed) { m.vol.recharge = true; stun(S, 2200, 'recharge'); VFX.big('MUST RECHARGE', '#ffffff'); logLine(`${m.name} must recharge!`); }
+  };
+  switch (mv.anim) {
+    case 'contact': case 'dash': case 'slash': {
+      if (c.phase === 'go') {
+        const target = c.accOk && present(fs) ? { x: t.x, y: t.y } : c.aim;
+        const sp = mv.anim === 'dash' ? 1150 : 820, d = dist(sd, target), reach = mv.anim === 'slash' ? TOUCH + 22 : TOUCH;
+        if (d > reach && c.t < 700) { const k = Math.min(1, sp * dt / 1000 / d); [sd.x, sd.y] = clampWalk(sd.x + (target.x - sd.x) * k, sd.y + (target.y - sd.y) * k); VFX.dust(S); return; }
+        if (c.accOk && present(fs) && dist(sd, t) < reach + 30) { c.landed = applyHit(S, mv, m); if (mv.anim === 'slash') VFX.slash(fs, mv); }
+        else missAt(sd.x, sd.y - 40, S);
+        const ang = Math.atan2(sd.y - t.y, sd.x - t.x); sd.kbx += Math.cos(ang) * 260; sd.kby += Math.sin(ang) * 260;
+        c.phase = 'back'; c.t = 0; return;
+      }
+      if (c.t > 200) end(); return;
+    }
+    case 'dig': {
+      if (c.phase === 'go') { sd.dig = true; if (c.t < 520) return; const tgt = c.accOk && present(fs) ? { x: t.x, y: t.y } : c.aim; [sd.x, sd.y] = clampWalk(tgt.x - sd.face * 30, tgt.y + 6); sd.dig = false; VFX.erupt(sd.x, sd.y); if (c.accOk && present(fs) && dist(sd, t) < 90) c.landed = applyHit(S, mv, m); else missAt(sd.x, sd.y - 40, S); c.phase = 'back'; c.t = 0; return; }
+      if (c.t > 260) end(); return;
+    }
+    case 'beam': {
+      if (c.phase === 'go') { if (c.t < 360) return; // charge
+        const from = { x: sd.x + sd.face * 18, y: sd.y - 32 }, ang = Math.atan2(c.aim.y - 32 - from.y, c.aim.x - from.x);
+        G.beams.push({ owner: S, mv, x: from.x, y: from.y, ang, t: 0, life: 520, w: mv.pow >= 110 ? 26 : 18 });
+        const px = t.x - from.x, py = (t.y - 32) - from.y, along = px * Math.cos(ang) + py * Math.sin(ang), perp = Math.abs(-px * Math.sin(ang) + py * Math.cos(ang));
+        if (present(fs) && along > 0 && perp < 44) c.landed = applyHit(S, mv, m); else missAt(t.x, t.y - 50, S);
+        c.phase = 'fire'; c.t = 0; return; }
+      if (c.t > 380) end(); return;
+    }
+    case 'projectile': case 'drain': case 'hex': case 'powder': case 'burst': case 'stars': case 'leaves': case 'wind': case 'multi': {
+      if (c.phase === 'go') {
+        const spd = mv.anim === 'hex' || mv.anim === 'powder' ? 420 : mv.anim === 'multi' ? 760 : mv.anim === 'wind' ? 700 : 600;
+        if (mv.anim === 'stars' || mv.anim === 'leaves' || mv.anim === 'wind') {
+          const n = mv.anim === 'wind' ? 2 : mv.anim === 'stars' ? 3 : 4;
+          for (let i = 0; i < n; i++) shoot(S, mv, { speed: spd, accOk: c.accOk, spread: (i - (n - 1) / 2) * .12, group: c.group, shape: mv.anim === 'stars' ? 'star' : mv.anim === 'leaves' ? 'leaf' : 'crescent', r: 20 });
+        } else if (mv.anim === 'multi') {
+          if (!c.hits) { const q = Math.random(); c.hits = q < .375 ? 2 : q < .75 ? 3 : q < .875 ? 4 : 5; }
+          if (c.spawn < c.hits && c.t >= c.spawn * 110) { shoot(S, mv, { speed: spd, accOk: c.accOk || Math.random() < .5, group: G.nextShotGroup++, r: 14, shape: 'needle', combo: c.comboId || (c.comboId = { n: 0 }) }); c.spawn++; }
+          if (c.spawn < c.hits) return;
+        } else shoot(S, mv, { speed: spd, accOk: c.accOk, group: c.group, burst: mv.anim === 'burst', r: mv.anim === 'burst' ? 16 : 20, shape: mv.anim === 'hex' || mv.anim === 'powder' ? 'hex' : 'orb' });
+        c.phase = 'after'; c.t = 0; return;
+      }
+      if (c.t > 220) end(); return;
+    }
+    case 'bolt': case 'sky': case 'psy': {
+      if (c.phase === 'go') {
+        const at = c.accOk ? aimPoint(S, true) : c.aim;
+        G.marks.push({ owner: S, mv, u: m, x: at.x, y: at.y, r: mv.anim === 'sky' ? 80 : mv.anim === 'bolt' ? 62 : 66, delay: mv.anim === 'sky' ? 620 : mv.anim === 'bolt' ? 460 : 380, t: 0, kind: mv.anim });
+        c.phase = 'after'; c.t = 0; return;
+      }
+      if (c.t > 240) end(); return;
+    }
+    case 'quake': case 'wave': {
+      if (c.phase === 'go') {
+        if (mv.anim === 'quake') { sd.hop = 1; VFX.shake(10, 500); }
+        G.waves.push({ owner: S, mv, u: m, x: sd.x, y: sd.y, r: 10, maxR: mv.anim === 'quake' ? 360 : 320, speed: mv.anim === 'quake' ? 720 : 600, hit: false, kind: mv.anim });
+        c.phase = 'after'; c.t = 0; return;
+      }
+      if (c.t > 300) end(); return;
+    }
+    default: { // self-targeted status moves
+      if (c.phase === 'go') {
+        const e = mv.e;
+        if (e.none) { VFX.text(S, 'NOTHING HAPPENED', '#e6ecff'); logLine('But nothing happened!'); }
+        else if (e.heal) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = Math.min(m.max - m.hp, Math.ceil(m.max * e.heal)); m.hp += h; VFX.heal(S, h); logLine(`${m.name} restored ${h} HP.`); } }
+        else if (e.rest) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = m.max - m.hp; m.hp = m.max; m.status = 'slp'; m.stT = 4200; VFX.heal(S, h); VFX.status(S, 'slp'); logLine(`${m.name} slept and became healthy!`); } }
+        else if (e.self) { VFX.aura(S, MOVE_FX[mv.type].col); stageChange(S, e.self); }
+        G.hudDirty = true; c.phase = 'after'; c.t = 0; return;
+      }
+      if (c.t > 380) end(); return;
+    }
+  }
+}
+function startExec(S, c) { VFX.exec(S, c.mv); }
+
+/* ---------- projectiles, markers, waves, beams ---------- */
+function updateWorld(dt) {
+  const k = dt / 1000;
+  for (let i = G.shots.length - 1; i >= 0; i--) {
+    const p = G.shots[i]; p.t += dt; p.ttl -= dt;
+    const fs = other(p.owner), t = side(fs);
+    if (p.home && present(fs)) { const ang = Math.atan2(t.y - 30 - p.y, t.x - p.x), cur = Math.atan2(p.vy, p.vx); let d = ((ang - cur + Math.PI * 3) % (Math.PI * 2)) - Math.PI; const turn = clamp(d, -4 * k, 4 * k); p.vx = Math.cos(cur + turn) * p.speed; p.vy = Math.sin(cur + turn) * p.speed; }
+    p.x += p.vx * k; p.y += p.vy * k;
+    if (p.burst && p.dest && Math.hypot(p.dest.x - p.x, p.dest.y - 30 - p.y) < 22) {
+      VFX.explode(p.x, p.y, p.mv);
+      if (present(fs) && Math.hypot(t.x - p.x, t.y - 30 - p.y) < 82) groupHit(p); else groupMiss(p);
+      G.shots.splice(i, 1); continue;
+    }
+    if (present(fs) && Math.hypot(t.x - p.x, t.y - 32 - p.y) < p.r + 26) {
+      if (p.damage) groupHit(p); VFX.impactAt(p.x, p.y, p.mv); G.shots.splice(i, 1); continue;
+    }
+    if (p.ttl <= 0 || p.x < -40 || p.x > WW + 40 || p.y < -60 || p.y > WH + 40) { groupMiss(p); G.shots.splice(i, 1); }
+  }
+  for (let i = G.marks.length - 1; i >= 0; i--) {
+    const mk = G.marks[i]; mk.t += dt;
+    if (mk.t >= mk.delay) {
+      const fs = other(mk.owner), t = side(fs);
+      VFX.markFire(mk);
+      if (present(fs) && Math.hypot(t.x - mk.x, t.y - mk.y) < mk.r) { const sd = side(mk.owner); if (applyHit(mk.owner, mk.mv, mk.u)) { if (sd.cast && sd.cast.mv === mk.mv) sd.cast.landed = true; } }
+      else missAt(mk.x, mk.y - 40, mk.owner);
+      G.marks.splice(i, 1);
+    }
+  }
+  for (let i = G.waves.length - 1; i >= 0; i--) {
+    const w = G.waves[i]; w.r += w.speed * k;
+    const fs = other(w.owner), t = side(fs);
+    if (!w.hit && present(fs)) { const d = Math.hypot(t.x - w.x, (t.y - w.y) * 1.6); if (Math.abs(d - w.r) < 34 || d < w.r) { w.hit = true; applyHit(w.owner, w.mv, w.u); } }
+    if (w.r >= w.maxR) { if (!w.hit) missAt(t.x, t.y - 40, w.owner); G.waves.splice(i, 1); }
+  }
+  for (let i = G.beams.length - 1; i >= 0; i--) { const b = G.beams[i]; b.t += dt; if (b.t >= b.life) G.beams.splice(i, 1); }
+}
+const groupState = {};
+function groupHit(p) {
+  const g = groupState[p.group] || (groupState[p.group] = { hit: false, missed: 0 });
+  if (g.hit && (p.shape === 'star' || p.shape === 'leaf' || p.shape === 'crescent')) return;
+  g.hit = true;
+  if (p.combo) p.combo.n++;
+  if (p.mv.cat === 'X') applyStatusMove(p.owner, p.mv); else applyHit(p.owner, p.mv, p.u, { scale: p.scale, combo: p.combo && p.combo.n >= 2 ? p.combo.n : 0 });
+}
+function applyStatusMove(S, mv) {
+  const fs = other(S); if (!present(fs) || G.phase !== 'battle') return false;
+  const t = act(fs), e = mv.e;
+  if ((e.tw && typeEff('Electric', t.types) === 0) || (e.powder && t.types.includes('Grass'))) { VFX.text(fs, 'NO EFFECT', '#c9d3ee'); logLine(`It doesn't affect ${t.name}...`); return true; }
+  if (e.st) inflict(fs, e.st[0], true);
+  if (e.cf) confuse(fs, 0, true);
+  if (e.tg) stageChange(fs, e.tg);
+  return true;
+}
+function groupMiss(p) {
+  const g = groupState[p.group] || (groupState[p.group] = { hit: false, missed: 0 });
+  g.missed++;
+  if (!g.hit && !g.shownMiss) { g.shownMiss = true; missAt(p.x, p.y, p.owner); }
+}
+
+/* ---------- per-side update ---------- */
+function updateSide(S, dt) {
+  const sd = side(S), m = act(S), fs = other(S), foe = side(fs);
+  sd.hit = Math.max(0, sd.hit - dt); sd.pillT = Math.max(0, sd.pillT - dt);
+  sd.hop = Math.max(0, sd.hop - dt / 300);
+  switch (sd.state) {
+    case 'entering': sd.stateT += dt; if (sd.stateT >= 760) { sd.state = 'idle'; sd.stateT = 0; } return;
+    case 'mega': sd.stateT += dt; if (sd.stateT >= 1500) finishMega(S); return;
+    case 'leaving': sd.stateT += dt; if (sd.stateT >= 360) completeSwitch(S); return;
+    case 'fainting': sd.stateT += dt; if (sd.stateT >= 1100) { sd.state = 'out'; afterFaint(S); } return;
+    case 'out': case 'wait': return;
+  }
+  if (G.phase !== 'battle') return;
+  if (m.hp <= 0) { startFaint(S); return; }
+  // timers
+  const rate = clamp(.85 + effSpe(m) / 320, .85, 1.35);
+  for (let i = 0; i < m.cd.length; i++) m.cd[i] = Math.max(0, m.cd[i] - dt * rate);
+  sd.gcd -= dt; sd.switchCd -= dt; sd.sinceIn += dt;
+  if (controlledByAI(S) && canMega(S) && (m.hp < m.max * .7 || sd.sinceIn > 5000) && Math.random() < dt / 1500) { megaEvolve(S); return; }
+  if (sd.stun > 0) { sd.stun -= dt; if (sd.stun <= 0 && sd.stunKind === 'recharge') m.vol.recharge = false; }
+  statusTick(S, m, dt);
+  if (m.hp <= 0) return;
+  const blocked = sd.stun > 0 || m.status === 'slp' || m.status === 'frz';
+  if (sd.cast && !blocked) updateCast(S, dt);
+  else if (!blocked) {
+    if (controlledByAI(S)) { sd.aiT -= dt; if (sd.aiT <= 0) { sd.aiT = 180 + Math.random() * 300; aiThink(S); } }
+    else if (sd.queued != null) { if (tryCast(S, sd.queued) || (sd.queuedT -= dt) <= 0) sd.queued = null; }
+  }
+  move(S, dt, blocked || (sd.cast && sd.cast.phase !== 'after' && !['projectile', 'drain', 'hex', 'powder', 'burst', 'stars', 'leaves', 'wind', 'multi', 'bolt', 'sky', 'psy'].includes(sd.cast.mv.anim)));
+}
+function statusTick(S, m, dt) {
+  if (m.status === 'slp') { m.stT -= dt; if (m.stT <= 0) { m.status = ''; VFX.text(S, 'WOKE UP', '#bfffd0'); logLine(`${m.name} woke up!`); G.hudDirty = true; } }
+  if (m.status === 'frz') { m.stT -= dt; m.thawT += dt; if (m.thawT >= 1000) { m.thawT = 0; if (Math.random() < .2) m.stT = 0; } if (m.stT <= 0) { m.status = ''; VFX.text(S, 'THAWED', '#bfffd0'); logLine(`${m.name} thawed out!`); G.hudDirty = true; } }
+  if (m.status === 'brn' || m.status === 'psn' || m.status === 'tox') {
+    m.dotT += dt;
+    if (m.dotT >= 2000) {
+      m.dotT -= 2000;
+      const d = Math.min(m.hp, Math.max(1, Math.floor(m.max * (m.status === 'brn' ? 1 / 24 : m.status === 'psn' ? 1 / 16 : m.tox / 32))));
+      if (m.status === 'tox') m.tox = Math.min(15, m.tox + 1);
+      m.hp -= d; VFX.dot(S, m.status, d); G.hudDirty = true; G.lastDmgT = G.time;
+    }
+  }
+  if (m.conf > 0) { m.conf -= dt; if (m.conf <= 0) { m.conf = 0; VFX.text(S, 'SNAPPED OUT', '#bfffd0'); logLine(`${m.name} snapped out of its confusion!`); G.hudDirty = true; } }
+  if (m.item === 'Leftovers' && m.hp < m.max) { m.lefT += dt; if (m.lefT >= 3000) { m.lefT = 0; const h = Math.min(m.max - m.hp, Math.floor(m.max / 32)); m.hp += h; VFX.heal(S, h, true); G.hudDirty = true; } }
+}
+function move(S, dt, rooted) {
+  const sd = side(S), m = act(S), foe = side(other(S)), k = dt / 1000;
+  let dx = 0, dy = 0;
+  if (!rooted) {
+    if (!controlledByAI(S) && sd.manualT > 0) { dx = sd.manual.x; dy = sd.manual.y; sd.manualT -= dt; }
+    else {
+      // steer to a preferred range, strafe, avoid incoming fire and ground markers, stay off the walls
+      const ax = foe.x - sd.x, ay = foe.y - sd.y, d = Math.hypot(ax, ay) || 1, ux = ax / d, uy = ay / d;
+      const err = d - sd.prefDist;
+      dx += ux * clamp(err / 120, -1, 1); dy += uy * clamp(err / 120, -1, 1);
+      sd.strafeT -= dt; if (sd.strafeT <= 0) { sd.strafe = Math.random() < .5 ? -1 : 1; sd.strafeT = 900 + Math.random() * 1800; }
+      dx += -uy * sd.strafe * .7; dy += ux * sd.strafe * .7;
+      const react = .45 + effSpe(m) / 400;
+      for (const p of G.shots) if (p.owner !== S) { const rx = sd.x - p.x, ry = sd.y - 30 - p.y, dd = Math.hypot(rx, ry); if (dd < 190 && (p.vx * rx + p.vy * ry) > 0) { const s2 = (p.vx * ry - p.vy * rx) > 0 ? 1 : -1; dx += (-p.vy / p.speed) * s2 * 2.2 * react; dy += (p.vx / p.speed) * s2 * 2.2 * react; } }
+      for (const mk of G.marks) if (mk.owner !== S) { const rx = sd.x - mk.x, ry = sd.y - mk.y, dd = Math.hypot(rx, ry); if (dd < mk.r + 30) { dx += rx / (dd || 1) * 2 * react; dy += ry / (dd || 1) * 2 * react; } }
+      const cx = (BOUND.x0 + BOUND.x1) / 2, cy = (BOUND.y0 + BOUND.y1) / 2;
+      for (const [ex, ey] of [[60, 0], [-60, 0], [0, 50], [0, -50]]) if (!inWalk(sd.x + ex, sd.y + ey)) { dx -= ex / 60 * .9; dy -= ey / 50 * .9; }
+      if (!inWalk(sd.x + ux * 80, sd.y + uy * 80)) { dx += (cx - sd.x) / 300; dy += (cy - sd.y) / 200; }
+      if (m.conf > 0) { dx += Math.sin(G.time / 170 + 1) * .8; dy += Math.cos(G.time / 230) * .8; }
+    }
+  }
+  const len = Math.hypot(dx, dy); if (len > 1) { dx /= len; dy /= len; }
+  const speed = clamp(70 + effSpe(m) * .95, 60, 250);
+  const blend = 1 - Math.exp(-dt / 110);
+  sd.vx += (dx * speed - sd.vx) * blend; sd.vy += (dy * speed - sd.vy) * blend;
+  sd.x += (sd.vx + sd.kbx) * k; sd.y += (sd.vy + sd.kby) * k;
+  const damp = Math.exp(-dt / 120); sd.kbx *= damp; sd.kby *= damp;
+  [sd.x, sd.y] = clampWalk(sd.x, sd.y);
+  if (foe.state === 'idle') { const d = dist(sd, foe); if (d < TOUCH && d > 0) { const push = (TOUCH - d) / 2; sd.x += (sd.x - foe.x) / d * push; sd.y += (sd.y - foe.y) / d * push; } }
+  [sd.x, sd.y] = clampWalk(sd.x, sd.y);
+  const sp = Math.hypot(sd.vx, sd.vy); sd.walk += sp * k;
+  if (!sd.cast || sd.cast.phase === 'after') sd.face = foe.x >= sd.x ? 1 : -1;
+  else if (Math.abs(sd.vx) > 20) sd.face = sd.vx > 0 ? 1 : -1;
+  if (sp > 150 && Math.random() < dt / 90) VFX.dust(S);
+}
+
+/* ---------- AI ---------- */
+function scoreMove(u, t, name, d) {
+  const mv = MOVES[name], e = mv.e;
+  if (mv.cat === 'X') {
+    if (e.none) return .01;
+    if (e.heal) return u.hp / u.max < .45 ? .7 : 0;
+    if (e.rest) return u.hp / u.max < .3 && !u.status ? .75 : 0;
+    if (e.st) { if (t.status || statusImmune(t, e.st[0]) || (e.tw && typeEff('Electric', t.types) === 0) || (e.powder && t.types.includes('Grass'))) return 0; return .4 * (mv.acc || 100) / 100; }
+    if (e.cf) return t.conf > 0 ? 0 : .3;
+    if (e.tg) return .16;
+    if (e.self) { const k = Object.keys(e.self)[0]; return u.stages[k] >= 2 || u.hp / u.max < .55 ? .03 : .45; }
+    return .05;
+  }
+  const eff = typeEff(mv.type, t.types); if (eff === 0) return 0;
+  const dmg = e.fix ? e.fix * HP_MULT : calcDamage(u, t, mv, false, eff, false) * (e.hits ? 3 : 1);
+  let v = Math.min(1, dmg / Math.max(1, t.hp)) * ((mv.acc ?? 100) / 100) + dmg / t.max * .5;
+  if (dmg >= t.hp) v += .6;
+  if (['contact', 'dash', 'slash', 'dig'].includes(mv.anim)) v *= d < 160 ? 1.15 : .9;
+  if (e.rch) v *= .75;
+  if (e.rc) v *= .9;
+  return v;
+}
+function aiThink(S) {
+  const sd = side(S), u = act(S), fs = other(S);
+  if (!present(fs)) return;
+  const t = act(fs), d = dist(sd, side(fs));
+  const all = u.moves.map((n, i) => ({ i, v: scoreMove(u, t, n, d) + Math.random() * .08 }));
+  const best = all.slice().sort((a, b) => b.v - a.v)[0];
+  sd.prefDist = ['contact', 'dash', 'slash', 'dig'].includes(MOVES[u.moves[best.i]].anim) ? 70 : 250 + (u.stats.spe > 90 ? 60 : 0);
+  const ready = all.filter(x => u.cd[x.i] <= 0).sort((a, b) => b.v - a.v);
+  // switch out of a hopeless matchup now and then
+  if (S === 'B' || G.auto) {
+    const weak = u.moves.every(n => MOVES[n].cat === 'X' || typeEff(MOVES[n].type, t.types) < 1);
+    if (weak && sd.switchCd <= 0 && u.hp / u.max > .4 && Math.random() < .06) { const alt = bestSwitchFor(S); if (alt != null) { requestSwitch(S, alt); return; } }
+  }
+  if (!ready.length || ready[0].v < .04) return;
+  const pick = (Math.random() < .8 || ready.length < 2) ? ready[0] : ready[1];
+  tryCast(S, pick.i);
+}
+function bestSwitchFor(S) {
+  const foe = act(other(S)); let best = null, bestV = -Infinity;
+  side(S).team.forEach((m, i) => {
+    if (m.hp <= 0 || i === side(S).active) return;
+    const off = Math.max(0, ...m.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, foe.types)));
+    const def = Math.max(0, ...foe.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, m.types)));
+    const v = off * 2 - def + m.hp / m.max;
+    if (v > bestV) { bestV = v; best = i; }
+  });
+  return best;
+}
+
+/* ---------- Mega Evolution (once per side per battle) ---------- */
+const displayName = m => (m.mega ? 'MEGA ' : '') + m.name.toUpperCase();
+function canMega(S) { const sd = side(S), m = act(S); return G && G.phase === 'battle' && !sd.megaUsed && !m.mega && MEGA_ABLE.has(m.name) && sd.state === 'idle' && !sd.cast && sd.stun <= 0 && m.hp > 0; }
+function megaEvolve(S) {
+  if (!canMega(S)) return false;
+  const sd = side(S), m = act(S); sd.megaUsed = true; sd.state = 'mega'; sd.stateT = 0;
+  logLine(`${m.name} is reacting to the Mega Stone!`, 't'); VFX.megaStart(S); return true;
+}
+function finishMega(S) {
+  const sd = side(S), m = act(S); m.mega = true;
+  for (const k of ['atk', 'def', 'spa', 'spd']) m.stats[k] = Math.round(m.stats[k] * 1.22);
+  m.stats.spe = Math.round(m.stats.spe * 1.08);
+  sd.state = 'idle'; sd.stateT = 0; logLine(`${m.name} Mega Evolved into Mega ${m.name}!`, 't'); VFX.megaDone(S); G.hudDirty = true;
+}
+
+/* ---------- switching, fainting, ending ---------- */
+function requestSwitch(S, idx) {
+  const sd = side(S);
+  if (G.phase !== 'battle' || sd.state !== 'idle' || sd.cast || sd.switchCd > 0 || sd.stun > 0) return false;
+  if (idx === sd.active || !sd.team[idx] || sd.team[idx].hp <= 0) return false;
+  sd.state = 'leaving'; sd.stateT = 0; sd.pendingSwitch = idx; sd.switchCd = 5000;
+  logLine(`${TEAM_NAME[S]} recalled ${act(S).name}!`);
+  return true;
+}
+function resetOnLeave(m) { m.stages = zeroStages(); m.conf = 0; m.vol.recharge = false; if (m.status === 'tox') m.tox = 1; }
+function completeSwitch(S) { const sd = side(S); resetOnLeave(act(S)); spawnIn(S, sd.pendingSwitch); sd.pendingSwitch = null; }
+function spawnIn(S, idx) {
+  const sd = side(S); sd.active = idx; sd.state = 'entering'; sd.stateT = 0; sd.cast = null; sd.stun = 0; sd.gcd = 600; sd.dig = false;
+  sd.x = ENTRY[S].x; sd.y = ENTRY[S].y + (Math.random() - .5) * 80; sd.vx = sd.vy = sd.kbx = sd.kby = 0; sd.throwT = G.time; sd.aiT = 700;
+  sd.face = S === 'A' ? 1 : -1;
+  logLine(`${TEAM_NAME[S]} sent out ${act(S).name}!`); G.hudDirty = true; sd.sinceIn = 0;
+  if (typeof VFX !== 'undefined') VFX.call(S, `Go, ${act(S).name}!`);
+  if (typeof VFX !== 'undefined') VFX.sendOut(S);
+}
+function startFaint(S) {
+  const sd = side(S), m = act(S);
+  sd.state = 'fainting'; sd.stateT = 0; sd.cast = null; sd.dig = false; m.status = ''; m.conf = 0; m.vol.recharge = false;
+  logLine(`${m.name} fainted!`); VFX.faint(S); G.hudDirty = true;
+}
+function teamAlive(S) { return side(S).team.some(m => m.hp > 0); }
+function afterFaint(S) {
+  if (!teamAlive(S)) { endBattle(teamAlive(other(S)) ? other(S) : 'draw'); return; }
+  if (controlledByAI(S)) spawnIn(S, bestSwitchFor(S));
+  else { side(S).state = 'wait'; G.phase = 'pick'; if (typeof onNeedPick === 'function') onNeedPick(); }
+}
+function decideByHp(reason) {
+  const pct = s => side(s).team.reduce((a, m) => a + m.hp / m.max, 0);
+  const a = pct('A'), b = pct('B'); G.decision = reason;
+  return Math.abs(a - b) < .001 ? 'draw' : a > b ? 'A' : 'B';
+}
+function endBattle(w, big) {
+  if (G.phase === 'over') return;
+  G.phase = 'over'; G.winner = w; G.shots.length = G.marks.length = G.waves.length = 0;
+  logLine(w === 'draw' ? 'The battle ended in a draw!' : `${TEAM_NAME[w]} wins the battle!`, 't');
+  if (typeof onBattleEnd === 'function') onBattleEnd(w, big);
+}
+function simStep(dt) {
+  if (!G || G.phase === 'pick' || G.phase === 'over' || G.phase === 'title') return;
+  G.time += dt; if (G.phase === 'battle') G.elapsed += dt;
+  updateSide('A', dt); updateSide('B', dt);
+  if (G.phase === 'battle') {
+    updateWorld(dt);
+    // Sudden Death: after 5:00, damage grows 25% every 30 seconds; at 10:00 the battle is decided on HP
+    if (G.elapsed > 300000) { const od = 1 + Math.floor((G.elapsed - 300000) / 30000 + 1) * .25; if (od !== G.overtime) { if (!G.overtime) { VFX.big('SUDDEN DEATH!', '#ff6a5a'); logLine('Sudden Death! Damage keeps rising until someone falls.', 't'); } G.overtime = od; } }
+    if (G.elapsed > 600000) endBattle(decideByHp('Ten-minute limit reached. Decided by remaining HP.'), 'TIME!');
+    else if (G.time - G.lastDmgT > 30000) endBattle(decideByHp('No damage for 30 seconds. Decided by remaining HP.'), 'STALEMATE');
+    else if (G.timeLimit && G.elapsed / 1000 >= G.timeLimit) endBattle(decideByHp('Time limit reached. Decided by remaining HP.'), 'TIME!');
+  }
+}
