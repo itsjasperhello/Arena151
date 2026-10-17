@@ -16,13 +16,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # List the exact SDK packages the app needs. The action's default list includes the
-      # retired "tools" package, which newer sdkmanager versions no longer provide.
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
-          log-accepted-android-sdk-licenses: false
+      # GitHub's Ubuntu runners ship with the Android SDK already installed (ANDROID_HOME).
+      # Accept its licenses quietly; Gradle downloads any missing platform/build-tools itself.
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: Build APKs
         run: |
