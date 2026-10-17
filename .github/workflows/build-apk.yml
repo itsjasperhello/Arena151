@@ -16,16 +16,22 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # List the exact SDK packages the app needs. The action's default list includes the
+      # retired "tools" package, which newer sdkmanager versions no longer provide.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          log-accepted-android-sdk-licenses: false
 
       - name: Build APKs
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug assembleRelease --no-daemon
+          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: Arena151-apk
           path: app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
