@@ -382,54 +382,115 @@ function generateSprite(d, frame = 0, opts = {}) {
 }
 
 /* ---------- sprite cache, variants, and the custom sprite pack ---------- */
-// Custom sprites live in ./sprites/ and are named after the Pokémon: blastoise.png, mr-mime.png,
-// farfetchd.png, nidoran-f.png, nidoran-m.png. They face LEFT, share one canvas size (e.g. 120×112)
-// and are drawn at their native pixel size, never resampled. An optional <name>-mega.png supplies
-// the Mega form. Numbered files (006.png) are still accepted as a fallback.
+// Custom sprites live in ./sprites/ as animated GIFs named after the Pokémon:
+//   front: "mew.gif"   (faces LEFT, toward the viewer)
+//   back:  "mew (1).gif"   (faces RIGHT, away from the viewer)
+// Special names: nidoran-f, nidoran-m, mr-mime, farfetchd. Optional Mega forms:
+// "charizard-mega.gif" and "charizard-mega (1).gif". A PNG with the same name is used if no GIF exists.
 const SPRITE_CACHE = {};
-const CUSTOM = {}, CUSTOM_MEGA = {};          // name → { img, w, h, foot, crop, card }
+const CUSTOM = {}, CUSTOM_MEGA = {};          // name → { front: anim, back: anim | null }
+const FILE_MODE = location.protocol === 'file:';   // file:// pages cannot read file bytes; the browser animates the GIF instead
 function spriteSlug(name) {
   return name.toLowerCase().replace('♀', '-f').replace('♂', '-m').replace(/[’'.]/g, '').replace(/\s+/g, '-');
 }
-function measureCustom(img) {
-  const w = img.naturalWidth, h = img.naturalHeight;
-  // Defaults match a 120×112 sheet with ~4px of empty space under the feet.
-  let x0 = Math.round(w * .13), x1 = Math.round(w * .88), y0 = Math.round(h * .27), y1 = h - Math.max(1, Math.round(h * .036));
-  try {   // exact bounds when the browser allows reading pixels (blocked for some file:// pages)
-    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(img, 0, 0);
-    const d = x.getImageData(0, 0, w, h).data; let a = w, b = h, cc = -1, dd = -1;
-    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (d[(j * w + i) * 4 + 3] > 20) { a = Math.min(a, i); b = Math.min(b, j); cc = Math.max(cc, i); dd = Math.max(dd, j); }
-    if (cc >= 0) { x0 = a; y0 = b; x1 = cc; y1 = dd; }
-  } catch (e) { /* tainted canvas: keep the defaults */ }
-  const foot = h - 1 - y1, cw = x1 - x0 + 1, ch = y1 - y0 + 1;
-  const cs = Math.min(Math.max(cw, ch) + 4, Math.min(w, h));
-  const card = { x: clamp(Math.round((x0 + x1) / 2 - cs / 2), 0, w - cs), y: clamp(y1 + 2 - cs, 0, h - cs), s: cs };
-  const ps = Math.round(Math.min(cw, ch) * .72);                                        // face sits upper-left on a left-facing sprite
-  const crop = { x: clamp(x0 + Math.round(cw * .04), 0, w - ps), y: clamp(y0 - 2, 0, h - ps), s: ps };
-  return { img, w, h, foot, crop, card };
+const spriteUrl = file => 'sprites/' + encodeURIComponent(file);
+// Bounding box of the opaque pixels across a sample of frames (fails quietly on tainted images).
+function measureFrames(frames, w, h) {
+  let x0 = w, y0 = h, x1 = -1, y1 = -1, f0 = null;
+  try {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true });
+    const step = Math.max(1, Math.floor(frames.length / 12));
+    for (let k = 0; k < frames.length; k += step) {
+      x.clearRect(0, 0, w, h); x.drawImage(frames[k], 0, 0); const d = x.getImageData(0, 0, w, h).data;
+      let a = w, b = h, cc = -1, dd = -1;
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (d[(j * w + i) * 4 + 3] > 20) { if (i < a) a = i; if (j < b) b = j; if (i > cc) cc = i; if (j > dd) dd = j; }
+      if (cc < 0) continue; if (!f0) f0 = [a, b, cc, dd];
+      x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, cc); y1 = Math.max(y1, dd);
+    }
+  } catch (e) { /* tainted: fall through to defaults */ }
+  if (x1 < 0) { x0 = Math.round(w * .12); x1 = Math.round(w * .88); y0 = Math.round(h * .2); y1 = h - 2; f0 = [x0, y0, x1, y1]; }
+  return { x0, y0, x1, y1, f0 };
+}
+function finishAnim(a) {
+  const { w, h } = a, m = measureFrames(a.frames, w, h);
+  a.foot = h - 1 - m.y1; a.cx = Math.round((m.x0 + m.x1 + 1) / 2);
+  const cw = m.x1 - m.x0 + 1, ch = m.y1 - m.y0 + 1, cs = Math.min(Math.max(cw, ch) + 4, Math.max(w, h));
+  a.card = { x: Math.round((m.x0 + m.x1) / 2 - cs / 2), y: Math.round(m.y1 + 2 - cs), s: cs };
+  const [fx0, fy0, fx1, fy1] = m.f0, ps = Math.max(12, Math.round(Math.min(fx1 - fx0 + 1, fy1 - fy0 + 1) * .72));
+  a.crop = { x: fx0 + Math.round((fx1 - fx0) * .04), y: fy0 - 2, s: ps };        // the face sits upper-left on a left-facing sprite
+  a.cum = []; let t = 0; for (const d of a.delays) { t += d; a.cum.push(t); } a.total = t || 1;
+  return a;
+}
+// Decoded lazily: bytes are kept until the sprite is first drawn.
+function ensureAnim(a) {
+  if (!a || a.frames) return a;
+  try { const g = decodeGif(a.buf); a.frames = g.frames; a.delays = g.delays; a.w = g.W; a.h = g.H; }
+  catch (e) { a.frames = [a.fallbackImg || document.createElement('canvas')]; a.delays = [1e9]; a.w = a.frames[0].width || 1; a.h = a.frames[0].height || 1; }
+  a.buf = null; return finishAnim(a);
+}
+function animFromImage(img, live) {   // PNG, or a GIF the browser animates by itself (file:// pages)
+  if (live) liveHolder().appendChild(img);
+  return finishAnim({ frames: [img], delays: [1e9], w: img.naturalWidth, h: img.naturalHeight, live });
+}
+function liveHolder() {
+  let el = document.getElementById('spriteHolder');
+  if (!el) { el = document.createElement('div'); el.id = 'spriteHolder'; el.setAttribute('aria-hidden', 'true'); el.style.cssText = 'position:fixed;left:0;top:0;opacity:.004;pointer-events:none;z-index:2147483647;display:flex;flex-wrap:wrap;width:1px';   // painted so browsers that can animate it keep doing so document.body.appendChild(el); }
+  return el;
+}
+function animFrameIndex(a, t) {
+  if (a.frames.length < 2) return 0;
+  const tt = ((t % a.total) + a.total) % a.total; let lo = 0, hi = a.cum.length - 1;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (a.cum[mid] > tt) hi = mid; else lo = mid + 1; }
+  return lo;
+}
+const loadImg = file => new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = spriteUrl(file); });
+async function loadAnim(base) {
+  if (!FILE_MODE) {
+    try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) return { buf: await r.arrayBuffer() }; } catch (e) { }
+  } else {
+    const gif = await loadImg(base + '.gif'); if (gif) return animFromImage(gif, true);
+  }
+  const png = await loadImg(base + '.png'); return png ? animFromImage(png, false) : null;
 }
 function loadCustomPack() {
-  const tryLoad = (cands, onOk) => { if (!cands.length) return; const img = new Image(); img.onload = () => onOk(img); img.onerror = () => tryLoad(cands.slice(1), onOk); img.src = 'sprites/' + cands[0]; };
+  const changed = name => { for (const k of [name, name + '#M']) delete SPRITE_CACHE[k]; if (typeof onSpritesChanged === 'function') onSpritesChanged(); };
   for (const d of DEX) {
-    const slug = spriteSlug(d.name), num = String(d.id).padStart(3, '0');
-    tryLoad([slug + '.png', num + '.png'], img => { CUSTOM[d.name] = measureCustom(img); delete SPRITE_CACHE[d.name]; delete SPRITE_CACHE[d.name + '#M']; if (typeof onSpritesChanged === 'function') onSpritesChanged(); });
-    if (MEGA_ABLE.has(d.name)) tryLoad([slug + '-mega.png'], img => { CUSTOM_MEGA[d.name] = measureCustom(img); delete SPRITE_CACHE[d.name + '#M']; if (typeof onSpritesChanged === 'function') onSpritesChanged(); });
+    const slug = spriteSlug(d.name);
+    loadAnim(slug).then(async front => {
+      if (!front) return;
+      const pack = CUSTOM[d.name] = { front, back: null }; changed(d.name);      // show the front as soon as it is ready
+      const back = await loadAnim(slug + ' (1)'); if (back) { pack.back = back; changed(d.name); }
+      if (MEGA_ABLE.has(d.name)) { const mf = await loadAnim(slug + '-mega'); if (mf) { CUSTOM_MEGA[d.name] = { front: mf, back: await loadAnim(slug + '-mega (1)') }; changed(d.name); } }
+    });
   }
 }
+// Decode both views for a team ahead of time (one sprite per tick) so the first back-view never stutters.
+function warmSprites(names) {
+  const q = []; for (const n of names) for (const pack of [CUSTOM[n], CUSTOM_MEGA[n]]) if (pack) { q.push(pack.front); if (pack.back) q.push(pack.back); }
+  const step = () => { const a = q.shift(); if (!a) return; ensureAnim(a); setTimeout(step, 16); }; setTimeout(step, 0);
+}
 function variant(src, kind, color) {
-  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+  const c = document.createElement('canvas'); c.width = src.width || src.naturalWidth; c.height = src.height || src.naturalHeight; const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
   if (kind === 'gray') { x.filter = 'grayscale(1) brightness(.7)'; x.drawImage(src, 0, 0); return c; }
   x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = color; x.fillRect(0, 0, c.width, c.height); return c;
+}
+// Scratch canvas for flashes and tints on animated frames (drawn immediately, never cached).
+const _scr = document.createElement('canvas'), _sx = _scr.getContext('2d');
+function frameFx(src, w, h, kind, color) {
+  if (_scr.width !== w || _scr.height !== h) { _scr.width = w; _scr.height = h; } else _sx.clearRect(0, 0, w, h);
+  _sx.imageSmoothingEnabled = false; _sx.globalCompositeOperation = 'source-over';
+  if (kind === 'gray') { _sx.filter = 'grayscale(1) brightness(.7)'; _sx.drawImage(src, 0, 0); _sx.filter = 'none'; return _scr; }
+  _sx.drawImage(src, 0, 0); _sx.globalCompositeOperation = 'source-in'; _sx.fillStyle = color; _sx.fillRect(0, 0, w, h); _sx.globalCompositeOperation = 'source-over'; return _scr;
 }
 function spriteOf(name, mega = false) {
   const key = name + (mega ? '#M' : '');
   if (SPRITE_CACHE[key]) return SPRITE_CACHE[key];
-  const d = DEX_BY_NAME[name], cu = mega ? (CUSTOM_MEGA[name] || CUSTOM[name]) : CUSTOM[name];
+  const d = DEX_BY_NAME[name], pack = mega ? (CUSTOM_MEGA[name] || CUSTOM[name]) : CUSTOM[name];
   let sp;
-  if (cu) {
-    // custom art: one frame, native size, faces left; a Mega without its own file gets a glow instead
-    sp = { custom: true, w: cu.w, h: cu.h, foot: cu.foot, frames: [cu.img, cu.img], crop: cu.crop, card: cu.card, megaGlow: mega && !CUSTOM_MEGA[name] };
-    sp.white = [variant(cu.img, 'tint', '#ffffff')]; sp.white[1] = sp.white[0]; sp.gray = variant(cu.img, 'gray'); sp.tints = {};
+  if (pack) {
+    const f = ensureAnim(pack.front), first = f.frames[0];
+    sp = { custom: true, front: pack.front, back: pack.back, w: f.w, h: f.h, foot: f.foot, frames: [first, first], crop: f.crop, card: f.card, megaGlow: mega && !CUSTOM_MEGA[name], tints: {} };
+    sp.white = [variant(first, 'tint', '#ffffff')]; sp.white[1] = sp.white[0]; sp.gray = variant(first, 'gray');
   } else {
     const grid = (GIANT.has(name) || mega) ? 80 : 56, a = generateSprite(d, 0, { grid, mega }), b = generateSprite(d, 1, { grid, mega });
     sp = { custom: false, w: grid, h: grid, foot: 2, frames: [a.canvas, b.canvas], crop: a.crop, card: { x: 0, y: 0, s: grid }, tints: {} };
@@ -438,17 +499,16 @@ function spriteOf(name, mega = false) {
   sp.size = sp.w; SPRITE_CACHE[key] = sp; return sp;
 }
 function tintOf(name, color, f = 0, mega = false) { const sp = spriteOf(name, mega), k = color + f; if (!sp.tints[k]) sp.tints[k] = variant(sp.frames[f], 'tint', color); return sp.tints[k]; }
-// Draws a sprite into a small UI canvas (portraits, roster cards, VS screen, results).
+// Draws a sprite into a small UI canvas (portraits, roster cards, VS screen, results) using the front view.
 // Custom art is copied 1:1 and the canvas is resized to match, so CSS scales it crisply.
 function drawSpriteTo(canvas, name, opts = {}) {
   const sp = spriteOf(name, opts.mega), src = opts.gray ? sp.gray : sp.frames[0];
   const r = opts.portrait ? sp.crop : sp.card;
-  if (sp.custom || opts.native) { canvas.width = r.s; canvas.height = r.s; }
+  if (sp.custom) { canvas.width = r.s; canvas.height = r.s; }
   const c = canvas.getContext('2d'); c.imageSmoothingEnabled = false; c.clearRect(0, 0, canvas.width, canvas.height);
   if (opts.bg) { c.fillStyle = opts.bg; c.fillRect(0, 0, canvas.width, canvas.height); }
   c.save();
-  // custom art faces left; mirror it where the UI wants it facing right (Red's side)
-  if (sp.custom && opts.faceRight) { c.translate(canvas.width, 0); c.scale(-1, 1); }
+  if (sp.custom && opts.faceRight) { c.translate(canvas.width, 0); c.scale(-1, 1); }   // front art faces left; mirror for Red's side
   c.drawImage(src, r.x, r.y, r.s, r.s, 0, 0, canvas.width, canvas.height);
   c.restore();
 }

@@ -4,7 +4,7 @@ A native Android app (Java + WebView) that runs the full Arena 151 game offline,
 
 - **Requires:** Android 8.0 (API 26) or newer.
 - **App ID:** `com.arena151.game`
-- **Version:** 6.0
+- **Version:** 6.2
 
 ## Build the APK on Windows (Android Studio)
 1. Install **Android Studio** (free) from developer.android.com/studio. It includes the Android SDK and Java.
@@ -38,7 +38,17 @@ The release APK is signed with the debug key so it installs on your own devices.
 - **Download save file** writes to `Downloads/Arena151` on the phone. **Open save file** lets you pick one.
 
 ## Your custom sprites
-Copy your PNGs into `app/src/main/assets/sprites/` before building, named as listed in `SPRITE_FILE_NAMES.txt` in that folder (`charizard.png`, `nidoran-f.png`, `mr-mime.png` …). Left-facing, same canvas size, same as on desktop. They are packaged inside the APK.
+Copy animated GIFs into `app/src/main/assets/sprites/` before building:
+
+- **Front:** `mew.gif`, facing left (toward the viewer).
+- **Back:** `mew (1).gif`, facing right (away from the viewer).
+
+The full list of names (including `nidoran-f`, `nidoran-m`, `mr-mime` and `farfetchd`) is in `SPRITE_FILE_NAMES.txt` in that folder.
+
+- **Front or back:** the back sprite shows while a Pokémon moves up the screen; the front sprite shows otherwise.
+- **Mirroring:** both views are mirrored so the Pokémon faces where it is heading.
+- **Animation:** every GIF frame plays at its own speed.
+- **Fallbacks:** if there's no back GIF, the front one is used for both views. If there's no GIF, a PNG with the same name is used.
 
 ## Updating the game
 The game code lives in `web/` (the same source as the desktop build). After changing it, run:
