@@ -203,26 +203,48 @@ function drawActorGround(S) {
 function drawActorSprite(S) {
   if (!G) return; const L = actorLook(S); if (!L || L.sd.dig) return;
   const { sd, m, sp, megaNow, scale, alpha, white, gray, sink } = L, c = sctx;
-  const unit = sp.custom ? Math.max(1, Math.round(cam.pz / 2)) : cam.pz;
   const st = m.status, frozen = st === 'frz', asleep = st === 'slp', moving = Math.hypot(sd.vx, sd.vy) > 40;
-  const f = frozen ? 0 : moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / (asleep ? 900 : 430)) % 2;
-  // custom art has one frame, so idle breathing and walking come from a small bob instead
-  const breathe = sp.custom && !frozen ? (moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / 430) % 2) : 0;
   const hopArt = (sd.hop > 0 ? Math.sin(sd.hop * Math.PI) * 6 : 0) + (moving && !sp.custom ? Math.floor(sd.walk / 16) % 2 : 0);
   const sx = (ax(sd.x) - OX) * cam.pz, sy = (ay(sd.y) - OY) * cam.pz;
-  const dw = Math.max(1, Math.round(sp.w * unit * scale)), dh = Math.max(1, Math.round(sp.h * unit * scale));
-  const dx = Math.round(sx - dw / 2), dy = Math.round(sy - (sp.h - sp.foot) * unit * scale - hopArt * cam.pz + sink * 9 * cam.pz - breathe * unit);
-  const flip = sp.custom ? sd.face > 0 : sd.face < 0;        // custom sprites face left, generated ones right
-  c.save(); c.imageSmoothingEnabled = false; c.globalAlpha = alpha;
-  if (flip) { c.translate(dx + dw, dy); c.scale(-1, 1); } else c.translate(dx, dy);
-  c.drawImage(gray ? sp.gray : sp.frames[f], 0, 0, dw, dh);
-  if (sp.megaGlow && megaNow) { c.globalAlpha = alpha * (.18 + .1 * Math.sin(clock.t / 180)); c.drawImage(tintOf(m.name, '#ff7ce8', 0, true), 0, 0, dw, dh); }
-  if (frozen) { c.globalAlpha = alpha * .5; c.drawImage(tintOf(m.name, '#9feaff', f, megaNow), 0, 0, dw, dh); }
-  if (st === 'par' && Math.floor(clock.t / 120) % 9 === 0) { c.globalAlpha = alpha * .6; c.drawImage(tintOf(m.name, '#ffe04a', f, megaNow), 0, 0, dw, dh); }
-  if (st === 'psn' || st === 'tox') { c.globalAlpha = alpha * (.12 + .1 * Math.sin(clock.t / 200)); c.drawImage(tintOf(m.name, '#b25bff', f, megaNow), 0, 0, dw, dh); }
   const flashOn = sd.hit > 0 && Math.floor(sd.hit / 55) % 2 === 0;
-  if (white > 0 || flashOn) { c.globalAlpha = alpha * Math.max(white, flashOn ? .9 : 0); c.drawImage(sp.white[f], 0, 0, dw, dh); }
-  c.restore();
+  if (sp.custom) {
+    // Front or back view: show the back while heading up the screen (away from the camera).
+    let lx, ly; if (moving) { lx = sd.vx; ly = sd.vy; } else { const f = side(other(S)); lx = f.x - sd.x; ly = f.y - sd.y; }
+    const len = Math.hypot(lx, ly) || 1;
+    if (sd.view === 'back') { if (ly > -.15 * len) sd.view = 'front'; } else if (ly < -.45 * len) sd.view = 'back';
+    const useBack = sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
+    const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
+    // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
+    const flip = useBack ? sd.face < 0 : sd.face > 0;
+    const unit = Math.max(1, Math.round(cam.pz / 2)) * scale, still = a.frames.length < 2 && !a.live;
+    const bob = still && !frozen ? (moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / 430) % 2) * unit : 0;
+    const dw = Math.max(1, Math.round(a.w * unit)), dh = Math.max(1, Math.round(a.h * unit));
+    c.save(); c.imageSmoothingEnabled = false; c.globalAlpha = alpha;
+    c.translate(Math.round(sx), Math.round(sy - hopArt * cam.pz + sink * 9 * cam.pz - bob)); c.scale(flip ? -1 : 1, 1);
+    const ox = -Math.round(a.cx * unit), oy = -Math.round((a.h - a.foot) * unit);
+    const put = img => c.drawImage(img, ox, oy, dw, dh);
+    put(gray ? frameFx(src, a.w, a.h, 'gray') : src);
+    const tint = (col, k) => { c.globalAlpha = alpha * k; put(frameFx(src, a.w, a.h, 'tint', col)); };
+    if (sp.megaGlow && megaNow) tint('#ff7ce8', .18 + .1 * Math.sin(clock.t / 180));
+    if (frozen) tint('#9feaff', .5);
+    if (st === 'par' && Math.floor(clock.t / 120) % 9 === 0) tint('#ffe04a', .6);
+    if (st === 'psn' || st === 'tox') tint('#b25bff', .12 + .1 * Math.sin(clock.t / 200));
+    if (white > 0 || flashOn) tint('#ffffff', Math.max(white, flashOn ? .9 : 0));
+    c.restore();
+  } else {
+    const unit = cam.pz;
+    const f = frozen ? 0 : moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / (asleep ? 900 : 430)) % 2;
+    const dw = Math.max(1, Math.round(sp.w * unit * scale)), dh = Math.max(1, Math.round(sp.h * unit * scale));
+    const dx = Math.round(sx - dw / 2), dy = Math.round(sy - (sp.h - sp.foot) * unit * scale - hopArt * cam.pz + sink * 9 * cam.pz);
+    c.save(); c.imageSmoothingEnabled = false; c.globalAlpha = alpha;
+    if (sd.face < 0) { c.translate(dx + dw, dy); c.scale(-1, 1); } else c.translate(dx, dy);
+    c.drawImage(gray ? sp.gray : sp.frames[f], 0, 0, dw, dh);
+    if (frozen) { c.globalAlpha = alpha * .5; c.drawImage(tintOf(m.name, '#9feaff', f, megaNow), 0, 0, dw, dh); }
+    if (st === 'par' && Math.floor(clock.t / 120) % 9 === 0) { c.globalAlpha = alpha * .6; c.drawImage(tintOf(m.name, '#ffe04a', f, megaNow), 0, 0, dw, dh); }
+    if (st === 'psn' || st === 'tox') { c.globalAlpha = alpha * (.12 + .1 * Math.sin(clock.t / 200)); c.drawImage(tintOf(m.name, '#b25bff', f, megaNow), 0, 0, dw, dh); }
+    if (white > 0 || flashOn) { c.globalAlpha = alpha * Math.max(white, flashOn ? .9 : 0); c.drawImage(sp.white[f], 0, 0, dw, dh); }
+    c.restore();
+  }
   if (!clock.paused && sd.state === 'idle') {
     const hx = sd.x, hy = sd.y - 44, q = Math.random();
     if (m.mega && q < .12) spark(sd.x + (Math.random() - .5) * 50, sd.y - Math.random() * 60, { color: '#ff9cf0', vy: -50, vx: 0, life: 500, add: true });

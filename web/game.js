@@ -134,7 +134,7 @@ async function startBattle(picksA, picksB, stageId) {
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
   $('log').innerHTML = ''; $('timer').textContent = '0:00'; movesKey = ''; rosterKey = '';
   logLine(`Red and Gold meet in the ${STAGE.name}. Live battle — six Pokémon each.`, 't');
-  updateHUD(true);
+  updateHUD(true); warmSprites([...G.picks.A, ...G.picks.B]);
   try {
     await playIntro(my); guard(my);
     spawnIn('A', 0); await wait(250); guard(my); spawnIn('B', 0);
