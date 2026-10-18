@@ -332,6 +332,7 @@ function draw(dt) {
   if (clock.t < shakeState.until) { OX += Math.round((Math.random() - .5) * shakeState.amp / 2); OY += Math.round((Math.random() - .5) * shakeState.amp / 2); } else shakeState.amp = 0;
   const b = bctx; b.setTransform(1, 0, 0, 1, 0, 0); b.imageSmoothingEnabled = false;
   b.fillStyle = '#05070d'; b.fillRect(0, 0, buf.width, buf.height);
+  drawStageBackdrop(b, OX, OY, clock.t);
   b.drawImage(stageCanvas, -OX, -OY);
   animateStage(b, OX, OY, clock.t);
   b.drawImage(scarCanvas, -OX, -OY);
@@ -356,8 +357,10 @@ function draw(dt) {
   drawEnts(false);
   drawWorldFx();
   drawAmbient(dt);
+  drawStageForeground(bctx, OX, OY, clock.t);
   bctx = gctx;
   c.drawImage(fbuf, 0, 0, vw, vh, 0, 0, vw * cam.pz, vh * cam.pz);
+  stageGrade(c);
   if (STAGE.ambient === 'snow') { lightning.next -= dt; if (lightning.next <= 0) { lightning.a = REDUCED ? .1 : .3; lightning.next = 8000 + Math.random() * 9000; } }
   if (lightning.a > 0) { c.fillStyle = `rgba(230,240,255,${lightning.a})`; c.fillRect(0, 0, DW, DH); lightning.a = Math.max(0, lightning.a - dt / 600); }
   if (flash.a > 0) { c.globalAlpha = flash.a; c.fillStyle = flash.color; c.fillRect(0, 0, DW, DH); c.globalAlpha = 1; flash.a = Math.max(0, flash.a - dt / 300); }

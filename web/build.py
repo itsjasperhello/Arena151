@@ -11,7 +11,7 @@ head = '''<!doctype html>
 <style>
 '''
 out = head + (src/'fonts.css').read_text(encoding='utf-8') + (src/'style.css').read_text(encoding='utf-8') + '</style>\n</head>\n<body>\n' + (src/'body.html').read_text(encoding='utf-8') + '<script>\n'
-for f in ['data.js', 'gif.js', 'sprites.js', 'stages.js', 'sim.js', 'render.js', 'movefx_core.js', 'movefx_moves.js', 'movefx_signature.js', 'movefx_signature2.js', 'movefx_signature3.js', 'game.js']:
+for f in ['data.js', 'gif.js', 'sprites.js', 'stages.js', 'stages_core.js', 'stages_art.js', 'sim.js', 'render.js', 'movefx_core.js', 'movefx_moves.js', 'movefx_signature.js', 'movefx_signature2.js', 'movefx_signature3.js', 'game.js']:
     out += (src/f).read_text(encoding='utf-8') + '\n'
 out += '</script>\n</body>\n</html>\n'
 import sys
