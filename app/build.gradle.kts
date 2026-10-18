@@ -10,16 +10,29 @@ android {
         applicationId = "com.arena151.game"
         minSdk = 26          // Android 8.0+
         targetSdk = 35
-        versionCode = 6
-        versionName = "6.0"
+        versionCode = 7
+        versionName = "6.1"
+    }
+
+    // One fixed signing key, kept in the repo, so every APK GitHub builds can install as an
+    // update over the previous one (and keep your saves). Fine for a personal/class project;
+    // use a private key stored as a secret before publishing anywhere.
+    signingConfigs {
+        create("arena") {
+            storeFile = file("arena151.jks")
+            storePassword = "arena151pass"
+            keyAlias = "arena151"
+            keyPassword = "arena151pass"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("arena")
+        }
         release {
             isMinifyEnabled = false
-            // Signed with the debug key so the release APK installs directly on your own phone.
-            // Create a real signing key before publishing anywhere.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("arena")
         }
     }
 
