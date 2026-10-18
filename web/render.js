@@ -13,7 +13,7 @@ class Cancelled extends Error {}
 function anim(dur, fn) { const my = epoch; return new Promise((res, rej) => tasks.push({ start: clock.t, dur: Math.max(1, dur), fn, res, rej, my })); }
 const wait = ms => anim(ms, null);
 function guard(my) { if (my !== epoch) throw new Cancelled(); }
-function cancelAll() { epoch++; const old = tasks; tasks = []; old.forEach(t => t.rej(new Cancelled())); fx.length = 0; parts.length = 0; screenFx.length = 0; }
+function cancelAll() { epoch++; const old = tasks; tasks = []; old.forEach(t => t.rej(new Cancelled())); fx.length = 0; parts.length = 0; screenFx.length = 0; if (typeof ENTS !== 'undefined') { ENTS.length = 0; timers.length = 0; dimState.a = 0; } }
 
 const scene = $('scene'), sctx = scene.getContext('2d');
 let DW = 0, DH = 0, DPR = 1, PZ0 = 2, buf = null, bctx = null, gctx = null, fbuf = null, fctx = null, scarCanvas = null, scarCtx = null;
@@ -26,6 +26,8 @@ const slide = { text: '', t: -9999 };
 const banner = { text: '', t: -9999, color: '#ffb347' };
 const trainerWalk = { A: 1, B: 1 };
 const crowdState = [];
+const ACTOR_GLOW = { A: null, B: null };          // per-Pokémon colour glow used by move animations
+const HITSTOP = { until: 0 };                        // real-time ms; the game runs at 12% speed until then
 
 function resizeScene() {
   const r = scene.getBoundingClientRect(); DPR = window.devicePixelRatio || 1;
@@ -87,9 +89,9 @@ function punch(x, y, ms = 1200, lv = 2) { cam.punchT = clock.t + ms; cam.fx = { 
 const VFX = {
   text(S, t, col) { const h = head(S); floatText(h.x, h.y - 26, t, { size: 18, color: col }); },
   hit(S, mv, dmg, eff, crit) {
-    const f = fxOf(mv), h = head(S), sd = side(S);
-    burstAt(h.x, h.y + 10, f.col, crit ? 26 : 16, crit ? 340 : 250, crit ? 2 : 1);
-    ringFx(h.x, h.y + 10, f.core, 8, crit ? 70 : 48, 300);
+    const f = fxOf(mv), h = head(S), sd = side(S), R = MFX[mv.name];
+    if (R && R.impact) { try { R.impact(S, mv, crit, eff); } catch (e) { console.error(e); } if (crit) burstAt(h.x, h.y + 10, '#ffffff', 14, 300, 2); }
+    else { burstAt(h.x, h.y + 10, f.col, crit ? 26 : 16, crit ? 340 : 250, crit ? 2 : 1); ringFx(h.x, h.y + 10, f.core, 8, crit ? 70 : 48, 300); }
     VFX.shake(crit ? 11 : eff > 1 ? 8 : 4, crit ? 360 : 220); if (crit) screenFlash('#ffffff', .3);
     if (Math.random() < .75) addScar(f.scar, sd.x + (Math.random() - .5) * 30, sd.y + (Math.random() - .5) * 12, { color: f.sc });
     floatText(h.x + (Math.random() - .5) * 18, h.y - 12, String(dmg), { size: crit ? 40 : 32, color: crit ? '#ffe24a' : '#ffffff', life: 1000 });
@@ -99,7 +101,7 @@ const VFX = {
     if (crit || (eff > 1 && dmg > act(S).max * .25)) punch(sd.x, sd.y - 30, 900, 1);
     portraitShake(S);
   },
-  impactAt(x, y, mv) { burstAt(x, y, fxOf(mv).col, 8, 160, 1); },
+  impactAt(x, y, mv) { const R = MFX[mv.name]; if (R && R.hitAt) { try { R.hitAt(x, y, mv); } catch (e) { console.error(e); } return; } burstAt(x, y, fxOf(mv).col, 8, 160, 1); },
   explode(x, y, mv) { const f = fxOf(mv); ringFx(x, y, f.col, 10, 90, 420); ringFx(x, y, f.core, 6, 60, 320); burstAt(x, y, f.col, 26, 300, 2); VFX.shake(7, 260); addScar('scorch', x, y + 30); },
   status(S, st) { const h = head(S); ringFx(h.x, h.y + 10, STATUS_INFO[st].color, 10, 60, 420); },
   stage(S, k, d) { const h = head(S), up = d > 0; fx.push({ kind: 'arrows', x: h.x, y: h.y, color: up ? '#ff8a72' : '#76a7ff', up, t0: clock.t, life: 650 }); },
@@ -109,13 +111,16 @@ const VFX = {
   selfHit(S, d) { const p = head(S); side(S).hit = 300; floatText(p.x, p.y - 20, String(d), { size: 26 }); VFX.banner('IT HURT ITSELF IN ITS CONFUSION!', '#c8a6ff'); },
   ability(S, name) { const p = head(S); fx.push({ kind: 'text', x: p.x, y: p.y - 70, text: name.toUpperCase() + '!', t0: clock.t, life: 1500, color: '#ffb347', size: 38, vy: -.01, stroke: '#3a1606', italic: true }); punch(side(S).x, side(S).y - 30, 1100, 1); },
   missAt(x, y) { floatText(x, y, 'MISS', { size: 22, color: '#e6ecff' }); },
-  windup(S, mv) { fx.push({ kind: 'charge', S, color: fxOf(mv).col, t0: clock.t, life: WINDUP(mv) + 120 }); },
-  exec(S, mv) { const sd = side(S); if (['contact', 'dash', 'slash'].includes(mv.anim)) for (let i = 0; i < 6; i++) spark(sd.x, sd.y - 10, { color: '#e9eef2', vx: -sd.face * (60 + Math.random() * 80), vy: -20 - Math.random() * 30, g: 200, life: 380 }); if (mv.anim === 'beam' && mv.pow >= 110) punch(sd.x, sd.y, 1300, 1); },
+  windup(S, mv) { const R = MFX[mv.name]; if (R && R.charge) { try { R.charge(S, mv); } catch (e) { console.error(e); } } else fx.push({ kind: 'charge', S, color: fxOf(mv).col, t0: clock.t, life: WINDUP(mv) + 120 }); },
+  exec(S, mv) { const R = MFX[mv.name]; if (R && R.exec) { try { R.exec(S, mv); } catch (e) { console.error(e); } } const sd = side(S); if (['contact', 'dash', 'slash'].includes(mv.anim)) for (let i = 0; i < 6; i++) spark(sd.x, sd.y - 10, { color: '#e9eef2', vx: -sd.face * (60 + Math.random() * 80), vy: -20 - Math.random() * 30, g: 200, life: 380 }); if (mv.anim === 'beam' && mv.pow >= 110) punch(sd.x, sd.y, 1300, 1); },
+  dashFx(S, mv) { const R = MFX[mv.name]; if (R && R.dash) { try { R.dash(S, mv); } catch (e) { console.error(e); } if (Math.random() < .3) addScar('trail', side(S).x, side(S).y + 2); } else VFX.dust(S); },
+  moveImpact(S, mv) { const R = MFX[mv.name]; if (R && R.impact) { try { R.impact(S, mv, false, 1); } catch (e) { console.error(e); } } },
   dust(S) { const sd = side(S); spark(sd.x + (Math.random() - .5) * 16, sd.y - 2, { color: '#e9eef2', vx: -sd.vx * .15, vy: -10 - Math.random() * 20, g: 60, life: 360 }); if (Math.random() < .35) addScar('trail', sd.x, sd.y + 2); },
   slash(S, mv) { const h = head(S); fx.push({ kind: 'slash', x: h.x, y: h.y, color: fxOf(mv).col, t0: clock.t, life: 300 }); },
   erupt(x, y) { burstAt(x, y, '#a08a66', 18, 260, 2); addScar('crack', x, y); VFX.shake(8, 260); },
   markFire(mk) {
-    const f = fxOf(mk.mv);
+    const f = fxOf(mk.mv), R = MFX[mk.mv.name];
+    if (R && R.mark) { try { R.mark(mk); } catch (e) { console.error(e); } return; }
     if (mk.kind === 'bolt') { fx.push({ kind: 'bolt', x: mk.x, y: mk.y - 30, color: f.col, t0: clock.t, life: 300 }); screenFlash('#ffffff', mk.mv.pow >= 90 ? .55 : .25); addScar('scorch', mk.x, mk.y); }
     else if (mk.kind === 'sky') { ringFx(mk.x, mk.y - 10, f.col, 10, mk.r, 380); burstAt(mk.x, mk.y - 20, f.col, 24, 260, 2); addScar(mk.mv.type === 'Rock' ? 'crack' : 'splat', mk.x, mk.y, { color: '#f2fbff' }); VFX.shake(6, 250); }
     else fx.push({ kind: 'psy', x: mk.x, y: mk.y - 30, color: f.col, t0: clock.t, life: 520 });
@@ -204,7 +209,7 @@ function drawActorSprite(S) {
   if (!G) return; const L = actorLook(S); if (!L || L.sd.dig) return;
   const { sd, m, sp, megaNow, scale, alpha, white, gray, sink } = L, c = sctx;
   const st = m.status, frozen = st === 'frz', asleep = st === 'slp', moving = Math.hypot(sd.vx, sd.vy) > 40;
-  const hopArt = (sd.hop > 0 ? Math.sin(sd.hop * Math.PI) * 6 : 0) + (moving && !sp.custom ? Math.floor(sd.walk / 16) % 2 : 0);
+  const hopArt = (sd.hop > 0 ? Math.sin(sd.hop * Math.PI) * 6 * (sd.hopK || 1) : 0) + (moving && !sp.custom ? Math.floor(sd.walk / 16) % 2 : 0);
   const sx = (ax(sd.x) - OX) * cam.pz, sy = (ay(sd.y) - OY) * cam.pz;
   const flashOn = sd.hit > 0 && Math.floor(sd.hit / 55) % 2 === 0;
   if (sp.custom) {
@@ -229,6 +234,7 @@ function drawActorSprite(S) {
     if (frozen) tint('#9feaff', .5);
     if (st === 'par' && Math.floor(clock.t / 120) % 9 === 0) tint('#ffe04a', .6);
     if (st === 'psn' || st === 'tox') tint('#b25bff', .12 + .1 * Math.sin(clock.t / 200));
+    const ag = ACTOR_GLOW[S]; if (ag && clock.t < ag.until) tint(ag.col, ag.a * (.65 + .35 * Math.sin(clock.t / 45)));
     if (white > 0 || flashOn) tint('#ffffff', Math.max(white, flashOn ? .9 : 0));
     c.restore();
   } else {
@@ -242,6 +248,7 @@ function drawActorSprite(S) {
     if (frozen) { c.globalAlpha = alpha * .5; c.drawImage(tintOf(m.name, '#9feaff', f, megaNow), 0, 0, dw, dh); }
     if (st === 'par' && Math.floor(clock.t / 120) % 9 === 0) { c.globalAlpha = alpha * .6; c.drawImage(tintOf(m.name, '#ffe04a', f, megaNow), 0, 0, dw, dh); }
     if (st === 'psn' || st === 'tox') { c.globalAlpha = alpha * (.12 + .1 * Math.sin(clock.t / 200)); c.drawImage(tintOf(m.name, '#b25bff', f, megaNow), 0, 0, dw, dh); }
+    const ag = ACTOR_GLOW[S]; if (ag && clock.t < ag.until) { c.globalAlpha = alpha * ag.a * (.65 + .35 * Math.sin(clock.t / 45)); c.drawImage(tintOf(m.name, ag.col, f, megaNow), 0, 0, dw, dh); }
     if (white > 0 || flashOn) { c.globalAlpha = alpha * Math.max(white, flashOn ? .9 : 0); c.drawImage(sp.white[f], 0, 0, dw, dh); }
     c.restore();
   }
@@ -256,6 +263,7 @@ function drawActorSprite(S) {
   }
 }
 function drawShot(p) {
+  const R = MFX[p.mv.name]; if (R && R.shot) { try { R.shot(p); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
   const f = fxOf(p.mv), i = bx(p.x), j = by(p.y);
   if (Math.random() < .6) spark(p.x, p.y, { color: f.col, vx: 0, vy: 0, life: 220, add: true });
   if (p.shape === 'star') { for (let q = -3; q <= 3; q++) { aRect(i + q, j, 1, 1, '#fff59a'); aRect(i, j + q, 1, 1, '#fff59a'); } aDisc(i, j, 1, '#ffffff'); return; }
@@ -267,6 +275,7 @@ function drawShot(p) {
   aDisc(i, j, r, f.col); aDisc(i - 1, j - 1, Math.max(1, r - 2), f.core);
 }
 function drawBeam(b) {
+  const R = MFX[b.mv.name]; if (R && R.beam) { try { R.beam(b); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
   const f = fxOf(b.mv), q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1;
   const n = Math.round(450 * grow), i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, di = Math.cos(b.ang), dj = Math.sin(b.ang), w = Math.round(b.w / 2 * (1 + Math.sin(clock.t / 25) * .12));
   bctx.globalCompositeOperation = 'lighter';
@@ -294,15 +303,7 @@ function drawWorldFx() {
     else if (f.kind === 'arrows') { for (let s = 0; s < 5; s++) { const ox = f.x - 36 + s * 18, oy = f.y + (f.up ? -1 : 1) * ((q * 60 + s * 13) % 60) - 6; for (let t = 0; t < 3; t++) aRect(bx(ox) - t, by(oy) + (f.up ? t : -t), t * 2 + 1, 1, f.color, 1 - q); } }
     else if (f.kind === 'capsule') { if (!G) continue; const S = f.S, from = TRAINER_POS[S], to = side(S), x = lerp(from.x, to.x, q), y = lerp(from.y - 30, to.y - 20, q) - Math.sin(q * Math.PI) * 70, col = S === 'A' ? '#ff4b55' : '#ffc72c', i = bx(x), j = by(y); aRect(i - 3, j - 3, 6, 6, '#141a2c'); aRect(i - 2, j - 2, 4, 4, col); aRect(i - 2, j - 2, 2, 2, '#ffffff'); if (q > .92) { burstAt(to.x, to.y - 20, '#ffffff', 20, 280, 1); ringFx(to.x, to.y - 10, col, 6, 70, 400); fx.splice(k, 1); } }
   }
-  for (let k = parts.length - 1; k >= 0; k--) {
-    const p = parts[k], t = p.t / p.life; if (t >= 1) { parts.splice(k, 1); continue; }
-    const i = bx(p.x), j = by(p.y); bctx.globalAlpha = 1 - t; bctx.fillStyle = p.color; if (p.add) bctx.globalCompositeOperation = 'lighter';
-    if (p.shape === 'ring') { bctx.fillRect(i - 1, j, 1, 1); bctx.fillRect(i + 1, j, 1, 1); bctx.fillRect(i, j - 1, 1, 1); bctx.fillRect(i, j + 1, 1, 1); }
-    else if (p.shape === 'plus') { bctx.fillRect(i - 1, j, 3, 1); bctx.fillRect(i, j - 1, 1, 3); }
-    else if (p.shape === 'zap') { for (let q = 0; q < 4; q++) bctx.fillRect(i + (q % 2), j + q, 1, 1); }
-    else bctx.fillRect(i, j, p.size, p.size);
-    bctx.globalCompositeOperation = 'source-over';
-  }
+  for (let k = parts.length - 1; k >= 0; k--) if (!drawParticle(parts[k])) parts.splice(k, 1);
   bctx.globalAlpha = 1;
 }
 function drawAmbient(dt) {
@@ -325,7 +326,7 @@ function textAt(c, text, x, y, size, color, stroke, opts = {}) {
 }
 function draw(dt) {
   if (!DW || !buf || !stageCanvas) return;
-  updateCamera(dt);
+  runTimers(); updateCamera(dt);
   const vw = Math.min(buf.width, Math.ceil(DW / cam.pz) + 1), vh = Math.min(buf.height, Math.ceil(DH / cam.pz) + 1);
   OX = cam.left; OY = cam.top;
   if (clock.t < shakeState.until) { OX += Math.round((Math.random() - .5) * shakeState.amp / 2); OY += Math.round((Math.random() - .5) * shakeState.amp / 2); } else shakeState.amp = 0;
@@ -337,19 +338,22 @@ function draw(dt) {
   if (G) {
     for (const mk of G.marks) { const q = mk.t / mk.delay, col = fxOf(mk.mv).col, i = bx(mk.x), j = by(mk.y), r = mk.r / 2; aEllFill(i, j, r, r * .6, col, .12 + q * .14); aRing(i, j, r, r * .6, col, .9); aRing(i, j, r * q, r * q * .6, '#ffffff', .8);
       if (mk.kind === 'sky' && q > .45) { const fall = (q - .45) / .55; for (let s = 0; s < 4; s++) aDisc(bx(mk.x + (s - 1.5) * 22), by(lerp(mk.y - 300, mk.y - 10, fall) - s * 18), mk.mv.type === 'Rock' ? 3 : 2, s % 2 ? col : fxOf(mk.mv).core); } }
-    for (const w of G.waves) { const col = fxOf(w.mv).col, r = w.r / 2; aRing(bx(w.x), by(w.y), r, r * .62, col, .95, 2); aRing(bx(w.x), by(w.y), r - 2, r * .62 - 1, '#ffffff', .6); if (w.kind === 'quake' && Math.random() < .5) { const a = Math.random() * 6.28; spark(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { color: '#a08a66', vy: -90, vx: 0, g: 300, life: 380 }); } }
+    for (const w of G.waves) { const RW = MFX[w.mv.name]; if (RW && RW.wave) { try { RW.wave(w); } catch (e) { console.error(e); } bctx.globalAlpha = 1; continue; } const col = fxOf(w.mv).col, r = w.r / 2; aRing(bx(w.x), by(w.y), r, r * .62, col, .95, 2); aRing(bx(w.x), by(w.y), r - 2, r * .62 - 1, '#ffffff', .6); if (w.kind === 'quake' && Math.random() < .5) { const a = Math.random() * 6.28; spark(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { color: '#a08a66', vy: -90, vx: 0, g: 300, life: 380 }); } }
   }
   drawCrowd();
   drawTrainer('A'); drawTrainer('B');
   const order = G ? ['A', 'B'].sort((p, q) => side(p).y - side(q).y) : [];
   if (G) { drawAimLines(); for (const S of order) drawActorGround(S); }
+  drawEnts(true);
   const c = sctx; c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
   c.fillStyle = '#05070d'; c.fillRect(0, 0, DW, DH);
   c.drawImage(buf, 0, 0, vw, vh, 0, 0, vw * cam.pz, vh * cam.pz);
+  if (dimState.a > 0) { const over = clock.t - dimState.until, f = over > 0 ? 1 - over / 400 : 1; if (f <= 0) dimState.a = 0; else { c.fillStyle = `rgba(${dimState.col},${(dimState.a * f).toFixed(3)})`; c.fillRect(0, 0, DW, DH); } }
   for (const S of order) drawActorSprite(S);
   // effects layer above the sprites
   bctx = fctx; bctx.clearRect(0, 0, fbuf.width, fbuf.height);
   if (G) { for (const p of G.shots) drawShot(p); for (const bm of G.beams) drawBeam(bm); }
+  drawEnts(false);
   drawWorldFx();
   drawAmbient(dt);
   bctx = gctx;
@@ -379,4 +383,4 @@ function draw(dt) {
     textAt(c, slide.text, x, DH * .58, Math.round(40 * unit), '#ffe9b0', '#2a1a0a', { italic: true });
   }
 }
-function updateParts(dt) { for (const q of parts) { q.t += dt; q.x += q.vx * dt / 1000; q.y += q.vy * dt / 1000; q.vy += q.g * dt / 1000; } }
+function updateParts(dt) { const k = dt / 1000; for (const q of parts) { q.t += dt; if (q.drag) { const d = Math.max(0, 1 - q.drag * k); q.vx *= d; q.vy *= d; } q.x += q.vx * k; q.y += q.vy * k; q.vy += q.g * k; if (q.spin) q.rot += q.spin * k; } }

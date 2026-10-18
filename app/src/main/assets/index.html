@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c1120">
-<title>Arena 151 — Milestone 6.2: Animated sprites</title>
+<title>Arena 151 — Milestone 7: Move animations</title>
 <style>
 /* Embedded fonts (SIL Open Font License 1.1): Lilita One by Juan Montoreano; Rubik by Hubert & Fischer */
 @font-face{font-family:'Lilita One';font-style:normal;font-weight:400;font-display:block;src:url(data:font/woff2;base64,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) format('woff2')}
@@ -1885,7 +1885,7 @@ function updateCast(S, dt) {
       if (c.phase === 'go') {
         const target = c.accOk && present(fs) ? { x: t.x, y: t.y } : c.aim;
         const sp = mv.anim === 'dash' ? 1150 : 820, d = dist(sd, target), reach = mv.anim === 'slash' ? TOUCH + 22 : TOUCH;
-        if (d > reach && c.t < 700) { const k = Math.min(1, sp * dt / 1000 / d); [sd.x, sd.y] = clampWalk(sd.x + (target.x - sd.x) * k, sd.y + (target.y - sd.y) * k); VFX.dust(S); return; }
+        if (d > reach && c.t < 700) { const k = Math.min(1, sp * dt / 1000 / d); [sd.x, sd.y] = clampWalk(sd.x + (target.x - sd.x) * k, sd.y + (target.y - sd.y) * k); VFX.dashFx(S, mv); return; }
         if (c.accOk && present(fs) && dist(sd, t) < reach + 30) { c.landed = applyHit(S, mv, m); if (mv.anim === 'slash') VFX.slash(fs, mv); }
         else missAt(sd.x, sd.y - 40, S);
         const ang = Math.atan2(sd.y - t.y, sd.x - t.x); sd.kbx += Math.cos(ang) * 260; sd.kby += Math.sin(ang) * 260;
@@ -1999,6 +1999,7 @@ function groupHit(p) {
 function applyStatusMove(S, mv) {
   const fs = other(S); if (!present(fs) || G.phase !== 'battle') return false;
   const t = act(fs), e = mv.e;
+  VFX.moveImpact(fs, mv);
   if ((e.tw && typeEff('Electric', t.types) === 0) || (e.powder && t.types.includes('Grass'))) { VFX.text(fs, 'NO EFFECT', '#c9d3ee'); logLine(`It doesn't affect ${t.name}...`); return true; }
   if (e.st) inflict(fs, e.st[0], true);
   if (e.cf) confuse(fs, 0, true);
@@ -2228,7 +2229,7 @@ class Cancelled extends Error {}
 function anim(dur, fn) { const my = epoch; return new Promise((res, rej) => tasks.push({ start: clock.t, dur: Math.max(1, dur), fn, res, rej, my })); }
 const wait = ms => anim(ms, null);
 function guard(my) { if (my !== epoch) throw new Cancelled(); }
-function cancelAll() { epoch++; const old = tasks; tasks = []; old.forEach(t => t.rej(new Cancelled())); fx.length = 0; parts.length = 0; screenFx.length = 0; }
+function cancelAll() { epoch++; const old = tasks; tasks = []; old.forEach(t => t.rej(new Cancelled())); fx.length = 0; parts.length = 0; screenFx.length = 0; if (typeof ENTS !== 'undefined') { ENTS.length = 0; timers.length = 0; dimState.a = 0; } }
 
 const scene = $('scene'), sctx = scene.getContext('2d');
 let DW = 0, DH = 0, DPR = 1, PZ0 = 2, buf = null, bctx = null, gctx = null, fbuf = null, fctx = null, scarCanvas = null, scarCtx = null;
@@ -2241,6 +2242,8 @@ const slide = { text: '', t: -9999 };
 const banner = { text: '', t: -9999, color: '#ffb347' };
 const trainerWalk = { A: 1, B: 1 };
 const crowdState = [];
+const ACTOR_GLOW = { A: null, B: null };          // per-Pokémon colour glow used by move animations
+const HITSTOP = { until: 0 };                        // real-time ms; the game runs at 12% speed until then
 
 function resizeScene() {
   const r = scene.getBoundingClientRect(); DPR = window.devicePixelRatio || 1;
@@ -2302,9 +2305,9 @@ function punch(x, y, ms = 1200, lv = 2) { cam.punchT = clock.t + ms; cam.fx = { 
 const VFX = {
   text(S, t, col) { const h = head(S); floatText(h.x, h.y - 26, t, { size: 18, color: col }); },
   hit(S, mv, dmg, eff, crit) {
-    const f = fxOf(mv), h = head(S), sd = side(S);
-    burstAt(h.x, h.y + 10, f.col, crit ? 26 : 16, crit ? 340 : 250, crit ? 2 : 1);
-    ringFx(h.x, h.y + 10, f.core, 8, crit ? 70 : 48, 300);
+    const f = fxOf(mv), h = head(S), sd = side(S), R = MFX[mv.name];
+    if (R && R.impact) { try { R.impact(S, mv, crit, eff); } catch (e) { console.error(e); } if (crit) burstAt(h.x, h.y + 10, '#ffffff', 14, 300, 2); }
+    else { burstAt(h.x, h.y + 10, f.col, crit ? 26 : 16, crit ? 340 : 250, crit ? 2 : 1); ringFx(h.x, h.y + 10, f.core, 8, crit ? 70 : 48, 300); }
     VFX.shake(crit ? 11 : eff > 1 ? 8 : 4, crit ? 360 : 220); if (crit) screenFlash('#ffffff', .3);
     if (Math.random() < .75) addScar(f.scar, sd.x + (Math.random() - .5) * 30, sd.y + (Math.random() - .5) * 12, { color: f.sc });
     floatText(h.x + (Math.random() - .5) * 18, h.y - 12, String(dmg), { size: crit ? 40 : 32, color: crit ? '#ffe24a' : '#ffffff', life: 1000 });
@@ -2314,7 +2317,7 @@ const VFX = {
     if (crit || (eff > 1 && dmg > act(S).max * .25)) punch(sd.x, sd.y - 30, 900, 1);
     portraitShake(S);
   },
-  impactAt(x, y, mv) { burstAt(x, y, fxOf(mv).col, 8, 160, 1); },
+  impactAt(x, y, mv) { const R = MFX[mv.name]; if (R && R.hitAt) { try { R.hitAt(x, y, mv); } catch (e) { console.error(e); } return; } burstAt(x, y, fxOf(mv).col, 8, 160, 1); },
   explode(x, y, mv) { const f = fxOf(mv); ringFx(x, y, f.col, 10, 90, 420); ringFx(x, y, f.core, 6, 60, 320); burstAt(x, y, f.col, 26, 300, 2); VFX.shake(7, 260); addScar('scorch', x, y + 30); },
   status(S, st) { const h = head(S); ringFx(h.x, h.y + 10, STATUS_INFO[st].color, 10, 60, 420); },
   stage(S, k, d) { const h = head(S), up = d > 0; fx.push({ kind: 'arrows', x: h.x, y: h.y, color: up ? '#ff8a72' : '#76a7ff', up, t0: clock.t, life: 650 }); },
@@ -2324,13 +2327,16 @@ const VFX = {
   selfHit(S, d) { const p = head(S); side(S).hit = 300; floatText(p.x, p.y - 20, String(d), { size: 26 }); VFX.banner('IT HURT ITSELF IN ITS CONFUSION!', '#c8a6ff'); },
   ability(S, name) { const p = head(S); fx.push({ kind: 'text', x: p.x, y: p.y - 70, text: name.toUpperCase() + '!', t0: clock.t, life: 1500, color: '#ffb347', size: 38, vy: -.01, stroke: '#3a1606', italic: true }); punch(side(S).x, side(S).y - 30, 1100, 1); },
   missAt(x, y) { floatText(x, y, 'MISS', { size: 22, color: '#e6ecff' }); },
-  windup(S, mv) { fx.push({ kind: 'charge', S, color: fxOf(mv).col, t0: clock.t, life: WINDUP(mv) + 120 }); },
-  exec(S, mv) { const sd = side(S); if (['contact', 'dash', 'slash'].includes(mv.anim)) for (let i = 0; i < 6; i++) spark(sd.x, sd.y - 10, { color: '#e9eef2', vx: -sd.face * (60 + Math.random() * 80), vy: -20 - Math.random() * 30, g: 200, life: 380 }); if (mv.anim === 'beam' && mv.pow >= 110) punch(sd.x, sd.y, 1300, 1); },
+  windup(S, mv) { const R = MFX[mv.name]; if (R && R.charge) { try { R.charge(S, mv); } catch (e) { console.error(e); } } else fx.push({ kind: 'charge', S, color: fxOf(mv).col, t0: clock.t, life: WINDUP(mv) + 120 }); },
+  exec(S, mv) { const R = MFX[mv.name]; if (R && R.exec) { try { R.exec(S, mv); } catch (e) { console.error(e); } } const sd = side(S); if (['contact', 'dash', 'slash'].includes(mv.anim)) for (let i = 0; i < 6; i++) spark(sd.x, sd.y - 10, { color: '#e9eef2', vx: -sd.face * (60 + Math.random() * 80), vy: -20 - Math.random() * 30, g: 200, life: 380 }); if (mv.anim === 'beam' && mv.pow >= 110) punch(sd.x, sd.y, 1300, 1); },
+  dashFx(S, mv) { const R = MFX[mv.name]; if (R && R.dash) { try { R.dash(S, mv); } catch (e) { console.error(e); } if (Math.random() < .3) addScar('trail', side(S).x, side(S).y + 2); } else VFX.dust(S); },
+  moveImpact(S, mv) { const R = MFX[mv.name]; if (R && R.impact) { try { R.impact(S, mv, false, 1); } catch (e) { console.error(e); } } },
   dust(S) { const sd = side(S); spark(sd.x + (Math.random() - .5) * 16, sd.y - 2, { color: '#e9eef2', vx: -sd.vx * .15, vy: -10 - Math.random() * 20, g: 60, life: 360 }); if (Math.random() < .35) addScar('trail', sd.x, sd.y + 2); },
   slash(S, mv) { const h = head(S); fx.push({ kind: 'slash', x: h.x, y: h.y, color: fxOf(mv).col, t0: clock.t, life: 300 }); },
   erupt(x, y) { burstAt(x, y, '#a08a66', 18, 260, 2); addScar('crack', x, y); VFX.shake(8, 260); },
   markFire(mk) {
-    const f = fxOf(mk.mv);
+    const f = fxOf(mk.mv), R = MFX[mk.mv.name];
+    if (R && R.mark) { try { R.mark(mk); } catch (e) { console.error(e); } return; }
     if (mk.kind === 'bolt') { fx.push({ kind: 'bolt', x: mk.x, y: mk.y - 30, color: f.col, t0: clock.t, life: 300 }); screenFlash('#ffffff', mk.mv.pow >= 90 ? .55 : .25); addScar('scorch', mk.x, mk.y); }
     else if (mk.kind === 'sky') { ringFx(mk.x, mk.y - 10, f.col, 10, mk.r, 380); burstAt(mk.x, mk.y - 20, f.col, 24, 260, 2); addScar(mk.mv.type === 'Rock' ? 'crack' : 'splat', mk.x, mk.y, { color: '#f2fbff' }); VFX.shake(6, 250); }
     else fx.push({ kind: 'psy', x: mk.x, y: mk.y - 30, color: f.col, t0: clock.t, life: 520 });
@@ -2419,7 +2425,7 @@ function drawActorSprite(S) {
   if (!G) return; const L = actorLook(S); if (!L || L.sd.dig) return;
   const { sd, m, sp, megaNow, scale, alpha, white, gray, sink } = L, c = sctx;
   const st = m.status, frozen = st === 'frz', asleep = st === 'slp', moving = Math.hypot(sd.vx, sd.vy) > 40;
-  const hopArt = (sd.hop > 0 ? Math.sin(sd.hop * Math.PI) * 6 : 0) + (moving && !sp.custom ? Math.floor(sd.walk / 16) % 2 : 0);
+  const hopArt = (sd.hop > 0 ? Math.sin(sd.hop * Math.PI) * 6 * (sd.hopK || 1) : 0) + (moving && !sp.custom ? Math.floor(sd.walk / 16) % 2 : 0);
   const sx = (ax(sd.x) - OX) * cam.pz, sy = (ay(sd.y) - OY) * cam.pz;
   const flashOn = sd.hit > 0 && Math.floor(sd.hit / 55) % 2 === 0;
   if (sp.custom) {
@@ -2444,6 +2450,7 @@ function drawActorSprite(S) {
     if (frozen) tint('#9feaff', .5);
     if (st === 'par' && Math.floor(clock.t / 120) % 9 === 0) tint('#ffe04a', .6);
     if (st === 'psn' || st === 'tox') tint('#b25bff', .12 + .1 * Math.sin(clock.t / 200));
+    const ag = ACTOR_GLOW[S]; if (ag && clock.t < ag.until) tint(ag.col, ag.a * (.65 + .35 * Math.sin(clock.t / 45)));
     if (white > 0 || flashOn) tint('#ffffff', Math.max(white, flashOn ? .9 : 0));
     c.restore();
   } else {
@@ -2457,6 +2464,7 @@ function drawActorSprite(S) {
     if (frozen) { c.globalAlpha = alpha * .5; c.drawImage(tintOf(m.name, '#9feaff', f, megaNow), 0, 0, dw, dh); }
     if (st === 'par' && Math.floor(clock.t / 120) % 9 === 0) { c.globalAlpha = alpha * .6; c.drawImage(tintOf(m.name, '#ffe04a', f, megaNow), 0, 0, dw, dh); }
     if (st === 'psn' || st === 'tox') { c.globalAlpha = alpha * (.12 + .1 * Math.sin(clock.t / 200)); c.drawImage(tintOf(m.name, '#b25bff', f, megaNow), 0, 0, dw, dh); }
+    const ag = ACTOR_GLOW[S]; if (ag && clock.t < ag.until) { c.globalAlpha = alpha * ag.a * (.65 + .35 * Math.sin(clock.t / 45)); c.drawImage(tintOf(m.name, ag.col, f, megaNow), 0, 0, dw, dh); }
     if (white > 0 || flashOn) { c.globalAlpha = alpha * Math.max(white, flashOn ? .9 : 0); c.drawImage(sp.white[f], 0, 0, dw, dh); }
     c.restore();
   }
@@ -2471,6 +2479,7 @@ function drawActorSprite(S) {
   }
 }
 function drawShot(p) {
+  const R = MFX[p.mv.name]; if (R && R.shot) { try { R.shot(p); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
   const f = fxOf(p.mv), i = bx(p.x), j = by(p.y);
   if (Math.random() < .6) spark(p.x, p.y, { color: f.col, vx: 0, vy: 0, life: 220, add: true });
   if (p.shape === 'star') { for (let q = -3; q <= 3; q++) { aRect(i + q, j, 1, 1, '#fff59a'); aRect(i, j + q, 1, 1, '#fff59a'); } aDisc(i, j, 1, '#ffffff'); return; }
@@ -2482,6 +2491,7 @@ function drawShot(p) {
   aDisc(i, j, r, f.col); aDisc(i - 1, j - 1, Math.max(1, r - 2), f.core);
 }
 function drawBeam(b) {
+  const R = MFX[b.mv.name]; if (R && R.beam) { try { R.beam(b); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
   const f = fxOf(b.mv), q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1;
   const n = Math.round(450 * grow), i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, di = Math.cos(b.ang), dj = Math.sin(b.ang), w = Math.round(b.w / 2 * (1 + Math.sin(clock.t / 25) * .12));
   bctx.globalCompositeOperation = 'lighter';
@@ -2509,15 +2519,7 @@ function drawWorldFx() {
     else if (f.kind === 'arrows') { for (let s = 0; s < 5; s++) { const ox = f.x - 36 + s * 18, oy = f.y + (f.up ? -1 : 1) * ((q * 60 + s * 13) % 60) - 6; for (let t = 0; t < 3; t++) aRect(bx(ox) - t, by(oy) + (f.up ? t : -t), t * 2 + 1, 1, f.color, 1 - q); } }
     else if (f.kind === 'capsule') { if (!G) continue; const S = f.S, from = TRAINER_POS[S], to = side(S), x = lerp(from.x, to.x, q), y = lerp(from.y - 30, to.y - 20, q) - Math.sin(q * Math.PI) * 70, col = S === 'A' ? '#ff4b55' : '#ffc72c', i = bx(x), j = by(y); aRect(i - 3, j - 3, 6, 6, '#141a2c'); aRect(i - 2, j - 2, 4, 4, col); aRect(i - 2, j - 2, 2, 2, '#ffffff'); if (q > .92) { burstAt(to.x, to.y - 20, '#ffffff', 20, 280, 1); ringFx(to.x, to.y - 10, col, 6, 70, 400); fx.splice(k, 1); } }
   }
-  for (let k = parts.length - 1; k >= 0; k--) {
-    const p = parts[k], t = p.t / p.life; if (t >= 1) { parts.splice(k, 1); continue; }
-    const i = bx(p.x), j = by(p.y); bctx.globalAlpha = 1 - t; bctx.fillStyle = p.color; if (p.add) bctx.globalCompositeOperation = 'lighter';
-    if (p.shape === 'ring') { bctx.fillRect(i - 1, j, 1, 1); bctx.fillRect(i + 1, j, 1, 1); bctx.fillRect(i, j - 1, 1, 1); bctx.fillRect(i, j + 1, 1, 1); }
-    else if (p.shape === 'plus') { bctx.fillRect(i - 1, j, 3, 1); bctx.fillRect(i, j - 1, 1, 3); }
-    else if (p.shape === 'zap') { for (let q = 0; q < 4; q++) bctx.fillRect(i + (q % 2), j + q, 1, 1); }
-    else bctx.fillRect(i, j, p.size, p.size);
-    bctx.globalCompositeOperation = 'source-over';
-  }
+  for (let k = parts.length - 1; k >= 0; k--) if (!drawParticle(parts[k])) parts.splice(k, 1);
   bctx.globalAlpha = 1;
 }
 function drawAmbient(dt) {
@@ -2540,7 +2542,7 @@ function textAt(c, text, x, y, size, color, stroke, opts = {}) {
 }
 function draw(dt) {
   if (!DW || !buf || !stageCanvas) return;
-  updateCamera(dt);
+  runTimers(); updateCamera(dt);
   const vw = Math.min(buf.width, Math.ceil(DW / cam.pz) + 1), vh = Math.min(buf.height, Math.ceil(DH / cam.pz) + 1);
   OX = cam.left; OY = cam.top;
   if (clock.t < shakeState.until) { OX += Math.round((Math.random() - .5) * shakeState.amp / 2); OY += Math.round((Math.random() - .5) * shakeState.amp / 2); } else shakeState.amp = 0;
@@ -2552,19 +2554,22 @@ function draw(dt) {
   if (G) {
     for (const mk of G.marks) { const q = mk.t / mk.delay, col = fxOf(mk.mv).col, i = bx(mk.x), j = by(mk.y), r = mk.r / 2; aEllFill(i, j, r, r * .6, col, .12 + q * .14); aRing(i, j, r, r * .6, col, .9); aRing(i, j, r * q, r * q * .6, '#ffffff', .8);
       if (mk.kind === 'sky' && q > .45) { const fall = (q - .45) / .55; for (let s = 0; s < 4; s++) aDisc(bx(mk.x + (s - 1.5) * 22), by(lerp(mk.y - 300, mk.y - 10, fall) - s * 18), mk.mv.type === 'Rock' ? 3 : 2, s % 2 ? col : fxOf(mk.mv).core); } }
-    for (const w of G.waves) { const col = fxOf(w.mv).col, r = w.r / 2; aRing(bx(w.x), by(w.y), r, r * .62, col, .95, 2); aRing(bx(w.x), by(w.y), r - 2, r * .62 - 1, '#ffffff', .6); if (w.kind === 'quake' && Math.random() < .5) { const a = Math.random() * 6.28; spark(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { color: '#a08a66', vy: -90, vx: 0, g: 300, life: 380 }); } }
+    for (const w of G.waves) { const RW = MFX[w.mv.name]; if (RW && RW.wave) { try { RW.wave(w); } catch (e) { console.error(e); } bctx.globalAlpha = 1; continue; } const col = fxOf(w.mv).col, r = w.r / 2; aRing(bx(w.x), by(w.y), r, r * .62, col, .95, 2); aRing(bx(w.x), by(w.y), r - 2, r * .62 - 1, '#ffffff', .6); if (w.kind === 'quake' && Math.random() < .5) { const a = Math.random() * 6.28; spark(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { color: '#a08a66', vy: -90, vx: 0, g: 300, life: 380 }); } }
   }
   drawCrowd();
   drawTrainer('A'); drawTrainer('B');
   const order = G ? ['A', 'B'].sort((p, q) => side(p).y - side(q).y) : [];
   if (G) { drawAimLines(); for (const S of order) drawActorGround(S); }
+  drawEnts(true);
   const c = sctx; c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
   c.fillStyle = '#05070d'; c.fillRect(0, 0, DW, DH);
   c.drawImage(buf, 0, 0, vw, vh, 0, 0, vw * cam.pz, vh * cam.pz);
+  if (dimState.a > 0) { const over = clock.t - dimState.until, f = over > 0 ? 1 - over / 400 : 1; if (f <= 0) dimState.a = 0; else { c.fillStyle = `rgba(${dimState.col},${(dimState.a * f).toFixed(3)})`; c.fillRect(0, 0, DW, DH); } }
   for (const S of order) drawActorSprite(S);
   // effects layer above the sprites
   bctx = fctx; bctx.clearRect(0, 0, fbuf.width, fbuf.height);
   if (G) { for (const p of G.shots) drawShot(p); for (const bm of G.beams) drawBeam(bm); }
+  drawEnts(false);
   drawWorldFx();
   drawAmbient(dt);
   bctx = gctx;
@@ -2594,7 +2599,956 @@ function draw(dt) {
     textAt(c, slide.text, x, DH * .58, Math.round(40 * unit), '#ffe9b0', '#2a1a0a', { italic: true });
   }
 }
-function updateParts(dt) { for (const q of parts) { q.t += dt; q.x += q.vx * dt / 1000; q.y += q.vy * dt / 1000; q.vy += q.g * dt / 1000; } }
+function updateParts(dt) { const k = dt / 1000; for (const q of parts) { q.t += dt; if (q.drag) { const d = Math.max(0, 1 - q.drag * k); q.vx *= d; q.vy *= d; } q.x += q.vx * k; q.y += q.vy * k; q.vy += q.g * k; if (q.spin) q.rot += q.spin * k; } }
+
+/* =====================================================================
+   Section 8b: move effects toolkit
+   Shaped, colour-ramped particles; timed effect "entities" drawn in the
+   art buffer (above or below the Pokémon); and a library of pixel
+   drawings (fists, jaws, swords, moons, rocks, spikes, lightning…).
+   Everything is drawn on the art-pixel grid so it stays crisp.
+   ===================================================================== */
+const RAMP = {
+  fire: ['#ffffff', '#fff6b0', '#ffd23f', '#ff9a1f', '#f0561c', '#a8321c', '#5a3a36', '#3a3a42'],
+  blueFire: ['#ffffff', '#d8f4ff', '#7fd6ff', '#3f8cff', '#4a3ad0', '#2a2470', '#2a2a3a'],
+  wisp: ['#ffffff', '#e6dcff', '#9f8bff', '#6a4ad8', '#3a2a8a', '#1a1440'],
+  elec: ['#ffffff', '#fffbd0', '#fff07a', '#ffd52a', '#d8a800', '#8a6a00'],
+  water: ['#ffffff', '#d8f4ff', '#8fd4ff', '#4aa6ff', '#2a6fc0', '#1a4080'],
+  ice: ['#ffffff', '#f0fdff', '#bff4ff', '#7fdcf0', '#4aa8d0', '#2a6a90'],
+  grass: ['#f4ffd8', '#c8f58a', '#7fe05a', '#3fb04a', '#26803a', '#1a4a26'],
+  poison: ['#f6e6ff', '#d8a0ff', '#b65cff', '#8a3ac8', '#5a2088', '#2a1040'],
+  psychic: ['#ffffff', '#ffe2f4', '#ffa8de', '#ff6fc8', '#c83a98', '#6a1a58'],
+  ghost: ['#efe6ff', '#b9a4ff', '#8c6bff', '#5a3ac8', '#2d2068', '#140e30'],
+  dragon: ['#ffffff', '#e5e0ff', '#a99bff', '#7d6bff', '#4a3ad0', '#24187a'],
+  fairy: ['#ffffff', '#fff0fa', '#ffd0ef', '#ffa8de', '#ff7ac8', '#c84a98'],
+  steel: ['#ffffff', '#eef4fa', '#cad8e6', '#9aaabb', '#6a7a8a', '#3a4450'],
+  rock: ['#fff2cf', '#e3cb92', '#b89f6a', '#8a7448', '#5a4a30', '#3a3020'],
+  ground: ['#fff0c9', '#e7c27a', '#c99a4d', '#9a7038', '#6a4a24', '#3a2a18'],
+  dark: ['#d9cde8', '#8a7a9a', '#5a4a6a', '#3a2a48', '#1e1628', '#0e0a14'],
+  smoke: ['#f0f0f0', '#c8c8d0', '#9898a4', '#6a6a78', '#44444e', '#2a2a32'],
+  dust: ['#f4ece0', '#d8ccb8', '#b0a48e', '#867a66', '#5a5244'],
+  fight: ['#ffffff', '#fff0d8', '#ffc08a', '#ff8a5b', '#d84a2a', '#7a2a1a'],
+  normal: ['#ffffff', '#fffbe8', '#f2eccd', '#d8d0b0', '#a8a088', '#6a6458'],
+  bug: ['#f8ffd8', '#e0f58a', '#b6d636', '#86a82a', '#56701a', '#2a3a0e'],
+  flying: ['#ffffff', '#f0f6ff', '#d7e6ff', '#a8c0f0', '#7a90c8', '#4a5a8a'],
+  gold: ['#ffffff', '#fffbe0', '#fff07a', '#ffd23f', '#e8a81a', '#a86a10'],
+  heal: ['#ffffff', '#e8ffef', '#a8ffc0', '#5ee08a', '#2aa85a', '#1a6a3a'],
+  aurora: ['#ffffff', '#ffd0f0', '#d0b0ff', '#a0d8ff', '#a0ffd8', '#fff0a0']
+};
+const TYPE_RAMP = { Fire: 'fire', Water: 'water', Grass: 'grass', Electric: 'elec', Ice: 'ice', Fighting: 'fight', Poison: 'poison', Ground: 'ground', Flying: 'flying',
+  Psychic: 'psychic', Bug: 'bug', Rock: 'rock', Ghost: 'ghost', Dragon: 'dragon', Steel: 'steel', Fairy: 'fairy', Normal: 'normal', Dark: 'dark' };
+const RR = r => typeof r === 'string' ? RAMP[r] : r;
+const rampAt = (r, q) => r[Math.min(r.length - 1, Math.max(0, Math.floor(q * r.length)))];
+const rnd2 = (a, b) => a + Math.random() * (b - a);
+
+/* ---------- particles ---------- */
+// P(x, y, {vx, vy, g, drag, life, size, size2, color | ramp, shape, spin, add})
+function P(x, y, o = {}) {
+  parts.push({ x, y, vx: o.vx || 0, vy: o.vy || 0, g: o.g || 0, drag: o.drag || 0, life: o.life || 500, t: 0,
+    size: o.size ?? 1, size2: o.size2 ?? o.size ?? 1, color: o.color || '#ffffff', ramp: o.ramp ? (typeof o.ramp === 'string' ? RAMP[o.ramp] : o.ramp) : null,
+    shape: o.shape || 'sq', rot: o.rot ?? Math.random() * 6.28, spin: o.spin || 0, add: !!o.add });
+}
+// emit n particles: speed [min,max]; ang + spread (radians) for a cone, otherwise all directions
+function emit(x, y, n, o = {}) {
+  const sp = o.speed || [60, 200];
+  for (let k = 0; k < n; k++) {
+    const a = o.ang != null ? o.ang + (Math.random() - .5) * (o.spread ?? .6) : Math.random() * 6.28, v = rnd2(sp[0], sp[1]);
+    const rx = o.r ? (Math.random() - .5) * o.r * 2 : 0, ry = o.r ? (Math.random() - .5) * o.r * 2 * (o.flat ?? .6) : 0;
+    P(x + rx, y + ry, { ...o, vx: Math.cos(a) * v + (o.vx || 0), vy: Math.sin(a) * v + (o.vy || 0), life: Array.isArray(o.life) ? rnd2(o.life[0], o.life[1]) : o.life,
+      size: Array.isArray(o.size) ? Math.round(rnd2(o.size[0], o.size[1])) : o.size, spin: o.spin ? rnd2(-o.spin, o.spin) : 0 });
+  }
+}
+function drawParticle(p) {
+  const q = p.t / p.life; if (q >= 1) return false;
+  const i = bx(p.x), j = by(p.y), s = Math.max(1, Math.round(lerp(p.size, p.size2, q)));
+  const c = bctx; c.globalAlpha = p.ramp ? Math.min(1, 1.25 - q) : 1 - q; c.fillStyle = p.ramp ? rampAt(p.ramp, q) : p.color;
+  if (p.add) c.globalCompositeOperation = 'lighter';
+  const r = (dx, dy, w = 1, h = 1) => c.fillRect(i + dx, j + dy, w, h);
+  switch (p.shape) {
+    case 'disc': { for (let y = -s; y <= s; y++) { const w = Math.round(Math.sqrt(Math.max(0, s * s - y * y))); r(-w, y, w * 2 + 1, 1); } break; }
+    case 'ring': { const n = Math.max(8, s * 6); for (let k = 0; k < n; k++) { const a = k / n * 6.28; r(Math.round(Math.cos(a) * s), Math.round(Math.sin(a) * s)); } break; }
+    case 'bubble': { const n = Math.max(8, s * 6); for (let k = 0; k < n; k++) { const a = k / n * 6.28; r(Math.round(Math.cos(a) * s), Math.round(Math.sin(a) * s)); } c.fillStyle = '#ffffff'; r(-Math.ceil(s / 2), -Math.ceil(s / 2)); break; }
+    case 'leaf': { const ca = Math.cos(p.rot), sa = Math.sin(p.rot); for (let k = -s - 1; k <= s + 1; k++) { r(Math.round(ca * k), Math.round(sa * k * .7)); if (Math.abs(k) < s) r(Math.round(ca * k - sa), Math.round(sa * k * .7 + ca * .7)); } break; }
+    case 'shard': { const ca = Math.cos(p.rot), sa = Math.sin(p.rot); for (let k = -s * 2; k <= s * 2; k++) { const w = Math.max(0, s - Math.abs(k) / 2); for (let m = -w; m <= w; m++) r(Math.round(ca * k - sa * m), Math.round(sa * k + ca * m)); } break; }
+    case 'star': { r(-s, 0, s * 2 + 1, 1); r(0, -s, 1, s * 2 + 1); if (s > 1) { r(-1, -1); r(1, 1); r(1, -1); r(-1, 1); } break; }
+    case 'plus': r(-1, 0, 3, 1); r(0, -1, 1, 3); break;
+    case 'zap': for (let k = 0; k < 3 + s; k++) r((k % 2) * 2 - 1, k - 2); break;
+    case 'drop': r(0, -s, 1, s * 2); r(-1, 0, 3, s); break;
+    case 'heart': { const H = ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']; H.forEach((row, y) => { for (let x = 0; x < 7; x++) if (row[x] === '#') r(x - 3, y - 3); }); break; }
+    case 'note': r(0, -4, 1, 5); r(-2, 0, 3, 2); r(1, -4, 2, 1); break;
+    case 'z': r(-2, -2, 5, 1); r(1, -1); r(0, 0); r(-1, 1); r(-2, 2, 5, 1); break;
+    case 'q': r(-1, -3, 3, 1); r(2, -2); r(1, -1); r(0, 0); r(0, 2); break;
+    case 'feather': { const ca = Math.cos(p.rot), sa = Math.sin(p.rot); for (let k = -4; k <= 4; k++) { r(Math.round(ca * k), Math.round(sa * k)); if (k > -3 && k < 3) { r(Math.round(ca * k - sa), Math.round(sa * k + ca)); } } break; }
+    default: r(-Math.floor(s / 2), -Math.floor(s / 2), s, s);
+  }
+  c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; return true;
+}
+
+// draw one shape immediately (for things redrawn every frame, like a projectile's body)
+function shapeAt(x, y, o = {}) { drawParticle({ x, y, t: 0, life: 1, size: o.size || 1, size2: o.size || 1, color: o.color || (o.ramp ? rampAt(RAMP[o.ramp] || o.ramp, .3) : '#ffffff'), ramp: null, shape: o.shape || 'sq', rot: o.rot || 0, add: !!o.add }); }
+
+/* ---------- timed effect entities ---------- */
+const ENTS = [];
+// ent(life, draw(q, ageMs), {under}) — under=true draws on the ground layer beneath the Pokémon
+function ent(life, draw, o = {}) { ENTS.push({ t0: clock.t + (o.delay || 0), life, draw, under: !!o.under }); }
+function drawEnts(under) {
+  for (let k = ENTS.length - 1; k >= 0; k--) {
+    const e = ENTS[k]; if (e.under !== under) continue;
+    const age = clock.t - e.t0; if (age < 0) continue; const q = age / e.life;
+    if (q >= 1) { ENTS.splice(k, 1); continue; }
+    try { e.draw(q, age); } catch (err) { console.error(err); ENTS.splice(k, 1); }
+    bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'source-over';
+  }
+}
+const timers = [];
+function setTimeoutGame(ms, fn) { timers.push({ at: clock.t + ms, fn }); return true; }
+function runTimers() { for (let k = timers.length - 1; k >= 0; k--) if (clock.t >= timers[k].at) { const f = timers[k].fn; timers.splice(k, 1); try { f(); } catch (e) { } } }
+
+/* ---------- screen-level helpers ---------- */
+const dimState = { a: 0, until: 0, col: '5,7,15' };
+function dim(a, ms, col) { if (REDUCED) a *= .4; dimState.a = Math.max(dimState.a, a); dimState.until = clock.t + ms; if (col) dimState.col = col; }
+function tintScreen(col, a) { screenFlash(col, a); }
+
+/* ---------- pixel drawing helpers (art pixels, current camera) ---------- */
+const PX = (i, j, col, a = 1) => { bctx.globalAlpha = a; bctx.fillStyle = col; bctx.fillRect(Math.round(i), Math.round(j), 1, 1); };
+function glow(i, j, r, col, a = .5) { bctx.globalCompositeOperation = 'lighter'; for (let k = 3; k >= 1; k--) aDisc(i, j, r * k / 3, col, a / 3); bctx.globalCompositeOperation = 'source-over'; }
+function orbPx(i, j, r, ramp, t = 0) {   // layered orb: dark rim → bright core, flickering
+  const R = RAMP[ramp] || ramp; glow(i, j, r * 1.8, R[3], .45);
+  aDisc(i, j, r, R[4]); aDisc(i - r * .15, j - r * .15, r * .78, R[3]); aDisc(i - r * .25, j - r * .25, r * .5, R[2]); aDisc(i - r * .35, j - r * .35, Math.max(1, r * .22), R[0]);
+  if (t) for (let k = 0; k < 3; k++) { const a = t / 120 + k * 2.1; PX(i + Math.cos(a) * (r + 1), j + Math.sin(a) * (r + 1), R[1]); }
+}
+function zig(i0, j0, i1, j1, col, w = 1, jit = 4, core) {   // lightning segment (re-randomised every frame)
+  const d = Math.hypot(i1 - i0, j1 - j0), n = Math.max(2, Math.round(d / 5)); let pi = i0, pj = j0;
+  for (let k = 1; k <= n; k++) { const t = k / n, ni = lerp(i0, i1, t) + (k < n ? (Math.random() - .5) * jit * 2 : 0), nj = lerp(j0, j1, t) + (k < n ? (Math.random() - .5) * jit * 2 : 0); aLine(pi, pj, ni, nj, col, 1, w); if (core) aLine(pi, pj, ni, nj, core, 1, 1); pi = ni; pj = nj; }
+}
+function beamPx(i0, j0, ang, len, w, ramp, a = 1, wob = 0) {
+  const R = RAMP[ramp] || ramp, ca = Math.cos(ang), sa = Math.sin(ang), n = Math.round(len);
+  bctx.globalCompositeOperation = 'lighter'; for (let k = 0; k < n; k += 2) aRect(i0 + ca * k - w, j0 + sa * k - w, w * 2, w * 2, R[3], .1 * a); bctx.globalCompositeOperation = 'source-over';
+  for (const [ww, ci] of [[w, 4], [w * .75, 3], [w * .45, 1], [Math.max(1, w * .2), 0]]) {
+    const s = Math.max(1, Math.round(ww)); for (let k = 0; k < n; k++) { const o = wob ? Math.sin(k / 5 - clock.t / 40) * wob : 0; aRect(i0 + ca * k - sa * o - s / 2, j0 + sa * k + ca * o - s / 2, s, s, R[ci], a); }
+  }
+}
+function swordPx(i, j, ang, col = '#e8f0ff') {   // 12px blade + crossguard + grip
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  for (let k = 0; k < 12; k++) { PX(i + ca * k, j + sa * k, k > 9 ? '#ffffff' : col); PX(i + ca * k - sa, j + sa * k + ca, '#9aaabb'); }
+  for (let k = -3; k <= 3; k++) PX(i - sa * k - ca, j + ca * k - sa, '#e8b84a');
+  for (let k = 1; k <= 3; k++) PX(i - ca * (k + 1), j - sa * (k + 1), '#7a4a2a');
+  bctx.globalAlpha = 1;
+}
+function fistPx(i, j, s, col, dir = 1) {   // chunky pixel fist, s = scale (1..3)
+  const F = ['.####.', '######', '######', '#.#.##', '######', '.####.'];
+  const dark = mix(col, '#1a1020', .5);
+  F.forEach((row, y) => { for (let x = 0; x < 6; x++) { if (row[x] === '.') continue; aRect(i + (dir > 0 ? x : 5 - x) * s - 3 * s, j + y * s - 3 * s, s, s, row[x] === '#' ? (y < 2 ? mix(col, '#ffffff', .35) : col) : dark); } });
+  for (let y = 0; y < 6; y++) { aRect(i + (dir > 0 ? -3 : 2) * s - (dir > 0 ? s : -s), j + y * s - 3 * s, s, s, dark, .9); }
+}
+function jawsPx(i, j, q, col = '#ffffff', w = 22) {   // top and bottom rows of fangs snapping shut
+  const gap = Math.round(lerp(14, 0, Math.min(1, q * 1.6))), t = Math.floor(w / 5);
+  for (let k = 0; k < t; k++) { const x = i - w / 2 + k * 5; for (let h = 0; h < 5; h++) { aRect(x + h / 2, j - gap - 5 + h, 5 - h, 1, col); aRect(x + h / 2, j + gap + 4 - h, 5 - h, 1, col); } }
+  aRect(i - w / 2, j - gap - 6, w, 1, '#3a2a3a'); aRect(i - w / 2, j + gap + 5, w, 1, '#3a2a3a');
+}
+function moonPx(i, j, r, a = 1) {
+  for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) { const d1 = x * x + y * y, d2 = (x - r * .45) ** 2 + (y + r * .2) ** 2; if (d1 <= r * r && d2 > (r * .85) ** 2) PX(i + x, j + y, d1 > (r - 1.5) ** 2 ? '#fff6c8' : x < -r * .3 ? '#ffe6f6' : '#ffd0ef', a); }
+  bctx.globalAlpha = 1;
+}
+function rockPx(i, j, r, seed = 1, pal = RAMP.rock) {
+  const rr = mulberry(seed);
+  const pts = Array.from({ length: 7 }, (_, k) => r * (.75 + rr() * .35));
+  for (let y = -r - 1; y <= r + 1; y++) for (let x = -r - 1; x <= r + 1; x++) {
+    const a = Math.atan2(y, x), k = ((a + Math.PI) / (Math.PI * 2) * 7) | 0, d = Math.hypot(x, y); if (d > pts[k % 7]) continue;
+    const lit = (-x - y) / (r * 2) + .5; PX(i + x, j + y, d > pts[k % 7] - 1 ? pal[5] : lit > .7 ? pal[1] : lit > .45 ? pal[2] : pal[3]);
+  }
+  bctx.globalAlpha = 1;
+}
+function spikePx(i, j, h, w, pal, a = 1) {   // ground spike pointing up, lit from the left
+  for (let y = 0; y < h; y++) { const ww = Math.max(1, Math.round(w * (1 - y / h))); for (let x = -ww; x <= ww; x++) PX(i + x, j - y, x < 0 ? pal[1] : x === 0 ? pal[0] : pal[3], a); }
+  aRect(i - w, j + 1, w * 2 + 1, 1, pal[5], a * .6);
+}
+function vinePx(i0, j0, i1, j1, q, col = '#3fb04a') {   // whipping vine: quadratic curve with leaves
+  const mi = (i0 + i1) / 2 + (j1 - j0) * .4 * Math.sin(q * Math.PI), mj = (j0 + j1) / 2 - 18 * Math.sin(q * Math.PI);
+  const n = 40; for (let k = 0; k <= n * Math.min(1, q * 1.8); k++) { const t = k / n, i = (1 - t) * (1 - t) * i0 + 2 * (1 - t) * t * mi + t * t * i1, j = (1 - t) * (1 - t) * j0 + 2 * (1 - t) * t * mj + t * t * j1; aRect(i, j, 2, 2, k % 7 === 3 ? '#7fe05a' : col); if (k % 9 === 4) { PX(i + 2, j - 1, '#a8f07a'); PX(i + 3, j - 2, '#a8f07a'); } }
+}
+function slashPx(i, j, ang, len, col, w = 2, q = 0) {   // curved slash arc that draws on then fades
+  const n = Math.round(len), shown = Math.min(n, Math.round(n * Math.min(1, q * 3)));
+  for (let k = 0; k < shown; k++) { const t = k / n - .5, a = ang + t * .5, r = len * .8, x = i + Math.cos(a) * r * t * 1.6, y = j + Math.sin(a) * r * t * 1.6 + Math.sin(t * Math.PI) * -4; const ww = Math.max(1, Math.round(w * Math.sin((t + .5) * Math.PI))); aRect(x - ww / 2, y - ww / 2, ww, ww, k > shown - 3 ? '#ffffff' : col, 1 - Math.max(0, q - .5) * 2); }
+}
+function powStar(i, j, r, col, q) {   // comic-book impact star
+  const s = r * (q < .25 ? q / .25 : 1), a0 = q * 2;
+  for (let k = 0; k < 8; k++) { const a = a0 + k * Math.PI / 4, rr = k % 2 ? s * .55 : s; aLine(i, j, i + Math.cos(a) * rr, j + Math.sin(a) * rr, col, 1 - q, 2); }
+  aDisc(i, j, s * .35, '#ffffff', 1 - q);
+}
+function speedLines(x, y, ang, n, len, col) { for (let k = 0; k < n; k++) { const o = (Math.random() - .5) * 40, ca = Math.cos(ang), sa = Math.sin(ang); P(x - sa * o, y + ca * o, { vx: -ca * rnd2(200, 400), vy: -sa * rnd2(200, 400), life: 180, color: col, shape: 'sq', size: 1 }); } }
+function crackBurst(x, y, n = 5, len = 26) { for (let k = 0; k < n; k++) addScar('crack', x + (Math.random() - .5) * len, y + (Math.random() - .5) * len * .5); }
+const headOf = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 }; };
+const footOf = S => { const sd = side(S); return { x: sd.x, y: sd.y }; };
+
+/* =====================================================================
+   Section 8c: one animation recipe per move
+   Hooks: charge (wind-up), exec (release), dash (each frame while
+   charging in), shot (projectile drawing), beam, mark (ground strike),
+   wave (shockwave drawing), impact (on hit). Missing hooks fall back to
+   the generic effects.
+   ===================================================================== */
+const MFX = {};
+const def = (names, r) => { for (const n of names.split('|')) MFX[n] = Object.assign({}, MFX[n] || {}, r); };
+const shotAng = p => Math.atan2(p.vy, p.vx);
+
+/* ---------- reusable building blocks ---------- */
+const CH = {
+  gather: (ramp, n = 16, r = 46, shape = 'sq') => S => { const h = headOf(S); for (let k = 0; k < n; k++) { const a = Math.random() * 6.28; P(h.x + Math.cos(a) * r, h.y + 10 + Math.sin(a) * r * .8, { vx: -Math.cos(a) * r * 3.5, vy: -Math.sin(a) * r * 2.8, life: 280, ramp, shape, size: 1, add: true }); } },
+  rise: (ramp, n = 14, shape = 'sq') => S => { const f = footOf(S); emit(f.x, f.y - 4, n, { r: 22, ang: -Math.PI / 2, spread: .5, speed: [60, 140], life: [300, 520], ramp, shape, size: [1, 2], add: true }); },
+  orb: (ramp, r = 5, ms = 300) => S => ent(ms, q => { const h = headOf(S); orbPx(bx(h.x + side(S).face * 14), by(h.y - 4), r * Math.min(1, q * 1.5), ramp, clock.t); }),
+  crackle: (col = '#ffe04a') => S => ent(320, () => { const h = headOf(S); for (let k = 0; k < 3; k++) { const a = Math.random() * 6.28, r = 14 + Math.random() * 10; zig(bx(h.x + Math.cos(a) * r), by(h.y + 10 + Math.sin(a) * r), bx(h.x + Math.cos(a + .7) * (r + 8)), by(h.y + 10 + Math.sin(a + .7) * (r + 8)), col, 1, 2); } }),
+  fist: (col, s = 1) => S => ent(260, q => { const h = headOf(S); fistPx(bx(h.x + side(S).face * (18 - q * 6)), by(h.y + 14), s, col, side(S).face); glow(bx(h.x + side(S).face * 16), by(h.y + 14), 8, col, .4 * (1 - q)); })
+};
+const DASH = {
+  trail: (ramp, shape = 'sq', n = 3, size = [1, 2]) => S => { const sd = side(S); emit(sd.x, sd.y - 30, n, { r: 16, speed: [10, 50], life: [200, 380], ramp, shape, size, add: true }); },
+  engulf: (ramp, n = 5) => S => { const sd = side(S); emit(sd.x, sd.y - 34, n, { r: 22, ang: -Math.PI / 2, spread: 1.2, speed: [40, 130], life: [220, 420], ramp, size: [1, 3], add: true }); },
+  speed: col => S => { const sd = side(S); speedLines(sd.x, sd.y - 30, sd.face > 0 ? 0 : Math.PI, 3, 30, col); },
+  dust: () => S => { VFX.dust(S); const sd = side(S); emit(sd.x, sd.y, 2, { r: 10, ang: -Math.PI / 2, spread: 2, speed: [20, 60], life: 400, ramp: 'dust', size: [2, 3] }); }
+};
+const IMP = {
+  burst: (ramp, n = 20, sp = [80, 260], shape = 'sq', size = [1, 2]) => S => { const h = headOf(S); emit(h.x, h.y + 10, n, { speed: sp, life: [300, 600], ramp, shape, size, g: 160, drag: 1.5, add: true }); },
+  pow: (col = '#ffffff', r = 16) => S => { const h = headOf(S), dx = (Math.random() - .5) * 14; ent(300, q => powStar(bx(h.x + dx), by(h.y + 6), r, col, q)); },
+  ring: (col, r1 = 70, w = 2) => S => { const h = headOf(S); ent(380, q => aRing(bx(h.x), by(h.y + 12), (8 + r1 * Ease.outQ(q)) / 2, (8 + r1 * Ease.outQ(q)) / 3.2, col, 1 - q, w)); },
+  explode: (ramp, r = 22) => S => { const h = headOf(S), R = RR(ramp); ent(520, q => { const rr = r * Ease.outQ(Math.min(1, q * 1.6)); glow(bx(h.x), by(h.y + 8), rr * 1.4, R[3], .6 * (1 - q)); aDisc(bx(h.x), by(h.y + 8), rr * (1 - q * .6), rampAt(R, q * .8), 1 - q); });
+    emit(h.x, h.y + 8, 26, { speed: [60, 280], life: [400, 800], ramp, size: [2, 3], size2: 1, drag: 2, add: true }); emit(h.x, h.y + 8, 10, { speed: [20, 70], life: [600, 1000], ramp: 'smoke', size: [3, 4], vy: -30 }); },
+  claws: (col, n = 3, len = 26, w = 2) => S => { const h = headOf(S), f = -side(S).face; ent(360, q => { for (let k = 0; k < n; k++) slashPx(bx(h.x - 10 + k * 8 * f), by(h.y + 8 + k * 2), Math.PI * .35 * f + Math.PI / 2, len, col, w, q); }); },
+  xslash: (col, len = 34) => S => { const h = headOf(S); ent(420, q => { slashPx(bx(h.x), by(h.y + 8), Math.PI * .25, len, col, 3, q); slashPx(bx(h.x), by(h.y + 8), Math.PI * .75, len, col, 3, Math.max(0, q - .12)); }); },
+  jaws: (col = '#ffffff', w = 22) => S => { const h = headOf(S); ent(380, q => { jawsPx(bx(h.x), by(h.y + 8), q, col, w); if (q > .55) powStar(bx(h.x), by(h.y + 8), 12, '#ffffff', (q - .55) / .45); }); },
+  fist: (col, s = 2, extra) => S => { const h = headOf(S), f = side(other(S)).face; ent(320, q => { fistPx(bx(h.x - f * (14 - q * 10)), by(h.y + 8), s, col, f); if (q > .3) powStar(bx(h.x), by(h.y + 8), 16, '#ffffff', (q - .3) / .7); }); if (extra) extra(S); },
+  splash: (n = 24) => S => { const h = headOf(S); emit(h.x, h.y + 6, n, { ang: -Math.PI / 2, spread: 2.4, speed: [80, 240], g: 520, life: [400, 700], ramp: 'water', shape: 'drop', size: [1, 2] }); },
+  shatter: (n = 14) => S => { const h = headOf(S); emit(h.x, h.y + 6, n, { speed: [90, 260], g: 380, life: [400, 700], ramp: 'ice', shape: 'shard', size: [1, 2], spin: 12 }); },
+  zap: (n = 4, col = '#ffe04a') => S => { const h = headOf(S); ent(300, () => { for (let k = 0; k < n; k++) { const a = Math.random() * 6.28; zig(bx(h.x), by(h.y + 8), bx(h.x + Math.cos(a) * 36), by(h.y + 8 + Math.sin(a) * 26), col, 2, 3, '#ffffff'); } }); },
+  leaves: (n = 16) => S => { const h = headOf(S); emit(h.x, h.y + 8, n, { speed: [60, 200], life: [500, 800], ramp: 'grass', shape: 'leaf', size: [1, 2], spin: 8, drag: 1.5, g: 60 }); },
+  rocks: (n = 10) => S => { const h = headOf(S); emit(h.x, h.y + 12, n, { ang: -Math.PI / 2, spread: 2.2, speed: [80, 220], g: 520, life: [500, 800], ramp: 'rock', size: [2, 3] }); },
+  toxic: () => S => { const h = headOf(S); emit(h.x, h.y + 8, 14, { speed: [30, 120], life: [500, 900], ramp: 'poison', shape: 'bubble', size: [1, 3], vy: -40, drag: 1 }); },
+  sparkle: (ramp = 'fairy', n = 16) => S => { const h = headOf(S); emit(h.x, h.y + 6, n, { r: 20, speed: [20, 90], life: [400, 800], ramp, shape: 'star', size: [1, 2], add: true }); },
+  dust: (n = 12) => S => { const f = footOf(S); emit(f.x, f.y - 4, n, { r: 14, ang: -Math.PI / 2, spread: 2.5, speed: [30, 110], life: [500, 900], ramp: 'dust', size: [2, 4], drag: 2 }); }
+};
+const both = (...fns) => (...a) => fns.forEach(f => f && f(...a));
+const SHOT = {
+  orb: (ramp, r = 4, trail = 'sq') => p => { const i = bx(p.x), j = by(p.y); orbPx(i, j, r, ramp, clock.t); if (Math.random() < .8) P(p.x, p.y, { vx: -p.vx * .1, vy: -p.vy * .1, life: 260, ramp, shape: trail, size: 2, size2: 1, add: true }); },
+  fireball: (r = 4) => p => { const i = bx(p.x), j = by(p.y); glow(i, j, r * 2.4, '#ff8a1f', .5); aDisc(i, j, r + (Math.random() < .5 ? 1 : 0), '#f0561c'); aDisc(i - 1, j - 1, r * .7, '#ffd23f'); aDisc(i - 1, j - 1, r * .35, '#ffffff');
+    emit(p.x, p.y, 3, { r: 3, speed: [10, 50], vx: -p.vx * .15, vy: -p.vy * .15 - 20, life: [200, 420], ramp: 'fire', size: [1, 3], size2: 1, add: true }); },
+  bubbles: () => p => { const t = clock.t / 80; for (let k = 0; k < 3; k++) { const i = bx(p.x + Math.cos(t + k * 2) * 6), j = by(p.y + Math.sin(t * 1.3 + k * 2) * 5); aRing(i, j, 3 - k * .5, 3 - k * .5, '#8fd4ff', .95); PX(i - 1, j - 1, '#ffffff'); } if (Math.random() < .4) P(p.x, p.y, { vy: -30, life: 400, ramp: 'water', shape: 'bubble', size: 1 }); },
+  sludge: (ramp = 'poison', r = 5) => p => { const i = bx(p.x), j = by(p.y), R = RR(ramp); aDisc(i, j, r, R[4]); aDisc(i - 1, j - 1, r - 1, R[3]); aDisc(i - 2, j - 2, 1, R[0]); for (let k = 0; k < 2; k++) PX(i + (Math.random() - .5) * r * 2, j + r, R[4]); if (Math.random() < .6) P(p.x, p.y + 4, { vy: 60, g: 300, life: 300, ramp, shape: 'drop', size: 1 }); },
+  shadow: (r = 5) => p => { const i = bx(p.x), j = by(p.y); glow(i, j, r * 2, '#6a4ad8', .5); aDisc(i, j, r, '#140e30'); aDisc(i - 1, j - 1, r - 2, '#2d2068'); for (let k = 0; k < 4; k++) { const a = clock.t / 90 + k * 1.57; PX(i + Math.cos(a) * (r + 2), j + Math.sin(a) * (r + 2), '#b9a4ff'); } P(p.x, p.y, { vx: (Math.random() - .5) * 40, vy: -30, life: 380, ramp: 'ghost', shape: 'sq', size: 2, size2: 1 }); },
+  aura: (r = 5) => p => { const i = bx(p.x), j = by(p.y); orbPx(i, j, r, ['#ffffff', '#d8f0ff', '#8fd0ff', '#3f8cff', '#2a4ab0', '#1a2470'], clock.t); aRing(i, j, r + 3 + Math.sin(clock.t / 50), (r + 3) * .5, '#bfe8ff', .9); emit(p.x, p.y, 2, { r: 4, speed: [10, 40], life: 240, color: '#9fd8ff', add: true }); },
+  moon: () => p => { const i = bx(p.x), j = by(p.y); glow(i, j, 14, '#ffa8de', .55); moonPx(i, j, 6); emit(p.x, p.y, 2, { r: 6, speed: [10, 40], life: 400, ramp: 'fairy', shape: 'star', size: 1, add: true }); },
+  rock: (r = 4, big) => p => { rockPx(bx(p.x), by(p.y), r, Math.floor(clock.t / 90) + 7); if (big || Math.random() < .3) P(p.x, p.y, { vy: 20, g: 200, life: 300, ramp: 'rock', size: 1 }); },
+  needle: (col, head = '#ffffff', len = 6) => p => { const a = shotAng(p), i = bx(p.x), j = by(p.y); for (let k = 0; k < len; k++) PX(i - Math.cos(a) * k, j - Math.sin(a) * k, k < 2 ? head : col); bctx.globalAlpha = 1; },
+  star: () => p => { const i = bx(p.x), j = by(p.y), s = 3 + (Math.floor(clock.t / 60) % 2); glow(i, j, 6, '#fff07a', .5); for (let k = -s; k <= s; k++) { PX(i + k, j, '#fff59a'); PX(i, j + k, '#fff59a'); } PX(i, j, '#ffffff'); PX(i - 1, j - 1, '#ffffff'); PX(i + 1, j + 1, '#ffffff'); bctx.globalAlpha = 1; P(p.x, p.y, { life: 300, ramp: 'gold', shape: 'star', size: 1, add: true }); },
+  leaf: (big) => p => { const a = clock.t / 50, i = bx(p.x), j = by(p.y), s = big ? 4 : 3; for (let k = -s; k <= s; k++) { PX(i + Math.cos(a) * k, j + Math.sin(a) * k * .6, k ? '#3fb04a' : '#c8f58a'); PX(i + Math.cos(a) * k - Math.sin(a), j + Math.sin(a) * k * .6 + .6, '#7fe05a'); } bctx.globalAlpha = 1; },
+  wind: (col = '#e8f2ff', w = 8) => p => { const a = shotAng(p), i = bx(p.x), j = by(p.y); for (let k = -w; k <= w; k++) { const t = k / w * 1.25; aRect(i + Math.cos(a + t) * w - Math.cos(a) * Math.abs(k) * .4, j + Math.sin(a + t) * w - Math.sin(a) * Math.abs(k) * .4, 2, 2, Math.abs(k) < 2 ? '#ffffff' : col, .95); } P(p.x, p.y, { life: 200, color: col, size: 1 }); },
+  spore: (ramp) => p => { for (let k = 0; k < 7; k++) { const a = clock.t / 200 + k, r = 4 + (k % 3) * 2; PX(bx(p.x + Math.cos(a) * r), by(p.y + Math.sin(a * 1.3) * r * .7), rampAt(RR(ramp), (k % 4) / 5)); } bctx.globalAlpha = 1; if (Math.random() < .7) P(p.x + (Math.random() - .5) * 12, p.y, { vy: 25, life: 600, ramp, size: 1 }); },
+  wisp: () => p => { const t = clock.t / 70; for (let k = 0; k < 3; k++) { const a = t + k * 2.09, x = p.x + Math.cos(a) * 9, y = p.y + Math.sin(a) * 6; glow(bx(x), by(y), 5, '#6a4ad8', .5); aDisc(bx(x), by(y), 2, '#9f8bff'); PX(bx(x), by(y) - 1, '#ffffff'); P(x, y, { vy: -40, life: 300, ramp: 'wisp', size: 1, add: true }); } bctx.globalAlpha = 1; },
+  zapRing: () => p => { const i = bx(p.x), j = by(p.y); for (let k = 0; k < 10; k++) { const a = k / 10 * 6.28 + clock.t / 100, r = 7 + (k % 2) * 3; PX(i + Math.cos(a) * r, j + Math.sin(a) * r * .7, k % 2 ? '#fff07a' : '#ffd52a'); } PX(i, j, '#ffffff'); bctx.globalAlpha = 1; if (Math.random() < .4) P(p.x, p.y, { life: 200, color: '#ffe04a', shape: 'zap', size: 1 }); },
+  heart: () => p => { shapeAt(p.x, p.y, { color: '#ff7ac8', shape: 'heart', size: 1 }); if (Math.random() < .5) P(p.x, p.y, { vy: -40, life: 500, ramp: 'fairy', shape: 'heart', size: 1 }); },
+  string: () => p => { const sd = side(p.owner); aLine(bx(sd.x + sd.face * 10), by(sd.y - 36), bx(p.x), by(p.y), '#f4f4f4', .85, 1); aDisc(bx(p.x), by(p.y), 2, '#ffffff'); },
+  psyRings: () => p => { const i = bx(p.x), j = by(p.y); for (let k = 0; k < 3; k++) { const q = ((clock.t / 400) + k / 3) % 1; aRing(i, j, 2 + q * 8, (2 + q * 8) * .6, '#ff8ad8', 1 - q); } },
+  confuse: () => p => { const i = bx(p.x + Math.sin(clock.t / 60) * 4), j = by(p.y + Math.cos(clock.t / 45) * 3); glow(i, j, 8, '#ffe86b', .6); aDisc(i, j, 3, Math.floor(clock.t / 80) % 2 ? '#ffe86b' : '#c8a6ff'); PX(i - 1, j - 1, '#ffffff'); P(p.x, p.y, { life: 400, color: Math.random() < .5 ? '#ffe86b' : '#c8a6ff', shape: 'plus', size: 1 }); },
+  ice: () => p => { shapeAt(p.x, p.y, { color: '#bff4ff', shape: 'shard', size: 2, rot: shotAng(p) }); glow(bx(p.x), by(p.y), 6, '#bff4ff', .4); P(p.x, p.y, { life: 260, ramp: 'ice', shape: 'star', size: 1, add: true }); },
+  water: (r = 3) => p => { const i = bx(p.x), j = by(p.y); aDisc(i, j, r, '#4aa6ff'); aDisc(i - 1, j - 1, r - 1, '#8fd4ff'); PX(i - 1, j - 1, '#ffffff'); bctx.globalAlpha = 1; emit(p.x, p.y, 2, { speed: [20, 60], vx: -p.vx * .2, vy: -p.vy * .2, g: 300, life: 300, ramp: 'water', shape: 'drop', size: 1 }); },
+  energy: () => p => { const i = bx(p.x), j = by(p.y); orbPx(i, j, 5, 'grass', clock.t); for (let k = 0; k < 2; k++) { const a = clock.t / 60 + k * 3.14; aRing(i, j, 7, 3, '#c8f58a', .7); PX(i + Math.cos(a) * 7, j + Math.sin(a) * 3, '#ffffff'); } bctx.globalAlpha = 1; },
+  vial: () => p => { const i = bx(p.x), j = by(p.y), a = clock.t / 70; aDisc(i, j, 3, '#8a3ac8'); aRect(i - 1, j - 5, 2, 2, '#d8d8e0'); PX(i + Math.cos(a) * 4, j + Math.sin(a) * 4, '#f6e6ff'); bctx.globalAlpha = 1; P(p.x, p.y, { vy: -20, life: 400, ramp: 'poison', shape: 'bubble', size: 1 }); },
+  mud: () => p => { const i = bx(p.x), j = by(p.y); aDisc(i, j, 4, '#6a4a24'); aDisc(i - 1, j - 1, 2, '#9a7038'); bctx.globalAlpha = 1; emit(p.x, p.y, 2, { speed: [10, 40], g: 400, life: 300, ramp: 'ground', size: [1, 2] }); },
+  seed: () => p => { const i = bx(p.x), j = by(p.y); aDisc(i, j, 3, '#7a5a2a'); aDisc(i - 1, j - 1, 1, '#c8a060'); PX(i, j - 4, '#7fe05a'); PX(i + 1, j - 5, '#7fe05a'); bctx.globalAlpha = 1; },
+  breeze: () => p => { for (let k = 0; k < 5; k++) { const a = clock.t / 90 + k * 1.25; PX(bx(p.x + Math.cos(a) * 7), by(p.y + Math.sin(a) * 5), k % 2 ? '#ffd0ef' : '#ffffff'); } bctx.globalAlpha = 1; P(p.x, p.y, { life: 400, ramp: 'fairy', shape: 'star', size: 1, add: true }); },
+  drainOrb: (ramp = 'heal') => p => { orbPx(bx(p.x), by(p.y), 4, 'grass', clock.t); P(p.x, p.y, { life: 300, ramp, shape: 'plus', size: 1, add: true }); },
+  multi: col => p => { const a = shotAng(p), i = bx(p.x), j = by(p.y); for (let k = 0; k < 7; k++) PX(i - Math.cos(a) * k, j - Math.sin(a) * k, k === 0 ? '#ffffff' : k < 3 ? '#f8ffd8' : col); bctx.globalAlpha = 1; P(p.x, p.y, { life: 160, color: col, size: 1 }); }
+};
+// Beam renderer: style ramp, width multiplier, wobble, extra per-frame spray
+const BEAM = (ramp, wm = 1, wob = 0, spray) => b => {
+  const q = b.t / b.life, grow = Math.min(1, q / .18), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, w = Math.round(b.w / 2 * wm * (1 + Math.sin(clock.t / 25) * .12));
+  beamPx(ax(b.x) - OX, ay(b.y) - OY, b.ang, len, w, ramp, fade, wob);
+  if (spray && q < .8) spray(b, len * 2);
+};
+const beamEnd = (b, wl) => ({ x: b.x + Math.cos(b.ang) * Math.min(wl, 300), y: b.y + Math.sin(b.ang) * Math.min(wl, 300) });
+
+/* =====================================================================
+   NORMAL
+   ===================================================================== */
+def('Tackle', { dash: DASH.trail('normal', 'sq', 1), impact: both(IMP.pow('#ffffff', 16), IMP.dust(6)) });
+def('Quick Attack', { exec: S => { const sd = side(S); for (let k = 0; k < 10; k++) speedLines(sd.x, sd.y - 30, sd.face > 0 ? 0 : Math.PI, 1, 30, '#ffffff'); }, dash: DASH.speed('#ffffff'), impact: both(IMP.pow('#ffffff', 14), IMP.burst('normal', 10, [100, 220], 'star', 1)) });
+def('Extreme Speed', { charge: CH.gather('gold', 18, 50, 'star'), dash: both(DASH.speed('#ffd23f'), DASH.trail('gold', 'star', 3, 1)), impact: S => { const h = headOf(S); for (let k = 0; k < 4; k++) setTimeoutGame(k * 70, () => { ent(220, q => powStar(bx(h.x + (Math.random() - .5) * 30), by(h.y + (Math.random() - .5) * 20), 14, '#ffd23f', q)); }); screenFlash('#fff3c0', .35); IMP.burst('gold', 24, [120, 320], 'star')(S); } });
+def('Body Slam', { exec: S => { side(S).hop = 1; }, dash: DASH.trail('normal', 'sq', 2, [2, 3]), impact: S => { const f = footOf(S); ent(300, q => aEllFill(bx(f.x), by(f.y), 26 * (1 - q * .3), 7, '#0b0f1a', .35 * (1 - q)), { under: true }); IMP.ring('#ffffff', 110, 2)(S); IMP.dust(18)(S); IMP.pow('#ffffff', 22)(S); VFX.shake(10, 300); crackBurst(f.x, f.y, 3); } });
+def('Headbutt', { dash: DASH.trail('normal'), impact: S => { const h = headOf(S); IMP.pow('#fff0b0', 18)(S); ent(900, q => { for (let k = 0; k < 4; k++) { const a = clock.t / 140 + k * 1.57; shapeAt(h.x + Math.cos(a) * 18, h.y - 18 + Math.sin(a) * 5, { color: '#ffe86b', shape: 'star', size: 1 }); } }); } });
+def('Slash', { charge: S => ent(240, q => { const h = headOf(S); PX(bx(h.x + side(S).face * 16), by(h.y + 10 - q * 10), '#ffffff'); }), impact: both(IMP.claws('#ffffff', 3, 30, 2), IMP.burst('normal', 8, [80, 180])) });
+def('Double-Edge', { charge: CH.rise(['#ffffff', '#ffd0d0', '#ff8a8a', '#e83a3a', '#8a1a1a'], 16), dash: both(DASH.engulf(['#ffffff', '#ffd0d0', '#ff8a8a', '#e83a3a', '#8a1a1a'], 4), DASH.speed('#ff8a8a')), impact: S => { IMP.pow('#ff8a8a', 26)(S); IMP.ring('#ff8a8a', 120, 3)(S); IMP.burst(['#ffffff', '#ff8a8a', '#e83a3a', '#8a1a1a'], 26, [120, 320])(S); VFX.shake(12, 380); screenFlash('#ffd0d0', .3); } });
+def('Swift', { charge: CH.gather('gold', 12, 30, 'star'), shot: SHOT.star(), impact: IMP.burst('gold', 12, [60, 180], 'star', 1) });
+def('Hyper Beam', { charge: S => { dim(.55, 1500); const h = headOf(S); ent(360, q => { const i = bx(h.x + side(S).face * 16), j = by(h.y + 6); glow(i, j, 6 + q * 14, '#ffb347', .7); aDisc(i, j, 2 + q * 6, '#fff6b0'); }); CH.gather(['#ffffff', '#fff6b0', '#ffd23f', '#ff9a1f', '#a8321c'], 26, 70)(S); },
+  beam: BEAM(['#ffffff', '#fffbe0', '#fff07a', '#ffb347', '#ff7a1a', '#a83a10'], 1.6, 1.5, (b, wl) => { const e = beamEnd(b, wl); emit(e.x, e.y, 3, { speed: [60, 240], life: [200, 420], ramp: 'fire', size: [2, 3], size2: 1, add: true }); }),
+  exec: S => { VFX.shake(14, 700); punch(side(S).x, side(S).y - 30, 1300, 1); }, impact: both(IMP.explode(['#ffffff', '#fffbe0', '#fff07a', '#ffb347', '#ff7a1a', '#a83a10', '#5a3a36'], 30), S => { screenFlash('#fff6d0', .7); crackBurst(footOf(S).x, footOf(S).y, 6); }) });
+def('Swords Dance', { exec: S => { dim(.35, 900); ent(900, q => { const h = headOf(S); for (let k = 0; k < 4; k++) { const a = q * 9 + k * Math.PI / 2, r = 26 * (1 - Math.max(0, q - .7) * 3); swordPx(bx(h.x + Math.cos(a) * r), by(h.y + 6 + Math.sin(a) * r * .6), a + Math.PI / 2); } if (q > .75) powStar(bx(h.x), by(h.y), 20, '#e8f0ff', (q - .75) * 4); }); IMP.sparkle('steel', 10)(S); } });
+def('Harden', { exec: S => ent(600, q => { const h = headOf(S); for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28; aLine(bx(h.x + Math.cos(a) * 20), by(h.y + 10 + Math.sin(a) * 16), bx(h.x + Math.cos(a + 1.05) * 20), by(h.y + 10 + Math.sin(a + 1.05) * 16), '#cad8e6', (1 - q) * .9, 1); } aRect(bx(h.x - 20 + q * 40), by(h.y - 10), 2, 40, '#ffffff', .6 * (1 - q)); }) });
+def('Recover', { exec: S => { const f = footOf(S); ent(900, q => { const i = bx(f.x), j = by(f.y); for (let y = 0; y < 70; y += 2) aRect(i - 8 + Math.sin(y / 6 + clock.t / 80) * 2, j - y, 16, 2, y % 4 ? '#a8ffc0' : '#e8ffef', .35 * (1 - q) * (1 - y / 70)); }); emit(f.x, f.y - 10, 26, { r: 18, ang: -Math.PI / 2, spread: .4, speed: [40, 110], life: [600, 1000], ramp: 'heal', shape: 'plus', size: 1, add: true }); } });
+def('Splash', { exec: S => { const f = footOf(S); for (let k = 0; k < 3; k++) setTimeoutGame(k * 280, () => emit(f.x, f.y - 6, 12, { ang: -Math.PI / 2, spread: 1.6, speed: [80, 180], g: 500, life: 600, ramp: 'water', shape: 'drop', size: 1 })); } });
+
+/* =====================================================================
+   FIRE
+   ===================================================================== */
+def('Ember', { charge: CH.rise('fire', 8), shot: SHOT.fireball(3), impact: S => { const h = headOf(S); emit(h.x, h.y + 10, 16, { speed: [40, 160], life: [300, 600], ramp: 'fire', size: [1, 2], g: 100, add: true }); addScar('scorch', footOf(S).x, footOf(S).y); } });
+def('Flamethrower', { charge: CH.orb('fire', 5, 320), beam: BEAM('fire', 1.1, 3, (b, wl) => { for (let k = 0; k < 4; k++) { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: Math.cos(b.ang) * 120 + (Math.random() - .5) * 80, vy: Math.sin(b.ang) * 120 - 40, life: [250, 500][k % 2], ramp: 'fire', size: 3, size2: 1, add: true }); } }),
+  impact: S => { IMP.explode('fire', 16)(S); const h = headOf(S); ent(1000, q => { if (Math.random() < .5) P(h.x + (Math.random() - .5) * 30, h.y + 30, { vy: -80, life: 500, ramp: 'fire', size: 2, size2: 1, add: true }); }); addScar('scorch', footOf(S).x, footOf(S).y); } });
+def('Fire Blast', { charge: S => { dim(.4, 1400); CH.orb('fire', 7, 300)(S); CH.rise('fire', 20)(S); },
+  shot: SHOT.fireball(5),
+  impact: S => { const h = headOf(S), i0 = h.x, j0 = h.y + 8; ent(900, q => { // the five-armed burst of flame
+      const arms = [[0, -1], [-1, .35], [1, .35], [-.7, 1], [.7, 1]], L = 34 * Ease.outQ(Math.min(1, q * 2));
+      for (const [dx, dy] of arms) for (let k = 0; k < L; k += 2) { const x = i0 + dx * k, y = j0 + dy * k; aDisc(bx(x), by(y), 4 * (1 - k / 50) * (1 - q * .5), rampAt(RAMP.fire, k / L * .6 + q * .4), 1 - q * .7); }
+      glow(bx(i0), by(j0), 20 * (1 - q), '#ff9a1f', .6 * (1 - q)); });
+    emit(i0, j0, 40, { speed: [80, 320], life: [500, 900], ramp: 'fire', size: [2, 4], size2: 1, drag: 1.5, add: true }); screenFlash('#ffb070', .5); VFX.shake(12, 450); punch(i0, j0, 1100, 1); for (let k = 0; k < 4; k++) addScar('scorch', footOf(S).x + (Math.random() - .5) * 40, footOf(S).y + (Math.random() - .5) * 20); } });
+def('Fire Punch', { charge: both(CH.fist('#ff9a1f', 1), CH.rise('fire', 8)), dash: DASH.engulf('fire', 2), impact: IMP.fist('#ff7a2a', 2, S => { IMP.explode('fire', 14)(S); }) });
+def('Flare Blitz', { charge: S => { CH.rise('blueFire', 24)(S); ent(400, q => { const sd = side(S); glow(bx(sd.x), by(sd.y - 30), 16 + q * 8, '#7fd6ff', .5); }); }, dash: both(DASH.engulf('blueFire', 6), DASH.engulf('fire', 3)),
+  impact: S => { IMP.explode('blueFire', 26)(S); IMP.explode('fire', 18)(S); screenFlash('#d8f4ff', .45); VFX.shake(13, 420); punch(side(S).x, side(S).y - 30, 900, 1); } });
+def('Will-O-Wisp', { charge: S => { const h = headOf(S); for (let k = 0; k < 3; k++) setTimeoutGame(k * 70, () => P(h.x + (k - 1) * 12, h.y - 10, { vy: -20, life: 400, ramp: 'wisp', shape: 'disc', size: 2, add: true })); }, shot: SHOT.wisp(),
+  impact: S => { const h = headOf(S); ent(800, q => { for (let k = 0; k < 3; k++) { const a = clock.t / 120 + k * 2.09; glow(bx(h.x + Math.cos(a) * 18), by(h.y + 10 + Math.sin(a) * 8), 6, '#6a4ad8', .6 * (1 - q)); aDisc(bx(h.x + Math.cos(a) * 18), by(h.y + 10 + Math.sin(a) * 8), 2, '#c8b8ff', 1 - q); } }); } });
+
+/* =====================================================================
+   WATER
+   ===================================================================== */
+def('Water Gun', { charge: CH.gather('water', 10, 30), shot: SHOT.water(3), impact: IMP.splash(18) });
+def('Bubble Beam', { charge: CH.gather('water', 12, 34, 'bubble'), shot: SHOT.bubbles(), exec: S => { const h = headOf(S), sd = side(S); for (let k = 0; k < 14; k++) setTimeoutGame(k * 25, () => P(h.x + sd.face * 16, h.y + 6, { vx: sd.face * rnd2(200, 380), vy: rnd2(-60, 60), life: 700, ramp: 'water', shape: 'bubble', size: rnd2(1, 3) | 0, drag: .6 })); },
+  impact: S => { const h = headOf(S); emit(h.x, h.y + 8, 18, { speed: [40, 160], life: [300, 500], ramp: 'water', shape: 'ring', size: [1, 3] }); IMP.splash(10)(S); } });
+def('Surf', { exec: S => { punch(side(S).x, side(S).y, 1200, 1); dim(.25, 900, '6,20,48'); },
+  wave: w => { const r = w.r / 2, i = bx(w.x), j = by(w.y); for (let k = 0; k < 4; k++) aRing(i, j, r - k * 2, (r - k * 2) * .62, rampAt(RAMP.water, k / 5 + .2), .95, 2); for (let k = 0; k < 18; k++) { const a = Math.random() * 6.28; PX(i + Math.cos(a) * r, j + Math.sin(a) * r * .62 - 2, '#ffffff'); } if (Math.random() < .8) { const a = Math.random() * 6.28; P(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { vy: -140, g: 500, life: 500, ramp: 'water', shape: 'drop', size: 2 }); } },
+  impact: both(IMP.splash(30), IMP.ring('#8fd4ff', 90, 2)) });
+def('Hydro Pump', { charge: S => { CH.gather('water', 22, 60)(S); dim(.3, 1100, '6,20,48'); }, beam: BEAM('water', 1.6, 2, (b, wl) => { const e = beamEnd(b, wl); emit(e.x, e.y, 4, { speed: [100, 300], g: 500, life: [300, 600], ramp: 'water', shape: 'drop', size: [1, 2] }); for (let k = 0; k < 2; k++) { const d = Math.random() * wl * .8; P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: (Math.random() - .5) * 120, vy: -80, g: 400, life: 400, ramp: 'water', shape: 'drop', size: 1 }); } }),
+  exec: S => VFX.shake(8, 600), impact: both(IMP.splash(40), IMP.ring('#d8f4ff', 120, 3)) });
+def('Scald', { charge: CH.rise(['#ffffff', '#f0f0f0', '#c8e8ff', '#8fd4ff'], 12), beam: BEAM(['#ffffff', '#fff4e8', '#ffd0b0', '#8fd4ff', '#4aa6ff', '#2a6fc0'], .9, 2, (b, wl) => { const d = Math.random() * wl; P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vy: -50, life: 600, ramp: 'smoke', size: 3, size2: 1 }); }),
+  impact: S => { IMP.splash(16)(S); const h = headOf(S); emit(h.x, h.y, 14, { r: 14, ang: -Math.PI / 2, spread: 1, speed: [30, 80], life: [600, 1000], ramp: 'smoke', size: [2, 4], size2: 1 }); } });
+def('Aqua Jet', { exec: S => { const sd = side(S); emit(sd.x, sd.y - 30, 16, { r: 14, speed: [60, 160], life: 400, ramp: 'water', shape: 'drop', size: 1, g: 300 }); }, dash: S => { const sd = side(S), a = clock.t / 40; for (let k = 0; k < 2; k++) P(sd.x + Math.cos(a + k * 3.14) * 14, sd.y - 30 + Math.sin(a + k * 3.14) * 10, { life: 300, ramp: 'water', shape: 'drop', size: 1, vy: -20 }); DASH.speed('#bfe9ff')(S); }, impact: both(IMP.splash(22), IMP.pow('#bfe9ff', 16)) });
+def('Waterfall', { dash: DASH.engulf('water', 4), impact: S => { const f = footOf(S); ent(700, q => { const i = bx(f.x), j = by(f.y), H = 70 * Math.min(1, q * 3); for (let y = 0; y < H; y += 1) { const w = 10 + Math.sin(y / 4 + clock.t / 50) * 2; aRect(i - w / 2, j - y, w, 1, rampAt(RAMP.water, (y / 70 + clock.t / 300) % 1 * .7), (1 - q) * .9); } }); IMP.splash(30)(S); VFX.shake(8, 300); } });
+def('Crabhammer', { charge: CH.gather('water', 10, 30), dash: DASH.trail('water', 'drop', 2, 1), impact: S => { const h = headOf(S); ent(400, q => { const g = 18 * (1 - Math.min(1, q * 2.2)); for (const s of [-1, 1]) { const i = bx(h.x + s * (g + 6)), j = by(h.y + 8); aDisc(i, j, 7, '#e85a3a'); aDisc(i - 1, j - 1, 5, '#ff8a6a'); aRect(i - s * 6, j - 2, 6, 4, '#c83a2a'); } }); setTimeoutGame(160, () => { IMP.splash(26)(S); IMP.pow('#ffffff', 22)(S); VFX.shake(10, 300); }); } });
+
+/* =====================================================================
+   GRASS
+   ===================================================================== */
+def('Vine Whip', { exec: S => { const sd = side(S); ent(520, q => { const t = side(other(S)); vinePx(bx(sd.x), by(sd.y - 30), bx(t.x), by(t.y - 36), q); vinePx(bx(sd.x), by(sd.y - 26), bx(t.x + 8), by(t.y - 26), Math.max(0, q - .1), '#26803a'); }); }, impact: both(IMP.claws('#7fe05a', 2, 30, 2), IMP.leaves(8)) });
+def('Razor Leaf', { charge: CH.gather('grass', 14, 40, 'leaf'), shot: SHOT.leaf(), impact: both(IMP.leaves(14), IMP.claws('#c8f58a', 2, 20, 1)) });
+def('Seed Bomb', { shot: SHOT.seed(), impact: S => { IMP.explode(['#ffffff', '#e8ffc0', '#a8f07a', '#5ec84a', '#3a8a2a', '#5a4a2a'], 18)(S); IMP.leaves(10)(S); IMP.dust(8)(S); } });
+def('Giga Drain', { charge: CH.gather('grass', 16, 46), shot: SHOT.drainOrb(), impact: S => { const h = headOf(S), a = side(other(S)); for (let k = 0; k < 12; k++) setTimeoutGame(k * 40, () => { const ox = (Math.random() - .5) * 30; P(h.x + ox, h.y + 10, { vx: (a.x - h.x) * 1.6, vy: (a.y - 44 - h.y) * 1.6 - 60, g: 60, life: 600, ramp: 'heal', shape: 'disc', size: 2, size2: 1, add: true }); }); ent(600, q => glow(bx(h.x), by(h.y + 10), 16, '#7fe05a', .5 * (1 - q))); } });
+def('Energy Ball', { charge: CH.orb('grass', 6, 320), shot: SHOT.energy(), impact: both(IMP.explode('grass', 18), IMP.ring('#c8f58a', 80, 2)) });
+def('Leaf Storm', { charge: S => { dim(.35, 1400, '6,26,10'); const h = headOf(S); ent(500, q => { for (let k = 0; k < 10; k++) { const a = q * 14 + k * .63, r = 12 + k * 2.5; shapeAt(h.x + Math.cos(a) * r, h.y + 10 + Math.sin(a) * r * .6, { ramp: 'grass', shape: 'leaf', size: 2, rot: a }); } }); }, shot: SHOT.leaf(true),
+  exec: S => { const sd = side(S); for (let k = 0; k < 40; k++) setTimeoutGame(k * 12, () => P(sd.x, sd.y - 30, { vx: sd.face * rnd2(220, 420), vy: rnd2(-120, 120), life: 800, ramp: 'grass', shape: 'leaf', size: 2, spin: 10, drag: .4 })); }, impact: both(IMP.leaves(30), IMP.ring('#7fe05a', 100, 2)) });
+def('Sleep Powder', { exec: S => { const sd = side(S); emit(sd.x, sd.y - 40, 16, { r: 14, speed: [20, 60], life: 700, ramp: ['#ffffff', '#d0f0ff', '#8fd4ff', '#5a8ac8'], size: 1 }); }, shot: SHOT.spore(['#ffffff', '#d0f0ff', '#8fd4ff', '#5a8ac8']),
+  impact: S => { const h = headOf(S); emit(h.x, h.y - 20, 30, { r: 26, vy: 40, speed: [0, 20], life: [800, 1300], ramp: ['#ffffff', '#d0f0ff', '#8fd4ff', '#5a8ac8'], size: 1 }); for (let k = 0; k < 3; k++) setTimeoutGame(300 + k * 200, () => P(h.x + 14 + k * 6, h.y - 10, { vy: -30, vx: 20, life: 900, color: '#e6ecff', shape: 'z', size: 1 })); } });
+def('Stun Spore', { exec: S => { const sd = side(S); emit(sd.x, sd.y - 40, 16, { r: 14, speed: [20, 60], life: 700, ramp: 'gold', size: 1 }); }, shot: SHOT.spore('gold'),
+  impact: S => { const h = headOf(S); emit(h.x, h.y - 20, 30, { r: 26, vy: 40, speed: [0, 20], life: [800, 1300], ramp: 'gold', size: 1 }); IMP.zap(3, '#fff07a')(S); } });
+
+/* =====================================================================
+   ELECTRIC
+   ===================================================================== */
+def('Thunder Shock', { charge: CH.crackle(), mark: mk => { ent(260, () => zig(bx(mk.x), by(mk.y - 120), bx(mk.x), by(mk.y - 34), '#ffe04a', 2, 4, '#ffffff')); emit(mk.x, mk.y - 34, 10, { speed: [60, 180], life: 300, color: '#fff07a', shape: 'zap', size: 1 }); }, impact: IMP.zap(3) });
+def('Thunderbolt', { charge: both(CH.crackle(), CH.gather('elec', 16, 40)), exec: S => dim(.35, 800),
+  mark: mk => { screenFlash('#fffbd0', .55); ent(420, q => { for (let k = 0; k < 3; k++) zig(bx(mk.x + (k - 1) * 10), by(mk.y - 220), bx(mk.x + (Math.random() - .5) * 8), by(mk.y - 34), '#ffd52a', 3, 7, '#ffffff'); glow(bx(mk.x), by(mk.y - 34), 22 * (1 - q), '#fff07a', .7); });
+    emit(mk.x, mk.y - 30, 26, { speed: [100, 300], life: [200, 450], ramp: 'elec', shape: 'zap', size: 1 }); addScar('scorch', mk.x, mk.y); VFX.shake(9, 300); },
+  impact: S => { IMP.zap(6)(S); const h = headOf(S); ent(700, () => { if (Math.random() < .5) { const a = Math.random() * 6.28; zig(bx(h.x), by(h.y + 8), bx(h.x + Math.cos(a) * 26), by(h.y + 8 + Math.sin(a) * 20), '#fff07a', 1, 2); } }); } });
+def('Thunder', { charge: S => { dim(.6, 1300, '4,6,20'); CH.crackle()(S); CH.gather('elec', 20, 60)(S); },
+  mark: mk => { screenFlash('#ffffff', .85); VFX.shake(16, 600); punch(mk.x, mk.y - 30, 1100, 1); ent(560, q => { for (let k = 0; k < 2; k++) zig(bx(mk.x + (Math.random() - .5) * 6), by(mk.y - 300), bx(mk.x), by(mk.y - 30), '#ffe04a', 5, 10, '#ffffff'); for (let k = 0; k < 3; k++) { const a = Math.random() * 6.28; zig(bx(mk.x), by(mk.y - 20), bx(mk.x + Math.cos(a) * 60), by(mk.y - 20 + Math.sin(a) * 30), '#fff07a', 1, 4); } glow(bx(mk.x), by(mk.y - 30), 34 * (1 - q), '#ffffff', .8); });
+    emit(mk.x, mk.y - 20, 40, { speed: [120, 380], life: [300, 600], ramp: 'elec', shape: 'zap', size: 2, size2: 1 }); for (let k = 0; k < 5; k++) addScar('scorch', mk.x + (Math.random() - .5) * 50, mk.y + (Math.random() - .5) * 24); },
+  impact: IMP.zap(8) });
+def('Thunder Punch', { charge: both(CH.fist('#ffe04a', 1), CH.crackle()), dash: S => { const sd = side(S); if (Math.random() < .6) P(sd.x + (Math.random() - .5) * 30, sd.y - 34 + (Math.random() - .5) * 30, { life: 160, color: '#fff07a', shape: 'zap', size: 2 }); }, impact: IMP.fist('#ffd52a', 2, S => { IMP.zap(6)(S); screenFlash('#fffbd0', .3); }) });
+def('Volt Tackle', { charge: S => { CH.crackle()(S); CH.gather('elec', 22, 50)(S); }, dash: S => { const sd = side(S); ent(60, () => { for (let k = 0; k < 2; k++) { const a = Math.random() * 6.28; zig(bx(sd.x), by(sd.y - 32), bx(sd.x + Math.cos(a) * 22), by(sd.y - 32 + Math.sin(a) * 22), '#ffe04a', 2, 3, '#ffffff'); } glow(bx(sd.x), by(sd.y - 32), 16, '#fff07a', .5); }); DASH.speed('#fff07a')(S); },
+  impact: S => { IMP.zap(9)(S); IMP.explode('elec', 22)(S); screenFlash('#fffbd0', .5); VFX.shake(13, 420); } });
+def('Thunder Wave', { charge: CH.crackle('#fff07a'), shot: SHOT.zapRing(), impact: S => { const h = headOf(S); ent(700, q => { for (let k = 0; k < 2; k++) { const r = (q * 40 + k * 14) % 40; for (let s = 0; s < 16; s++) { const a = s / 16 * 6.28; PX(bx(h.x + Math.cos(a) * r), by(h.y + 10 + Math.sin(a) * r * .6 + (s % 2 ? 1 : -1)), '#ffe04a', 1 - r / 40); } } }); } });
+
+/* =====================================================================
+   ICE
+   ===================================================================== */
+def('Ice Shard', { exec: S => { const h = headOf(S); emit(h.x + side(S).face * 14, h.y + 6, 8, { speed: [30, 90], life: 300, ramp: 'ice', shape: 'star', size: 1 }); }, shot: SHOT.ice(), impact: both(IMP.shatter(12), IMP.burst('ice', 8, [60, 160], 'star', 1)) });
+def('Ice Punch', { charge: both(CH.fist('#bff4ff', 1), CH.gather('ice', 10, 30, 'star')), dash: DASH.trail('ice', 'star', 2, 1), impact: IMP.fist('#7fdcf0', 2, S => { IMP.shatter(18)(S); const f = footOf(S); for (let k = 0; k < 5; k++) { const a = k / 5 * 6.28; ent(800, q => spikePx(bx(f.x + Math.cos(a) * 18), by(f.y + Math.sin(a) * 8), 10 * Math.min(1, q * 4), 2, RAMP.ice, 1 - Math.max(0, q - .7) * 3.3), { under: true }); } }) });
+def('Aurora Beam', { charge: CH.gather('aurora', 18, 46, 'star'), beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .18), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    const cols = ['#ff9ad8', '#c89aff', '#9ad0ff', '#9affd8', '#fff09a']; for (let k = 0; k < len; k++) for (let s = -4; s <= 4; s++) { const idx = ((((s + 4) >> 1) + Math.floor((k - clock.t / 20) / 6)) % 5 + 5) % 5, o = s + Math.sin(k / 8 - clock.t / 60) * 2; PX(i0 + ca * k - sa * o, j0 + sa * k + ca * o, cols[idx], fade * (s === 0 ? 1 : .8)); } bctx.globalAlpha = 1; },
+  impact: both(IMP.sparkle('aurora', 22), IMP.shatter(8)) });
+def('Ice Beam', { charge: CH.gather('ice', 18, 46, 'star'), beam: BEAM('ice', 1, 1, (b, wl) => { const d = Math.random() * Math.min(wl, 300); const x = b.x + Math.cos(b.ang) * d, y = b.y + Math.sin(b.ang) * d; P(x, y, { life: 500, ramp: 'ice', shape: 'shard', size: 2, rot: Math.random() * 6.28 }); }),
+  impact: S => { IMP.shatter(20)(S); const f = footOf(S); ent(1400, q => { const a = 1 - Math.max(0, q - .7) * 3.3; for (let k = 0; k < 7; k++) { const ang = k / 7 * 6.28; spikePx(bx(f.x + Math.cos(ang) * 16), by(f.y + Math.sin(ang) * 7), 6 + (k % 3) * 4, 2, RAMP.ice, a * Math.min(1, q * 6)); } }, { under: true }); } });
+def('Blizzard', { charge: S => { dim(.45, 1600, '20,30,48'); CH.gather('ice', 24, 70, 'star')(S); },
+  exec: S => { for (let k = 0; k < 60; k++) setTimeoutGame(k * 12, () => { const sd = side(S); P(sd.x + (Math.random() - .5) * 600, -40, { vx: rnd2(200, 400) * sd.face, vy: rnd2(200, 380), life: 1200, ramp: 'ice', shape: Math.random() < .5 ? 'star' : 'sq', size: rnd2(1, 3) | 0 }); }); },
+  mark: mk => { ent(900, q => { for (let k = 0; k < 14; k++) { const a = q * 12 + k * .45, r = 6 + k * 3; aRect(bx(mk.x + Math.cos(a) * r), by(mk.y - 20 + Math.sin(a) * r * .5), 2, 2, k % 3 ? '#ffffff' : '#bff4ff', 1 - q); } }); emit(mk.x, mk.y - 20, 30, { speed: [80, 260], life: [400, 800], ramp: 'ice', shape: 'shard', size: [1, 2], spin: 10 }); screenFlash('#e8fbff', .4); },
+  impact: IMP.shatter(16) });
+
+/* =====================================================================
+   FIGHTING
+   ===================================================================== */
+def('Mach Punch', { exec: DASH.speed('#ffc08a'), dash: DASH.speed('#ffc08a'), impact: S => { const h = headOf(S); for (let k = 0; k < 3; k++) setTimeoutGame(k * 55, () => { const dx = (Math.random() - .5) * 20, dy = (Math.random() - .5) * 14; ent(200, q => { fistPx(bx(h.x + dx), by(h.y + 8 + dy), 1, '#ff8a5b', side(other(S)).face); powStar(bx(h.x + dx), by(h.y + 8 + dy), 10, '#ffffff', q); }); }); } });
+def('Karate Chop', { charge: S => ent(260, q => { const h = headOf(S); aRect(bx(h.x + side(S).face * 12), by(h.y - 6 - q * 6), 3, 10, '#f2c39c'); }), impact: S => { const h = headOf(S); ent(320, q => { const j = by(h.y - 16 + q * 30); aRect(bx(h.x) - 1, j - 12, 4, 12, '#f2c39c', 1 - q); slashPx(bx(h.x), by(h.y + 8), Math.PI / 2, 28, '#ffc08a', 3, q); }); IMP.pow('#ffc08a', 16)(S); } });
+def('Brick Break', { charge: CH.fist('#ff8a5b', 1), impact: S => { const h = headOf(S); IMP.fist('#ff8a5b', 2)(S); emit(h.x, h.y + 10, 12, { ang: -Math.PI / 2, spread: 2.5, speed: [100, 240], g: 520, life: 700, ramp: ['#e8a080', '#c8604a', '#9a3a2a', '#5a2018'], shape: 'sq', size: [2, 3] }); VFX.shake(9, 260); } });
+def('Cross Chop', { charge: CH.rise('fight', 12), impact: S => { IMP.xslash('#ffc08a', 40)(S); IMP.burst('fight', 18, [100, 260])(S); VFX.shake(10, 320); } });
+def('Close Combat', { charge: S => { CH.rise('fight', 18)(S); dim(.3, 1000); }, dash: DASH.speed('#ffc08a'), impact: S => { const h = headOf(S); for (let k = 0; k < 7; k++) setTimeoutGame(k * 60, () => { const dx = (Math.random() - .5) * 34, dy = (Math.random() - .5) * 26; ent(220, q => { if (k % 2) fistPx(bx(h.x + dx), by(h.y + 8 + dy), 1, '#ff8a5b', side(other(S)).face); powStar(bx(h.x + dx), by(h.y + 8 + dy), 14, k % 3 ? '#ffffff' : '#ffc08a', q); }); VFX.shake(7, 120); }); setTimeoutGame(450, () => { IMP.burst('fight', 26, [140, 340])(S); punch(side(S).x, side(S).y - 30, 700, 1); }); } });
+def('Aura Sphere', { charge: S => { CH.gather(['#ffffff', '#d8f0ff', '#8fd0ff', '#3f8cff', '#2a4ab0'], 22, 54)(S); CH.orb(['#ffffff', '#d8f0ff', '#8fd0ff', '#3f8cff', '#2a4ab0', '#1a2470'], 6, 320)(S); }, shot: SHOT.aura(6), impact: S => { IMP.explode(['#ffffff', '#d8f0ff', '#8fd0ff', '#3f8cff', '#2a4ab0', '#1a2470'], 22)(S); IMP.ring('#8fd0ff', 100, 2)(S); } });
+def('Bulk Up', { exec: S => { const h = headOf(S); ent(700, q => { glow(bx(h.x), by(h.y + 14), 22, '#ff8a5b', .5 * (1 - q)); for (const s of [-1, 1]) { const i = bx(h.x + s * (18 + Math.sin(q * 20) * 2)), j = by(h.y + 14); aDisc(i, j, 4, '#ff8a5b', 1 - q); } }); CH.rise('fight', 22)(S); VFX.shake(4, 300); } });
+
+/* =====================================================================
+   POISON
+   ===================================================================== */
+def('Poison Sting', { shot: SHOT.needle('#b65cff', '#f6e6ff', 6), impact: IMP.toxic() });
+def('Poison Jab', { charge: S => ent(260, q => { const h = headOf(S), f = side(S).face; for (let k = 0; k < 10; k++) PX(bx(h.x + f * (10 + k)), by(h.y + 10), k > 7 ? '#f6e6ff' : '#b65cff'); }), dash: DASH.trail('poison', 'bubble', 2, 1), impact: both(IMP.claws('#d8a0ff', 1, 30, 3), IMP.toxic(), IMP.burst('poison', 14, [80, 200], 'drop', 1)) });
+def('Sludge Bomb', { charge: CH.orb('poison', 6, 300), shot: SHOT.sludge('poison', 6), impact: S => { IMP.explode('poison', 20)(S); const f = footOf(S); emit(f.x, f.y - 20, 18, { ang: -Math.PI / 2, spread: 2.4, speed: [80, 220], g: 500, life: 700, ramp: 'poison', shape: 'drop', size: [1, 2] }); ent(1500, q => aEllFill(bx(f.x), by(f.y + 2), 18, 5, '#8a3ac8', .5 * (1 - q)), { under: true }); } });
+def('Gunk Shot', { charge: S => { CH.orb(['#f0e0ff', '#c8a060', '#8a6a3a', '#6a3a8a', '#3a1a48', '#1a0a20'], 7, 340)(S); dim(.3, 1000, '20,6,26'); }, shot: SHOT.sludge(['#f0e0ff', '#c8a060', '#8a6a3a', '#6a3a8a', '#3a1a48', '#1a0a20'], 7),
+  impact: S => { IMP.explode(['#ffffff', '#d8a0ff', '#8a6a3a', '#6a3a8a', '#3a1a48', '#1a0a20'], 26)(S); IMP.toxic()(S); IMP.rocks(8)(S); VFX.shake(11, 380); } });
+def('Toxic', { shot: SHOT.vial(), impact: S => { const h = headOf(S); IMP.toxic()(S); ent(900, q => { glow(bx(h.x), by(h.y + 10), 20, '#8a3ac8', .55 * (1 - q)); for (let k = 0; k < 6; k++) { const a = k + clock.t / 200; PX(bx(h.x + Math.cos(a) * 16), by(h.y + 10 + Math.sin(a * 1.4) * 14), '#d8a0ff', 1 - q); } }); } });
+def('Acid Armor', { exec: S => { const sd = side(S); ent(900, q => { const i = bx(sd.x), j = by(sd.y); for (let k = 0; k < 12; k++) { const x = i - 14 + k * 2.5, y = j - 50 + ((k * 13 + q * 60) % 50); aRect(x, y, 1, 3, '#b65cff', .8 * (1 - q)); } aEllFill(i, j, 18, 4, '#8a3ac8', .5 * (1 - q)); }); IMP.sparkle('poison', 12)(S); } });
+
+/* =====================================================================
+   GROUND
+   ===================================================================== */
+def('Mud Shot', { shot: SHOT.mud(), impact: S => { const h = headOf(S); emit(h.x, h.y + 10, 18, { speed: [60, 200], g: 500, life: 600, ramp: 'ground', size: [1, 3] }); ent(1600, q => aEllFill(bx(footOf(S).x), by(footOf(S).y + 2), 16, 4, '#6a4a24', .55 * (1 - q)), { under: true }); } });
+def('Dig', { exec: S => { const f = footOf(S); IMP.dust(20)(S); emit(f.x, f.y - 4, 16, { ang: -Math.PI / 2, spread: 2, speed: [80, 200], g: 500, life: 600, ramp: 'ground', size: [2, 3] }); }, impact: S => { IMP.rocks(14)(S); IMP.dust(16)(S); IMP.pow('#e7c27a', 22)(S); crackBurst(footOf(S).x, footOf(S).y, 4); } });
+def('Drill Run', { dash: S => { const sd = side(S), a = clock.t / 25; for (let k = 0; k < 3; k++) P(sd.x + sd.face * 14 + Math.cos(a + k * 2.09) * 8, sd.y - 30 + Math.sin(a + k * 2.09) * 8, { life: 140, ramp: 'ground', size: 2, size2: 1 }); DASH.dust()(S); },
+  impact: S => { const h = headOf(S); ent(380, q => { for (let k = 0; k < 14; k++) { const a = q * 30 + k, r = 4 + k; PX(bx(h.x + Math.cos(a) * r * .5), by(h.y + 8 + Math.sin(a) * r * .5), rampAt(RAMP.ground, k / 16)); } }); IMP.rocks(10)(S); IMP.pow('#e7c27a', 18)(S); } });
+def('Earth Power', { mark: mk => { ent(700, q => { const i = bx(mk.x), j = by(mk.y); aEllFill(i, j, 30 * Math.min(1, q * 3), 10, '#ff8a1f', .6 * (1 - q)); for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28; aLine(i, j, i + Math.cos(a) * 30, j + Math.sin(a) * 10, '#ffd23f', 1 - q, 1); } }, { under: true });
+    ent(560, q => { const i = bx(mk.x), j = by(mk.y), H = 90 * Ease.outQ(Math.min(1, q * 2.5)); for (let y = 0; y < H; y++) { const w = 12 * (1 - y / 100) + Math.sin(y / 3 + clock.t / 40) * 2; aRect(i - w / 2, j - y, w, 1, rampAt(RAMP.fire, y / 100 + q * .3), 1 - q); } });
+    emit(mk.x, mk.y - 10, 30, { ang: -Math.PI / 2, spread: .9, speed: [120, 320], g: 300, life: [500, 900], ramp: 'fire', size: [1, 3], add: true }); emit(mk.x, mk.y - 10, 10, { ang: -Math.PI / 2, spread: 2.2, speed: [80, 220], g: 520, life: [500, 800], ramp: 'rock', size: [2, 3] }); VFX.shake(10, 400); crackBurst(mk.x, mk.y, 5); },
+  impact: IMP.burst('ground', 12, [60, 200]) });
+def('Earthquake', { charge: S => { const f = footOf(S); emit(f.x, f.y, 10, { r: 20, ang: -Math.PI / 2, spread: 2, speed: [30, 90], life: 500, ramp: 'dust', size: [2, 3] }); },
+  exec: S => { dim(.3, 900, '30,20,10'); VFX.shake(18, 900); punch(side(S).x, side(S).y, 900, 1); const f = footOf(S); for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; for (let d = 20; d < 260; d += 22) setTimeoutGame(d * 1.4, () => addScar('crack', f.x + Math.cos(a) * d, f.y + Math.sin(a) * d * .6)); } },
+  wave: w => { const r = w.r / 2, i = bx(w.x), j = by(w.y); aRing(i, j, r, r * .62, '#9a7038', .9, 2); aRing(i, j, r - 3, (r - 3) * .62, '#e7c27a', .6, 1); for (let k = 0; k < 3; k++) { const a = Math.random() * 6.28; P(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { vy: -rnd2(100, 200), g: 500, life: 500, ramp: Math.random() < .5 ? 'rock' : 'dust', size: [2, 3][k % 2] }); } },
+  impact: both(IMP.rocks(14), IMP.dust(14)) });
+
+/* =====================================================================
+   FLYING
+   ===================================================================== */
+def('Peck', { dash: DASH.trail('flying', 'feather', 1, 1), impact: S => { const h = headOf(S); for (let k = 0; k < 3; k++) setTimeoutGame(k * 60, () => ent(160, q => { const dx = (k - 1) * 8; for (let s = 0; s < 6; s++) aRect(bx(h.x + dx - 3 + s / 2), by(h.y + 4 + s), 6 - s, 1, '#ffd23f', 1 - q); })); IMP.burst('flying', 8, [60, 160], 'feather', 1)(S); } });
+def('Wing Attack', { dash: S => { const sd = side(S); if (Math.random() < .5) P(sd.x, sd.y - 40, { vx: -sd.vx * .1, vy: 20, life: 600, color: '#ffffff', shape: 'feather', spin: 6, size: 1 }); }, impact: S => { IMP.claws('#d7e6ff', 2, 34, 3)(S); IMP.burst('flying', 12, [80, 200], 'feather', 1)(S); } });
+def('Aerial Ace', { exec: S => DASH.speed('#ffffff')(S), dash: DASH.speed('#ffffff'), impact: S => { const h = headOf(S); ent(380, q => { const L = 60; for (let k = -L; k <= L; k++) { if (Math.abs(k) / L > q * 3) continue; aRect(bx(h.x + k), by(h.y + 8 - k * .35), 2, 2, Math.abs(k) < 6 ? '#ffffff' : '#d7e6ff', 1 - Math.max(0, q - .5) * 2); } }); screenFlash('#ffffff', .25); } });
+def('Air Slash', { shot: SHOT.wind('#d7e6ff', 9), impact: both(IMP.claws('#ffffff', 2, 30, 2), IMP.burst('flying', 10, [80, 200])) });
+def('Drill Peck', { dash: S => { const sd = side(S), a = clock.t / 20; for (let k = 0; k < 3; k++) P(sd.x + sd.face * 16 + Math.cos(a + k * 2.09) * 6, sd.y - 34 + Math.sin(a + k * 2.09) * 6, { life: 140, color: '#ffffff', size: 1 }); }, impact: S => { const h = headOf(S); ent(400, q => { for (let k = 0; k < 18; k++) { const a = q * 40 + k * .7, r = k * 1.2; PX(bx(h.x + Math.cos(a) * r), by(h.y + 8 + Math.sin(a) * r * .5), k % 3 ? '#d7e6ff' : '#ffd23f', 1 - q); } }); IMP.pow('#ffffff', 18)(S); } });
+def('Brave Bird', { charge: S => { CH.rise('blueFire', 20)(S); dim(.3, 1000, '6,10,30'); }, dash: both(DASH.engulf('blueFire', 5), S => { const sd = side(S); ent(60, () => { const i = bx(sd.x), j = by(sd.y - 36), f = sd.face; for (const s of [-1, 1]) for (let k = 0; k < 16; k++) PX(i - f * k * .6, j + s * k * .9 - k * .2, rampAt(RAMP.blueFire, k / 18)); }); }),
+  impact: S => { IMP.explode('blueFire', 26)(S); IMP.burst('flying', 16, [100, 280], 'feather', 1)(S); screenFlash('#d8f4ff', .45); VFX.shake(12, 400); } });
+def('Hurricane', { charge: S => { dim(.35, 1200, '10,16,30'); CH.gather('flying', 20, 60)(S); }, shot: p => { const i = bx(p.x), j = by(p.y); for (let k = 0; k < 20; k++) { const a = clock.t / 40 + k * .5, r = 2 + k * .6; PX(i + Math.cos(a) * r, j - k * .8 + Math.sin(a) * r * .4, k % 4 ? '#d7e6ff' : '#ffffff'); } bctx.globalAlpha = 1; P(p.x, p.y, { vy: -40, life: 400, ramp: 'flying', size: 1 }); },
+  impact: S => { const h = headOf(S); ent(900, q => { for (let k = 0; k < 30; k++) { const a = q * 20 + k * .5, r = 4 + k * .9; PX(bx(h.x + Math.cos(a) * r), by(h.y + 20 - k * 1.6 + Math.sin(a) * r * .3), k % 3 ? '#d7e6ff' : '#ffffff', 1 - q); } }); IMP.burst('flying', 16, [80, 220], 'feather', 1)(S); } });
+
+/* =====================================================================
+   PSYCHIC
+   ===================================================================== */
+def('Confusion', { charge: CH.gather('psychic', 10, 30), mark: mk => { ent(500, q => { for (let k = 0; k < 4; k++) { const qq = (q * 1.5 + k / 4) % 1; aRing(bx(mk.x), by(mk.y - 34), 4 + qq * 24, (4 + qq * 24) * .6, '#ff8ad8', 1 - qq); } }); }, impact: IMP.sparkle('psychic', 10) });
+def('Psybeam', { charge: CH.gather('psychic', 14, 40), beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    for (let k = 4; k < len; k += 9) { const r = 3 + Math.sin(k / 10 - clock.t / 60) * 1.5; for (let s = 0; s < 14; s++) { const a = s / 14 * 6.28; PX(i0 + ca * k - sa * Math.cos(a) * r * 1.6, j0 + sa * k + ca * Math.cos(a) * r * 1.6 + Math.sin(a) * r * .4, (k / 9 | 0) % 2 ? '#ff8ad8' : '#c89aff', fade); } } bctx.globalAlpha = 1; },
+  impact: both(IMP.sparkle('psychic', 14), IMP.ring('#ff8ad8', 70, 1)) });
+def('Psychic', { charge: S => { dim(.45, 1200, '30,8,30'); const h = headOf(S); ent(400, q => { for (let k = 0; k < 3; k++) aRing(bx(h.x), by(h.y - 6), 4 + q * 10 + k * 4, 2 + q * 4 + k * 2, '#ff8ad8', 1 - q); }); },
+  mark: mk => { punch(mk.x, mk.y - 30, 900, 1); ent(800, q => { const i = bx(mk.x), j = by(mk.y - 34); for (let k = 0; k < 5; k++) { const qq = (q * 2 + k / 5) % 1; aRing(i, j, 6 + qq * 34, (6 + qq * 34) * .55, k % 2 ? '#ff8ad8' : '#c89aff', (1 - qq) * (1 - q * .5), 1); } glow(i, j, 22, '#ff6fc8', .5 * (1 - q)); }); },
+  impact: S => { const sd = side(S); sd.hop = 1; IMP.sparkle('psychic', 22)(S); IMP.burst('psychic', 18, [100, 260])(S); } });
+def('Zen Headbutt', { charge: S => { const h = headOf(S); ent(320, q => { glow(bx(h.x), by(h.y), 14, '#ff6fc8', .6); aRing(bx(h.x), by(h.y - 2), 10, 6, '#ffa8de', 1 - q); }); }, dash: DASH.engulf('psychic', 3), impact: both(IMP.pow('#ffa8de', 22), IMP.explode('psychic', 18)) });
+def('Calm Mind', { exec: S => { dim(.3, 1000, '20,10,30'); const h = headOf(S); ent(1000, q => { for (let k = 0; k < 4; k++) { const qq = (q * 1.4 + k / 4) % 1; aRing(bx(h.x), by(h.y + 14), 6 + qq * 30, (6 + qq * 30) * .4, k % 2 ? '#9ad0ff' : '#ff8ad8', 1 - qq); } const i = bx(h.x), j = by(h.y - 8); aEllFill(i, j, 3, 2, '#ffffff', .9 * (1 - q)); PX(i, j, '#ff6fc8', 1 - q); }); } });
+def('Agility', { exec: S => { const sd = side(S); ent(700, q => { for (let k = 0; k < 3; k++) { const o = (k + 1) * 10 * (1 - q); aRect(bx(sd.x - sd.face * o) - 6, by(sd.y - 50), 12, 40, k % 2 ? '#9ad0ff' : '#ff8ad8', .18 * (1 - q)); } }); for (let k = 0; k < 6; k++) setTimeoutGame(k * 80, () => speedLines(sd.x, sd.y - 30, sd.face > 0 ? 0 : Math.PI, 3, 30, '#ffa8de')); } });
+def('Amnesia', { exec: S => { const h = headOf(S); for (let k = 0; k < 4; k++) setTimeoutGame(k * 140, () => P(h.x + (k - 1.5) * 10, h.y - 14, { vy: -40, life: 900, color: '#9ad0ff', shape: 'q', size: 1 })); ent(800, q => aRing(bx(h.x), by(h.y - 4), 12, 5, '#9ad0ff', 1 - q)); } });
+def('Hypnosis', { charge: S => ent(300, q => { const h = headOf(S); aRing(bx(h.x), by(h.y), 4 + q * 10, 2 + q * 5, '#ff8ad8', 1 - q); }), shot: SHOT.psyRings(), impact: S => { const h = headOf(S); ent(900, q => { for (let k = 0; k < 3; k++) { const a = clock.t / 150 + k * 2.1; aRing(bx(h.x + Math.cos(a) * 4), by(h.y + 4), 6 + k * 4, 3 + k * 2, '#ff8ad8', 1 - q); } }); for (let k = 0; k < 3; k++) setTimeoutGame(200 + k * 180, () => P(h.x + 16, h.y - 6, { vy: -30, vx: 20, life: 900, color: '#e6ecff', shape: 'z', size: 1 })); } });
+def('Rest', { exec: S => { const h = headOf(S); ent(1200, q => glow(bx(h.x), by(h.y + 14), 22, '#5a8ac8', .5 * (1 - q))); for (let k = 0; k < 4; k++) setTimeoutGame(k * 220, () => P(h.x + 14, h.y - 8, { vy: -30, vx: 18, life: 1100, color: '#e6ecff', shape: 'z', size: 1 })); IMP.sparkle('heal', 14)(S); } });
+
+/* =====================================================================
+   BUG
+   ===================================================================== */
+def('Bug Bite', { dash: DASH.trail('bug', 'sq', 1), impact: both(IMP.jaws('#d8f58a', 18), IMP.burst('bug', 8, [60, 160])) });
+def('X-Scissor', { charge: S => ent(280, q => { const h = headOf(S), i = bx(h.x + side(S).face * 12), j = by(h.y + 6); aLine(i - 6, j - 6, i + 6, j + 6, '#d8f58a', 1, 2); aLine(i + 6, j - 6, i - 6, j + 6, '#d8f58a', 1, 2); }), impact: both(IMP.xslash('#c8f04a', 40), IMP.burst('bug', 14, [100, 240])) });
+def('Leech Life', { shot: SHOT.drainOrb('bug'), impact: S => { const h = headOf(S), a = side(other(S)); IMP.jaws('#ff8a8a', 16)(S); for (let k = 0; k < 10; k++) setTimeoutGame(120 + k * 40, () => P(h.x, h.y + 10, { vx: (a.x - h.x) * 1.6, vy: (a.y - 44 - h.y) * 1.6 - 40, g: 40, life: 600, color: '#ff5a5a', shape: 'disc', size: 1, add: true })); } });
+def('Pin Missile', { shot: SHOT.multi('#b6d636'), impact: S => { const h = headOf(S); ent(160, q => powStar(bx(h.x + (Math.random() - .5) * 16), by(h.y + 6 + (Math.random() - .5) * 12), 9, '#e0f58a', q)); } });
+def('Signal Beam', { charge: CH.gather('bug', 14, 40), beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow; const alt = Math.floor(clock.t / 70) % 2; beamPx(ax(b.x) - OX, ay(b.y) - OY, b.ang, len, 5, alt ? 'bug' : ['#ffffff', '#ffe0f0', '#ff9ad8', '#e85aa8', '#a83a78', '#5a1a40'], fade, 1); },
+  impact: S => { IMP.sparkle(['#ffffff', '#f8ffd8', '#ff9ad8', '#b6d636'], 18)(S); } });
+def('Bug Buzz', { exec: S => dim(.25, 700), wave: w => { const r = w.r / 2, i = bx(w.x), j = by(w.y); for (let k = 0; k < 3; k++) { const rr = r - k * 6; if (rr < 2) continue; const n = Math.round(rr * 3); for (let s = 0; s < n; s++) { const a = s / n * 6.28, o = (s % 2 ? 1.5 : -1.5); PX(i + Math.cos(a) * (rr + o), j + Math.sin(a) * (rr + o) * .62, k ? '#b6d636' : '#f8ffd8', .9 - k * .25); } } bctx.globalAlpha = 1; }, impact: IMP.burst('bug', 14, [80, 200], 'plus', 1) });
+def('String Shot', { shot: SHOT.string(), impact: S => { const h = headOf(S); ent(1200, q => { for (let k = 0; k < 6; k++) { const a = k / 6 * 3.14; aLine(bx(h.x - Math.cos(a) * 18), by(h.y + 10 - Math.sin(a) * 14), bx(h.x + Math.cos(a) * 18), by(h.y + 10 + Math.sin(a) * 14), '#f4f4f4', .8 * (1 - q), 1); } }); } });
+
+/* =====================================================================
+   GHOST
+   ===================================================================== */
+def('Lick', { dash: DASH.trail('ghost', 'sq', 1), impact: S => { const h = headOf(S); ent(420, q => { for (let k = 0; k < 18 * Math.min(1, q * 3); k++) aRect(bx(h.x - 10 + k), by(h.y + 18 - Math.sin(k / 5) * 8), 4, 3, k % 5 ? '#ff7a9a' : '#ffb0c0', 1 - Math.max(0, q - .6) * 2.5); }); ent(700, q => { const sd = side(S); if (Math.random() < .5) P(sd.x + (Math.random() - .5) * 30, sd.y - 40, { vy: -20, life: 400, color: '#c8a6ff', shape: 'zap', size: 1 }); }); } });
+def('Shadow Claw', { charge: S => ent(300, q => { const h = headOf(S); glow(bx(h.x + side(S).face * 12), by(h.y + 8), 10, '#6a4ad8', .6); }), impact: S => { IMP.claws('#8c6bff', 3, 40, 3)(S); const h = headOf(S); ent(500, q => glow(bx(h.x), by(h.y + 10), 18, '#2d2068', .6 * (1 - q))); IMP.burst('ghost', 16, [80, 220])(S); } });
+def('Shadow Ball', { charge: CH.orb(['#efe6ff', '#8c6bff', '#5a3ac8', '#2d2068', '#140e30', '#06040e'], 6, 320), shot: SHOT.shadow(6), impact: S => { IMP.explode('ghost', 24)(S); const h = headOf(S); emit(h.x, h.y + 10, 16, { speed: [40, 120], life: [600, 1000], ramp: 'ghost', size: [2, 4], size2: 1, vy: -40 }); } });
+def('Night Shade', { charge: S => dim(.55, 1200, '4,2,10'), mark: mk => { ent(800, q => { const i = bx(mk.x), j = by(mk.y); for (let y = 0; y < 90; y++) { const w = 22 - y / 6 + Math.sin(y / 4 + clock.t / 50) * 3; aRect(i - w / 2, j - y, w, 1, y % 3 ? '#140e30' : '#2d2068', (1 - q) * .85); } for (const s of [-1, 1]) aRect(i + s * 5 - 1, j - 60, 3, 2, '#ff3a5a', 1 - q); }); VFX.shake(6, 400); }, impact: IMP.burst('ghost', 14, [60, 180]) });
+def('Confuse Ray', { shot: SHOT.confuse(), impact: S => { const h = headOf(S); ent(1000, q => { for (let k = 0; k < 4; k++) { const a = clock.t / 120 + k * 1.57; PX(bx(h.x + Math.cos(a) * 16), by(h.y - 12 + Math.sin(a) * 4), k % 2 ? '#ffe86b' : '#c8a6ff', 1 - q); } }); } });
+
+/* =====================================================================
+   DRAGON
+   ===================================================================== */
+def('Dragon Breath', { charge: CH.orb('dragon', 5, 300), beam: BEAM(['#ffffff', '#e8fff0', '#a8ffd0', '#7d6bff', '#4a3ad0', '#24187a'], 1.2, 3, (b, wl) => { for (let k = 0; k < 3; k++) { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: (Math.random() - .5) * 120, vy: -60, life: 400, ramp: k % 2 ? 'dragon' : ['#ffffff', '#c8ffe0', '#5ee08a', '#2a8a5a'], size: 2, size2: 1, add: true }); } }),
+  impact: both(IMP.explode('dragon', 16), IMP.zap(3, '#a8ffd0')) });
+def('Dragon Claw', { charge: S => ent(300, q => glow(bx(headOf(S).x + side(S).face * 12), by(headOf(S).y + 8), 12, '#7d6bff', .7)), dash: DASH.engulf('dragon', 2), impact: both(IMP.claws('#a99bff', 3, 44, 3), IMP.burst('dragon', 18, [100, 260])) });
+def('Dragon Pulse', { charge: S => { CH.gather('dragon', 20, 54)(S); dim(.35, 1100, '10,6,30'); }, beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    beamPx(i0, j0, b.ang, len, 4, 'dragon', fade, 0); for (let k = 0; k < len; k++) for (const s of [0, Math.PI]) { const o = Math.sin(k / 7 - clock.t / 35 + s) * 9; PX(i0 + ca * k - sa * o, j0 + sa * k + ca * o, s ? '#a99bff' : '#e5e0ff', fade); } bctx.globalAlpha = 1; },
+  impact: both(IMP.explode('dragon', 24), IMP.ring('#a99bff', 110, 2)) });
+def('Outrage', { charge: S => { dim(.45, 1400, '40,4,8'); CH.rise(['#ffffff', '#ffd0d0', '#ff5a5a', '#c81a2a', '#6a0a14'], 26)(S); }, dash: DASH.engulf(['#ffffff', '#ffd0d0', '#ff5a5a', '#c81a2a', '#6a0a14'], 6),
+  impact: S => { const h = headOf(S); for (let k = 0; k < 5; k++) setTimeoutGame(k * 80, () => { ent(220, q => powStar(bx(h.x + (Math.random() - .5) * 34), by(h.y + 8 + (Math.random() - .5) * 26), 18, k % 2 ? '#ff5a5a' : '#a99bff', q)); VFX.shake(9, 140); }); screenFlash('#ff8080', .4); IMP.burst('dragon', 24, [120, 320])(S); } });
+def('Dragon Dance', { exec: S => { const sd = side(S); ent(1000, q => { for (let k = 0; k < 2; k++) for (let s = 0; s < 24; s++) { const t = s / 24, a = t * 12 + q * 10 + k * Math.PI, r = 18 * (1 - t * .3); PX(bx(sd.x + Math.cos(a) * r), by(sd.y - t * 70 + Math.sin(a) * r * .35), k ? '#ff7a4a' : '#7d6bff', 1 - q); } }); CH.rise('dragon', 18)(S); } });
+
+/* =====================================================================
+   STEEL
+   ===================================================================== */
+def('Metal Claw', { charge: S => ent(260, q => { const h = headOf(S); PX(bx(h.x + side(S).face * 14), by(h.y + 4), '#ffffff'); glow(bx(h.x + side(S).face * 14), by(h.y + 4), 6, '#ffffff', .6 * (1 - q)); }), impact: both(IMP.claws('#e2ecf6', 3, 32, 2), IMP.sparkle('steel', 10)) });
+def('Flash Cannon', { charge: S => { CH.orb('steel', 6, 320)(S); dim(.3, 1000); }, beam: BEAM('steel', 1.3, 0, (b, wl) => { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { life: 300, color: '#ffffff', shape: 'star', size: 2, add: true }); }),
+  exec: S => screenFlash('#ffffff', .4), impact: both(IMP.explode('steel', 20), IMP.sparkle('steel', 16)) });
+def('Iron Tail', { charge: S => ent(300, q => { const sd = side(S); glow(bx(sd.x - sd.face * 14), by(sd.y - 20), 10, '#ffffff', .6); }), impact: S => { const h = headOf(S); ent(380, q => { for (let k = 0; k < 40 * Math.min(1, q * 3); k++) { const a = Math.PI * (1.1 + k / 40 * .9), r = 26; aRect(bx(h.x + Math.cos(a) * r), by(h.y + 30 + Math.sin(a) * r), 3, 3, k > 34 ? '#ffffff' : '#cad8e6', 1 - Math.max(0, q - .6) * 2.5); } }); setTimeoutGame(140, () => { IMP.pow('#ffffff', 22)(S); IMP.sparkle('steel', 14)(S); VFX.shake(10, 300); }); } });
+def('Iron Defense', { exec: S => { const sd = side(S); ent(900, q => { const i = bx(sd.x), j = by(sd.y - 30); for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28 + q * 2; aLine(i + Math.cos(a) * 22, j + Math.sin(a) * 26, i + Math.cos(a + 1.05) * 22, j + Math.sin(a + 1.05) * 26, '#e2ecf6', 1 - q, 2); } aRect(i - 20 + q * 40, j - 30, 3, 60, '#ffffff', .7 * (1 - q)); }); IMP.sparkle('steel', 14)(S); } });
+
+/* =====================================================================
+   ROCK
+   ===================================================================== */
+def('Rock Throw', { charge: S => ent(260, q => rockPx(bx(headOf(S).x), by(headOf(S).y - 10 - q * 6), 4, 3)), shot: SHOT.rock(5), impact: both(IMP.rocks(10), IMP.dust(8), IMP.pow('#e3cb92', 16)) });
+def('Rock Slide', { mark: mk => { for (let k = 0; k < 5; k++) setTimeoutGame(k * 50, () => { const x = mk.x + (Math.random() - .5) * 70, y = mk.y + (Math.random() - .5) * 26; ent(260, q => rockPx(bx(x), by(lerp(y - 260, y - 8, q * q)), 6, k + 11)); setTimeoutGame(260, () => { emit(x, y - 4, 10, { ang: -Math.PI / 2, spread: 2.4, speed: [60, 180], g: 500, life: 500, ramp: 'rock', size: [1, 3] }); addScar('crack', x, y); VFX.shake(6, 150); }); }); }, impact: IMP.dust(12) });
+def('Stone Edge', { charge: S => dim(.3, 1100, '20,14,6'), mark: mk => { VFX.shake(12, 400); punch(mk.x, mk.y - 20, 800, 1); for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, d = 6 + (k % 3) * 10, x = mk.x + Math.cos(a) * d * 1.6, y = mk.y + Math.sin(a) * d * .6, h = 26 + (k % 3) * 10; setTimeoutGame(k * 25, () => ent(900, q => spikePx(bx(x), by(y), h * Math.min(1, q * 6), 4, RAMP.rock, 1 - Math.max(0, q - .75) * 4))); } emit(mk.x, mk.y - 10, 24, { ang: -Math.PI / 2, spread: 2.4, speed: [100, 280], g: 500, life: 700, ramp: 'rock', size: [1, 3] }); crackBurst(mk.x, mk.y, 6); }, impact: IMP.rocks(10) });
+def('Rock Polish', { exec: S => { const h = headOf(S); for (let k = 0; k < 8; k++) setTimeoutGame(k * 70, () => P(h.x + (Math.random() - .5) * 36, h.y + (Math.random() - .5) * 40, { life: 400, color: '#fff2cf', shape: 'star', size: 2, add: true })); ent(700, q => aRect(bx(h.x - 18 + q * 36), by(h.y - 20), 2, 50, '#ffffff', .6 * (1 - q))); } });
+
+/* =====================================================================
+   FAIRY
+   ===================================================================== */
+def('Fairy Wind', { shot: SHOT.breeze(), impact: IMP.sparkle('fairy', 18) });
+def('Dazzling Gleam', { charge: S => { dim(.4, 900); CH.gather('fairy', 20, 50, 'star')(S); }, exec: S => { const h = headOf(S); screenFlash('#fff0fa', .7); ent(500, q => { for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28; aLine(bx(h.x), by(h.y + 6), bx(h.x + Math.cos(a) * 160 * q), by(h.y + 6 + Math.sin(a) * 100 * q), k % 2 ? '#ffd0ef' : '#ffffff', 1 - q, 2); } }); },
+  shot: p => { glow(bx(p.x), by(p.y), 8, '#ffd0ef', .7); aDisc(bx(p.x), by(p.y), 3, '#ffffff'); P(p.x, p.y, { life: 300, ramp: 'fairy', shape: 'star', size: 2, add: true }); }, impact: both(IMP.sparkle('fairy', 30), IMP.ring('#ffd0ef', 120, 2)) });
+def('Moonblast', { charge: S => { dim(.6, 1500, '6,4,20'); const sd = side(S); ent(700, q => { const i = bx(sd.x), j = by(sd.y - 130); glow(i, j, 22, '#ffd0ef', .5 * Math.min(1, q * 3)); moonPx(i, j, 11, Math.min(1, q * 3)); }); },
+  exec: S => { const sd = side(S); for (let k = 0; k < 20; k++) P(sd.x, sd.y - 130, { vy: 120, vx: (Math.random() - .5) * 60, life: 400, ramp: 'fairy', shape: 'star', size: 1, add: true }); }, shot: SHOT.moon(),
+  impact: S => { IMP.explode('fairy', 26)(S); IMP.sparkle('fairy', 30)(S); screenFlash('#fff0fa', .5); punch(side(S).x, side(S).y - 30, 900, 1); } });
+def('Play Rough', { dash: DASH.trail('fairy', 'heart', 1, 1), impact: S => { const h = headOf(S); ent(700, q => { for (let k = 0; k < 6; k++) { const a = clock.t / 60 + k, r = 12 + Math.sin(clock.t / 40 + k) * 4; aDisc(bx(h.x + Math.cos(a) * r), by(h.y + 10 + Math.sin(a) * r * .6), 6, '#f0e8f0', (1 - q) * .9); } }); for (let k = 0; k < 6; k++) setTimeoutGame(k * 90, () => { P(h.x + (Math.random() - .5) * 30, h.y + (Math.random() - .5) * 24, { vy: -60, life: 500, color: k % 2 ? '#ff7ac8' : '#ffe86b', shape: k % 2 ? 'heart' : 'star', size: 2 }); ent(160, q => powStar(bx(h.x + (Math.random() - .5) * 30), by(h.y + 8 + (Math.random() - .5) * 20), 10, '#ffffff', q)); }); } });
+def('Charm', { exec: S => { const h = headOf(S); for (let k = 0; k < 4; k++) setTimeoutGame(k * 90, () => P(h.x + (k - 1.5) * 10, h.y - 8, { vy: -40, life: 700, color: '#ff7ac8', shape: 'heart', size: 1 })); }, shot: SHOT.heart(), impact: S => { const h = headOf(S); emit(h.x, h.y, 10, { speed: [30, 90], life: 700, color: '#ff7ac8', shape: 'heart', size: 1, vy: -30 }); } });
+
+/* =====================================================================
+   DARK
+   ===================================================================== */
+def('Bite', { dash: DASH.trail('dark', 'sq', 1), impact: both(IMP.jaws('#ffffff', 22), IMP.burst('dark', 8, [60, 160])) });
+def('Crunch', { charge: S => dim(.3, 900, '10,6,14'), dash: DASH.engulf('dark', 2), impact: S => { IMP.jaws('#ffffff', 30)(S); setTimeoutGame(180, () => { IMP.burst('dark', 18, [100, 260])(S); crackBurst(footOf(S).x, footOf(S).y, 3); VFX.shake(10, 260); }); } });
+
+/* =====================================================================
+   Section 8d: signature move animations
+   Each move below is choreographed from scratch for that move only:
+   its own shapes, colours, timing, camera and screen effects. They use
+   the basic drawing tools (particles, glows, lines, discs) but never
+   a shared ready-made animation.
+   ===================================================================== */
+const sig = (name, r) => { MFX[name] = r; };
+const hitstop = ms => { if (!REDUCED) HITSTOP.until = Math.max(HITSTOP.until, performance.now() + ms); };
+const glowActor = (S, col, ms, a = .55) => { ACTOR_GLOW[S] = { col, a, until: clock.t + ms }; };
+const bigHop = (S, k, ms = 600) => { const sd = side(S); sd.hopK = k; sd.hop = 1; setTimeoutGame(ms, () => { sd.hopK = 1; }); };
+const angTo = S => { const a = side(S), b = side(other(S)); return Math.atan2(b.y - a.y, b.x - a.x); };
+const easeOut = q => 1 - (1 - q) * (1 - q);
+
+// Afterimage: a coloured silhouette of the Pokémon's current frame, left on the ground layer to fade.
+function ghostOf(S, col, life = 260, a0 = .5, dx = 0, dy = 0) {
+  const sd = side(S), m = act(S); if (!m || sd.state !== 'idle' && sd.state !== 'mega') return;
+  const sp = spriteOf(m.name, m.mega); let src, w, h, cx, foot, flip, k;
+  if (sp.custom) { const back = sd.view === 'back' && sp.back, an = ensureAnim(back ? sp.back : sp.front); src = an.frames[animFrameIndex(an, clock.t)]; w = an.w; h = an.h; cx = an.cx; foot = an.foot; flip = back ? sd.face < 0 : sd.face > 0; k = .5; }
+  else { src = sp.frames[0]; w = sp.w; h = sp.h; cx = w / 2; foot = sp.foot; flip = sd.face < 0; k = 1; }
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, w, h);
+  const X = sd.x + dx, Y = sd.y + dy;
+  ent(life, q => { const b = bctx; b.save(); b.globalAlpha = a0 * (1 - q); b.globalCompositeOperation = 'lighter'; b.translate(bx(X), by(Y)); b.scale(flip ? -k : k, k); b.drawImage(c, -cx, -(h - foot)); b.restore(); }, { under: true });
+}
+// Pixel flame tongue: hot white-yellow core, orange body, red tips, flickering.
+function flamePx(i, j, h, w, t, ramp = RAMP.fire, a = 1) {
+  for (let y = 0; y < h; y++) {
+    const f = y / h, ww = Math.max(0, w * Math.pow(Math.sin(Math.PI * Math.min(1, (1 - f) * .85 + .15)), .7)), off = Math.sin(y * .45 + t / 55) * 1.6 * f;
+    const cw = Math.round(ww), core = Math.round(ww * .45);
+    if (cw > 0) aRect(i - cw + off, j - y, cw * 2 + 1, 1, ramp[Math.min(ramp.length - 1, 2 + Math.floor(f * 3.2))], a);
+    if (core > 0 && f < .7) aRect(i - core + off, j - y, core * 2 + 1, 1, ramp[f < .3 ? 0 : 1], a);
+  }
+}
+// Thick ring with a bright leading edge and a soft trailing edge.
+function shockPx(i, j, r, flat, col, edge = '#ffffff', a = 1, th = 2) { aRing(i, j, r + 1, (r + 1) * flat, col, a * .5, th + 1); aRing(i, j, r, r * flat, edge, a, th); }
+
+/* -------------------------------- ELECTRIC -------------------------------- */
+sig('Thunderbolt', {
+  charge: S => { glowActor(S, '#ffe04a', 700, .45); const sd = side(S);
+    ent(650, (q, age) => { const h = headOf(S), i = bx(h.x), j = by(h.y + 6); glow(i, j, 6 + q * 10, '#fff07a', .5);
+      for (let k = 0; k < 3; k++) { const a = Math.random() * 6.28, r = 14 + Math.random() * 8; zig(i + Math.cos(a) * 4, j + Math.sin(a) * 4, i + Math.cos(a) * r, j + Math.sin(a) * r * .8, '#ffe04a', 1, 3, '#ffffff'); }
+      if (Math.random() < .5) P(sd.x + rnd2(-26, 26), sd.y - rnd2(10, 70), { vy: -40, life: 260, ramp: 'elec', shape: 'zap' }); }); },
+  exec: S => { dim(.45, 900, '4,4,12'); const h = headOf(S); ent(260, q => zig(bx(h.x), by(h.y), bx(h.x + (Math.random() - .5) * 20), by(h.y - 260), '#fff07a', 2, 5, '#ffffff')); },
+  mark: mk => { hitstop(70); screenFlash('#fffbd0', .7); VFX.shake(12, 340); punch(mk.x, mk.y - 30, 700, 1);
+    ent(460, q => { const i = bx(mk.x), j = by(mk.y - 34), top = by(mk.y - 320), fade = 1 - q;
+      zig(i + 6, top, i, j, '#ffd52a', 4, 9, '#ffffff'); if (q < .6) { zig(i, (top + j) / 2, i - 30, j + 12, '#fff07a', 2, 6, '#ffffff'); zig(i, (top + j) / 2 + 20, i + 34, j + 10, '#fff07a', 2, 6); }
+      glow(i, j, 30 * fade, '#fff07a', .8 * fade);
+      for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28 + q * 2; zig(i, j + 16, i + Math.cos(a) * (18 + q * 30), j + 16 + Math.sin(a) * (10 + q * 16), '#ffe04a', 1, 3); } });
+    emit(mk.x, mk.y - 30, 34, { speed: [120, 340], life: [220, 520], ramp: 'elec', shape: 'zap', g: 300 });
+    addScar('scorch', mk.x, mk.y); addScar('scorch', mk.x + 14, mk.y + 4); crackBurst(mk.x, mk.y, 3, 30); },
+  impact: S => { glowActor(S, '#fff07a', 600, .7); const h = headOf(S);
+    ent(800, () => { if (Math.random() < .6) { const a = Math.random() * 6.28; zig(bx(h.x), by(h.y + 8), bx(h.x + Math.cos(a) * 24), by(h.y + 8 + Math.sin(a) * 22), '#fff07a', 1, 2, '#ffffff'); } }); }
+});
+sig('Volt Tackle', {
+  charge: S => { glowActor(S, '#ffe04a', 1100, .75); const sd = side(S);
+    ent(420, q => { const i = bx(sd.x), j = by(sd.y - 26), r = 26 - q * 4; aRing(i, j, r, r * .9, '#ffe04a', .7, 1);
+      for (let k = 0; k < 5; k++) { const a = Math.random() * 6.28, b = a + rnd2(.4, 1); zig(i + Math.cos(a) * r, j + Math.sin(a) * r * .9, i + Math.cos(b) * r, j + Math.sin(b) * r * .9, '#fff6b0', 1, 3, '#ffffff'); } }); },
+  dash: S => { const sd = side(S), a = Math.atan2(sd.vy + .001, sd.vx + .001); if (Math.random() < .55) ghostOf(S, '#ffe04a', 200, .55);
+    const x0 = sd.x, y0 = sd.y - 26; ent(130, () => zig(bx(x0 - Math.cos(a) * 30), by(y0), bx(x0), by(y0), '#ffe04a', 2, 4, '#ffffff'));
+    P(sd.x + rnd2(-10, 10), sd.y - rnd2(8, 50), { vx: rnd2(-60, 60), vy: rnd2(-60, 20), life: 240, ramp: 'elec', shape: 'zap' }); },
+  impact: (S, mv, crit) => { hitstop(crit ? 130 : 90); screenFlash('#fff6b0', .6); VFX.shake(13, 380); const h = headOf(S);
+    ent(520, q => { const i = bx(h.x), j = by(h.y + 8), r = easeOut(q) * 52;
+      for (let k = 0; k < 10; k++) { const a = k / 10 * 6.28 + .3; zig(i, j, i + Math.cos(a) * r, j + Math.sin(a) * r * .8, '#ffd52a', 2, 4, '#ffffff'); }
+      shockPx(i, j, r * .9, .7, '#ffd52a', '#ffffff', 1 - q, 2); glow(i, j, 20 * (1 - q), '#fff07a', .9); });
+    emit(h.x, h.y + 8, 40, { speed: [160, 420], life: [250, 600], ramp: 'elec', shape: 'zap', g: 200 });
+    const u = headOf(other(S)); emit(u.x, u.y + 10, 12, { speed: [60, 160], life: 300, ramp: 'elec', shape: 'zap' }); }
+});
+sig('Thunder Shock', {
+  charge: S => { const h = headOf(S); ent(250, () => { if (Math.random() < .7) P(h.x + rnd2(-14, 14), h.y + rnd2(-6, 14), { life: 140, ramp: 'elec', shape: 'zap' }); }); },
+  mark: mk => { screenFlash('#fffbd0', .25); ent(220, q => { const i = bx(mk.x), j = by(mk.y - 34); zig(i - 4, by(mk.y - 160), i, j, '#ffe04a', 2, 5, '#ffffff'); glow(i, j, 10 * (1 - q), '#fff07a', .6); });
+    emit(mk.x, mk.y - 30, 12, { speed: [80, 200], life: 260, ramp: 'elec', shape: 'zap' }); }
+});
+
+/* -------------------------------- NORMAL -------------------------------- */
+sig('Quick Attack', {
+  charge: S => { const sd = side(S); ent(120, q => { const i = bx(sd.x), j = by(sd.y); aRect(i - 8 + q * 4, j, 16 - q * 8, 1, '#ffffff', 1 - q); PX(i, j - 1, '#ffffff'); }); },
+  dash: S => { const sd = side(S); ghostOf(S, '#ffffff', 150, .45); const a = Math.atan2(sd.vy + .001, sd.vx + .001);
+    for (let k = 0; k < 2; k++) { const o = rnd2(-24, 24); P(sd.x - Math.sin(a) * o, sd.y - 26 + Math.cos(a) * o, { vx: -Math.cos(a) * 520, vy: -Math.sin(a) * 520, life: 120, color: '#ffffff', size: 1 }); } },
+  impact: S => { const h = headOf(S), a = angTo(other(S));
+    ent(240, q => { const i = bx(h.x), j = by(h.y + 6), s = 12 * (1 - q * .5); aRect(i - s, j, s * 2 + 1, 1, '#ffffff', 1 - q); aRect(i, j - s, 1, s * 2 + 1, '#ffffff', 1 - q); aRing(i, j, 4 + q * 14, (4 + q * 14) * .7, '#ffffff', 1 - q);
+      for (let k = -1; k <= 1; k++) aLine(i - Math.cos(a) * 26, j - Math.sin(a) * 26 + k * 4, i + Math.cos(a) * 26 * q, j + Math.sin(a) * 26 * q + k * 4, '#ffffff', .8 * (1 - q)); }); }
+});
+sig('Extreme Speed', {
+  charge: S => { glowActor(S, '#ffffff', 300, .8); const sd = side(S); ent(110, q => aRing(bx(sd.x), by(sd.y), 20 * (1 - q), 6 * (1 - q), '#ffe9a0', 1, 1)); sd._es = { x: sd.x, y: sd.y }; },
+  exec: S => { screenFlash('#ffffff', .25); dim(.35, 700, '10,8,0'); },
+  dash: S => { const sd = side(S); ghostOf(S, '#ffe9a0', 230, .6); const st = sd._es || { x: sd.x, y: sd.y }, X = sd.x, Y = sd.y;
+    ent(200, q => { aLine(bx(st.x), by(st.y - 26), bx(X), by(Y - 26), '#ffe9a0', .8 * (1 - q), 3); aLine(bx(st.x), by(st.y - 26), bx(X), by(Y - 26), '#ffffff', 1 - q, 1); }); },
+  impact: S => { hitstop(70); const h = headOf(S);
+    for (let k = 0; k < 5; k++) setTimeoutGame(k * 70, () => { const a = k * 1.25 + .4; screenFlash('#ffffff', .12); ent(200, q => { const i = bx(h.x), j = by(h.y + 6); aLine(i - Math.cos(a) * 34, j - Math.sin(a) * 34, i + Math.cos(a) * 34, j + Math.sin(a) * 34, '#ffe9a0', 1 - q, 2); aLine(i - Math.cos(a) * 34, j - Math.sin(a) * 34, i + Math.cos(a) * 34, j + Math.sin(a) * 34, '#ffffff', 1 - q, 1); });
+      emit(h.x, h.y + 6, 6, { speed: [120, 260], life: 220, color: '#ffe9a0' }); VFX.shake(5, 90); }); }
+});
+sig('Body Slam', {
+  charge: S => { bigHop(S, 4.5, 650); const sd = side(S); ent(300, q => aEllFill(bx(sd.x), by(sd.y), 10 + q * 10, 3 + q * 2, '#0b0f1a', .35)); },
+  dash: S => { const sd = side(S); if (Math.random() < .5) P(sd.x, sd.y, { vx: rnd2(-40, 40), vy: -20, life: 360, ramp: 'dust', shape: 'disc', size: 2, size2: 4 }); },
+  impact: (S, mv, crit) => { hitstop(crit ? 120 : 85); VFX.shake(15, 420); const sd = side(S);
+    ent(560, q => { const i = bx(sd.x), j = by(sd.y), r = easeOut(q) * 60; aRing(i, j, r, r * .35, '#c9b08a', 1 - q, 2); aRing(i, j, r * .7, r * .25, '#f4ece0', 1 - q, 1); powStar(i, by(sd.y - 36), 26, '#ffffff', Math.min(1, q * 1.4)); }, { under: false });
+    for (let k = 0; k < 14; k++) { const a = k / 14 * 6.28; P(sd.x + Math.cos(a) * 18, sd.y + Math.sin(a) * 6, { vx: Math.cos(a) * rnd2(80, 160), vy: Math.sin(a) * 40 - 20, drag: 2, life: 700, ramp: 'dust', shape: 'disc', size: 2, size2: 5 }); }
+    crackBurst(sd.x, sd.y, 6, 44); }
+});
+sig('Hyper Beam', {
+  charge: S => { dim(.6, 1700, '12,6,0'); glowActor(S, '#ffb347', 900, .6); const sd = side(S), total = WINDUP(MOVES['Hyper Beam']) + 360;
+    ent(total, q => { const i = bx(sd.x + sd.face * 18), j = by(sd.y - 32); for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28 + q * 3; aLine(i, j, i + Math.cos(a) * (30 + q * 30), j + Math.sin(a) * (30 + q * 30), '#ffd27a', .25 + q * .3, 1); }
+      orbPx(i, j, 3 + q * 7, 'fire', clock.t); if (Math.random() < .8) { const a = Math.random() * 6.28, r = rnd2(50, 90); P(sd.x + sd.face * 18 + Math.cos(a) * r * 2, sd.y - 32 + Math.sin(a) * r * 2, { vx: -Math.cos(a) * r * 4, vy: -Math.sin(a) * r * 4, life: 420, ramp: 'fire', shape: 'sq', size: 1, add: true }); } VFX.shake(2 + q * 4, 60); }); },
+  beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .15), fade = q > .75 ? (1 - q) / .25 : 1, i0 = bx(b.x), j0 = by(b.y), len = 460 * grow, w = 10 * (1 + Math.sin(clock.t / 20) * .1);
+    if (!b._scar) { b._scar = 1; for (let k = 60; k < 900; k += 40) addScar('scorch', b.x + Math.cos(b.ang) * k, b.y + 30 + Math.sin(b.ang) * k); }
+    beamPx(i0, j0, b.ang, len, w * 1.6, ['#ffffff', '#fff6b0', '#ffd23f', '#ff9a1f', '#c8501c'], fade, 1.5);
+    for (let k = 1; k < 8; k++) { const d = ((k * 60 + clock.t * .35) % len), cx = i0 + Math.cos(b.ang) * d, cy = j0 + Math.sin(b.ang) * d; aRing(cx, cy, 5, 12, '#fff6b0', .6 * fade, 1); }
+    if (q < .6) emit(b.x + Math.cos(b.ang) * rnd2(40, 700), b.y + Math.sin(b.ang) * rnd2(40, 700), 2, { speed: [40, 140], life: 300, ramp: 'fire', size: 1 }); },
+  impact: S => { hitstop(130); screenFlash('#fff6b0', .8); VFX.shake(18, 600); const h = headOf(S);
+    ent(800, q => { const i = bx(h.x), j = by(h.y + 10); for (let k = 0; k < 3; k++) { const r = easeOut(Math.max(0, q - k * .1)) * (50 + k * 18); shockPx(i, j, r, .65, '#ff9a1f', '#fff6b0', 1 - q, 2); } glow(i, j, 26 * (1 - q), '#ffd23f', .9); });
+    emit(h.x, h.y + 10, 50, { speed: [120, 420], life: [300, 800], ramp: 'fire', shape: 'disc', size: [1, 3], g: 160 }); emit(h.x, h.y, 16, { speed: [20, 70], vy: -60, life: [700, 1200], ramp: 'smoke', shape: 'disc', size: 3, size2: 7 }); }
+});
+
+/* -------------------------------- STEEL -------------------------------- */
+sig('Iron Tail', {
+  charge: S => { glowActor(S, '#e8f0ff', 650, .65); const sd = side(S); ent(320, q => { const i = bx(sd.x - sd.face * 20), j = by(sd.y - 20), s = Math.sin(q * Math.PI) * 6; aRect(i - s, j, s * 2 + 1, 1, '#ffffff'); aRect(i, j - s, 1, s * 2 + 1, '#ffffff'); }); },
+  dash: S => { const sd = side(S); if (Math.random() < .4) P(sd.x - sd.face * 18, sd.y - 16, { vx: -sd.face * 80, vy: -30, g: 300, life: 260, color: '#ffffff', size: 1 }); },
+  impact: S => { VFX.shake(10, 300); hitstop(60); const h = headOf(S), a = angTo(other(S));
+    ent(380, q => { const i = bx(h.x), j = by(h.y + 6); for (let k = 0; k < Math.round(28 * Math.min(1, q * 3)); k++) { const t = a - 1.3 + k / 28 * 2.6, r = 24; aRect(i + Math.cos(t) * r - 2, j + Math.sin(t) * r * .7 - 2, 4, 4, '#9aaabb', 1 - q); aRect(i + Math.cos(t) * (r - 2) - 1, j + Math.sin(t) * (r - 2) * .7 - 1, 2, 2, '#ffffff', 1 - q); }
+      aRing(i, j, 6 + q * 22, (6 + q * 22) * .6, '#ffffff', 1 - q); });
+    emit(h.x, h.y + 6, 22, { speed: [160, 380], life: [200, 420], ramp: ['#ffffff', '#fff0b0', '#ffb24a', '#c86a1a'], shape: 'sq', g: 500 });
+    for (let k = 0; k < 4; k++) P(h.x + rnd2(-20, 20), h.y + rnd2(-14, 14), { life: 420, color: '#ffffff', shape: 'star', size: 2 }); }
+});
+sig('Flash Cannon', {
+  charge: S => { const sd = side(S), total = WINDUP(MOVES['Flash Cannon']) + 360;
+    ent(total, q => { const i = bx(sd.x + sd.face * 18), j = by(sd.y - 32), r = 2 + q * 6; glow(i, j, r * 2.5, '#cad8e6', .6); aDisc(i, j, r, '#ffffff');
+      aRect(i - 30 * q, j, 60 * q + 1, 1, '#ffffff', .8); aRect(i, j - 14 * q, 1, 28 * q + 1, '#ffffff', .6);
+      for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28 + clock.t / 200; PX(i + Math.cos(a) * (r + 6), j + Math.sin(a) * (r + 6), '#cad8e6'); } }); },
+  beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .18), fade = q > .7 ? (1 - q) / .3 : 1, i0 = bx(b.x), j0 = by(b.y), len = 450 * grow, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    for (let k = 0; k < len; k++) { const x = i0 + ca * k, y = j0 + sa * k; aRect(x - sa * 4 - 1, y + ca * 4 - 1, 2, 2, '#7ff7ff', .55 * fade); aRect(x + sa * 4 - 1, y - ca * 4 - 1, 2, 2, '#ff9cf0', .55 * fade); aRect(x - 3, y - 3, 6, 6, '#e6eef6', fade); aRect(x - 1, y - 1, 2, 2, '#ffffff', fade); }
+    for (let k = 0; k < 4; k++) { const d = (k * 110 + clock.t * .6) % len; glow(i0 + ca * d, j0 + sa * d, 6, '#ffffff', .6 * fade); } },
+  impact: S => { screenFlash('#ffffff', .5); hitstop(50); const h = headOf(S);
+    ent(500, q => { const i = bx(h.x), j = by(h.y + 6), L = 70 * (1 - q * .4); aRect(i - L, j, L * 2, 1, '#ffffff', 1 - q); aRect(i, j - L * .5, 1, L, '#ffffff', 1 - q); aRect(i - L * .5, j - 1, L, 3, '#cad8e6', .5 * (1 - q)); glow(i, j, 16 * (1 - q), '#ffffff', .8);
+      for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28, r = 10 + q * 26; aRing(i + Math.cos(a) * r, j + Math.sin(a) * r * .7, 3, 3, '#cad8e6', 1 - q); } }); }
+});
+sig('Iron Defense', {
+  exec: S => { glowActor(S, '#cad8e6', 1000, .55); const sd = side(S); VFX.shake(3, 200);
+    ent(1000, q => { const i = bx(sd.x), j = by(sd.y - 28), R = 34 - easeOut(Math.min(1, q * 2)) * 10;
+      for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28 + q * .6, hx = i + Math.cos(a) * R, hy = j + Math.sin(a) * R * .85;
+        for (let s = 0; s < 6; s++) { const b1 = s / 6 * 6.28, b2 = (s + 1) / 6 * 6.28; aLine(hx + Math.cos(b1) * 6, hy + Math.sin(b1) * 6, hx + Math.cos(b2) * 6, hy + Math.sin(b2) * 6, s < 3 ? '#ffffff' : '#9aaabb', 1 - q * .7); } }
+      const band = (q * 120) - 40; for (let y = -30; y < 6; y++) aRect(i + band + y * .6, j + y, 3, 1, '#ffffff', .5 * (1 - q)); });
+    for (let k = 0; k < 6; k++) setTimeoutGame(k * 120, () => P(sd.x + rnd2(-26, 26), sd.y - rnd2(6, 60), { life: 360, color: '#ffffff', shape: 'star', size: 2 })); }
+});
+
+/* -------------------------------- WATER -------------------------------- */
+sig('Hydro Pump', {
+  charge: S => { const sd = side(S), total = WINDUP(MOVES['Hydro Pump']) + 360;
+    ent(total, q => { const i = bx(sd.x), j = by(sd.y - 28); for (let s = 0; s < 2; s++) for (let k = 0; k < 18; k++) { const a = k / 18 * 6.28 * (s ? -1 : 1) + clock.t / (s ? 140 : 110); aRect(i + Math.cos(a) * (26 - s * 6), j + Math.sin(a) * (20 - s * 5), 2, 2, s ? '#d8f4ff' : '#4aa6ff', .7); }
+      if (Math.random() < .7) { const a = Math.random() * 6.28; P(sd.x + Math.cos(a) * 70, sd.y - 28 + Math.sin(a) * 50, { vx: -Math.cos(a) * 200, vy: -Math.sin(a) * 140, life: 330, ramp: 'water', shape: 'drop', size: 1 }); } }); },
+  beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, i0 = bx(b.x), j0 = by(b.y), len = 450 * grow, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    for (let k = 0; k < len; k++) { const x = i0 + ca * k, y = j0 + sa * k, w1 = Math.sin(k / 7 - clock.t / 30) * 5, w2 = Math.sin(k / 7 - clock.t / 30 + Math.PI) * 5;
+      aRect(x - 2, y - 2, 4, 4, '#2a6fc0', .45 * fade);
+      aRect(x - sa * w1 - 2, y + ca * w1 - 2, 4, 3, '#4aa6ff', fade); aRect(x - sa * w1 - 1, y + ca * w1 - 2, 2, 1, '#d8f4ff', fade);
+      aRect(x - sa * w2 - 2, y + ca * w2 - 2, 4, 3, '#8fd4ff', fade); }
+    if (Math.random() < .9) { const d = rnd2(20, len) * 2; P(b.x + ca * d, b.y + sa * d, { vx: rnd2(-60, 60), vy: rnd2(-90, -20), g: 500, life: 380, ramp: 'water', shape: 'drop', size: 1 }); } },
+  impact: S => { const h = headOf(S); VFX.shake(10, 320); screenFlash('#d8f4ff', .25);
+    ent(520, q => { const i = bx(h.x), j = by(h.y + 30); aRing(i, j, 6 + q * 34, (6 + q * 34) * .35, '#d8f4ff', 1 - q, 2); aRing(i, j, q * 22, q * 8, '#4aa6ff', 1 - q, 1); });
+    for (let k = 0; k < 30; k++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4; P(h.x, h.y + 10, { vx: Math.cos(a) * rnd2(80, 260), vy: Math.sin(a) * rnd2(120, 320), g: 700, life: [500, 800], ramp: 'water', shape: 'drop', size: 1 }); }
+    addScar('splat', h.x, h.y + 44, { color: '#6d8fb0' }); addScar('splat', h.x + 12, h.y + 40, { color: '#8fb4d0' }); }
+});
+sig('Surf', {
+  exec: S => { dim(.28, 1300, '0,8,22'); screenFlash('#8fd4ff', .2); },
+  wave: w => { const i = bx(w.x), j = by(w.y), r = w.r / 2, fl = .62;
+    aEllFill(i, j, r, r * fl, '#2a6fc0', .18);
+    for (let k = 0; k < 160; k++) { const a = k / 160 * 6.28, wob = Math.sin(a * 9 + clock.t / 80) * 2, x = i + Math.cos(a) * (r + wob), y = j + Math.sin(a) * (r + wob) * fl;
+      aRect(x - 1, y - 4, 3, 4, '#4aa6ff'); aRect(x - 1, y - 6, 3, 2, '#8fd4ff'); if ((k + Math.floor(clock.t / 60)) % 3 === 0) aRect(x - 1, y - 7, 2, 1, '#ffffff'); aRect(x - 1, y - 1, 3, 1, '#1a4080', .6); }
+    if (Math.random() < .95) { const a = Math.random() * 6.28; P(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * fl - 10, { vx: Math.cos(a) * 60, vy: rnd2(-160, -60), g: 600, life: 420, ramp: 'water', shape: 'drop', size: 1 }); } },
+  impact: S => { const h = headOf(S); bigHop(S, 2, 400); emit(h.x, h.y + 20, 26, { speed: [100, 280], ang: -Math.PI / 2, spread: 2.4, g: 600, life: [400, 700], ramp: 'water', shape: 'drop', size: 1 }); addScar('splat', h.x, h.y + 44, { color: '#6d8fb0' }); }
+});
+sig('Waterfall', {
+  charge: S => { const sd = side(S); ent(320, q => { for (let k = 0; k < 7; k++) { const x = bx(sd.x + (k - 3) * 9), top = by(sd.y - 20 - q * 90); for (let y = top; y < by(sd.y); y += 2) aRect(x, y, 2, 2, (y + k + Math.floor(clock.t / 40)) % 6 < 2 ? '#d8f4ff' : '#4aa6ff', .75); } }); },
+  dash: S => { const sd = side(S); P(sd.x + rnd2(-12, 12), sd.y - rnd2(10, 40), { vx: rnd2(-50, 50), vy: -60, g: 500, life: 360, ramp: 'water', shape: 'drop', size: 1 }); },
+  impact: S => { VFX.shake(12, 380); hitstop(60); const h = headOf(S), sd = side(S);
+    ent(560, q => { const x0 = bx(sd.x), top = by(sd.y - 320), bot = by(sd.y), fall = Math.min(1, q * 2.4);
+      for (let k = -8; k <= 8; k++) for (let y = top; y < lerp(top, bot, fall); y += 2) if ((y + k * 3 + Math.floor(clock.t / 25)) % 7 < 5) aRect(x0 + k * 2, y, 2, 2, Math.abs(k) > 6 ? '#8fd4ff' : (y + k) % 5 ? '#4aa6ff' : '#ffffff', q > .7 ? (1 - q) / .3 : 1);
+      if (fall >= 1) aRing(x0, bot, 10 + (q - .42) * 60, (10 + (q - .42) * 60) * .35, '#d8f4ff', 1 - q, 2); });
+    setTimeoutGame(220, () => { for (let k = 0; k < 28; k++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.8; P(sd.x, sd.y - 4, { vx: Math.cos(a) * rnd2(80, 240), vy: Math.sin(a) * rnd2(100, 300), g: 700, life: 600, ramp: 'water', shape: 'drop', size: 1 }); } addScar('splat', sd.x, sd.y, { color: '#6d8fb0' }); }); }
+});
+
+/* -------------------------------- ICE -------------------------------- */
+sig('Ice Beam', {
+  charge: S => { glowActor(S, '#bff4ff', 700, .5); const sd = side(S), total = WINDUP(MOVES['Ice Beam']) + 360;
+    ent(total, q => { const i = bx(sd.x + sd.face * 16), j = by(sd.y - 32); glow(i, j, 4 + q * 8, '#bff4ff', .6); if (Math.random() < .7) { const a = Math.random() * 6.28; P(sd.x + sd.face * 16 + Math.cos(a) * 60, sd.y - 32 + Math.sin(a) * 50, { vx: -Math.cos(a) * 160, vy: -Math.sin(a) * 130, life: 360, color: '#ffffff', shape: 'star', size: 1 }); } }); },
+  beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, i0 = bx(b.x), j0 = by(b.y), len = 450 * grow, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    for (let k = 0; k < len; k++) { const x = i0 + ca * k, y = j0 + sa * k; aRect(x - 2, y - 2, 4, 4, '#7fdcf0', .6 * fade); aRect(x - 1, y - 1, 2, 2, '#ffffff', fade); }
+    for (let k = 14; k < len; k += 14) { const side_ = (k / 14) % 2 ? 1 : -1, x = i0 + ca * k, y = j0 + sa * k, L = 6 + ((k * 7) % 5);
+      for (let s = 0; s < L; s++) { const ww = Math.max(0, 2 - s / 3); aRect(x - sa * s * side_ - ww, y + ca * s * side_ - ww, ww * 2 + 1, ww * 2 + 1, s > L - 2 ? '#ffffff' : '#bff4ff', fade); } }
+    if (Math.random() < .8) { const d = rnd2(20, len) * 2; P(b.x + ca * d, b.y + sa * d, { vx: rnd2(-30, 30), vy: rnd2(-30, 30), life: 400, color: '#ffffff', shape: 'star', size: 1 }); } },
+  impact: S => { glowActor(S, '#bff4ff', 700, .6); hitstop(50); const sd = side(S);
+    ent(900, q => { const i = bx(sd.x), j = by(sd.y), g = easeOut(Math.min(1, q * 3)), a = q > .75 ? (1 - q) / .25 : 1;
+      for (let k = 0; k < 7; k++) spikePx(i + (k - 3) * 7, j + Math.abs(k - 3), (14 + (k % 3) * 7) * g, 3, RAMP.ice, a); });
+    setTimeoutGame(680, () => emit(sd.x, sd.y - 20, 22, { speed: [80, 220], life: [300, 600], ramp: 'ice', shape: 'shard', size: 1, spin: 8, g: 300 })); addScar('splat', sd.x, sd.y, { color: '#e9fbff' }); }
+});
+
+/* -------------------------------- GRASS -------------------------------- */
+sig('Giga Drain', {
+  shot: p => { const i = bx(p.x), j = by(p.y), pulse = 4 + Math.sin(clock.t / 60) * 1.2; glow(i, j, 10, '#7fe05a', .5); aDisc(i, j, pulse, '#3fb04a'); aDisc(i - 1, j - 1, pulse * .6, '#c8f58a'); PX(i - 2, j - 2, '#ffffff');
+    for (let k = 0; k < 3; k++) { const a = clock.t / 90 + k * 2.1; shapeAt(p.x + Math.cos(a) * 18, p.y + Math.sin(a) * 12, { shape: 'leaf', color: '#7fe05a', size: 1, rot: a }); }
+    if (Math.random() < .7) P(p.x, p.y, { life: 260, color: '#c8f58a', size: 1, add: true }); },
+  hitAt: (x, y) => { ent(260, q => aRing(bx(x), by(y), 4 + q * 16, (4 + q * 16) * .8, '#c8f58a', 1 - q)); },
+  impact: S => { const h = headOf(S), U = other(S);
+    for (let k = 0; k < 14; k++) setTimeoutGame(k * 45, () => { const sx = h.x + rnd2(-14, 14), sy = h.y + rnd2(-8, 16), bend = rnd2(-60, 60);
+      ent(520, q => { const u = headOf(U), t = easeOut(q), mx = (sx + u.x) / 2, my = Math.min(sy, u.y) - 50 + bend * .3, x = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * u.x, y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * u.y;
+        glow(bx(x), by(y), 3, '#7fe05a', .7); aRect(bx(x) - 1, by(y) - 1, 2, 2, '#f4ffd8'); }); });
+    setTimeoutGame(560, () => glowActor(U, '#7fe05a', 500, .5)); emit(h.x, h.y + 8, 10, { speed: [60, 160], life: 500, color: '#7fe05a', shape: 'leaf', size: 1, spin: 6 }); }
+});
+sig('Sleep Powder', {
+  shot: p => { for (let k = 0; k < 12; k++) { const a = k * 2.399 + p.t / 300, r = 4 + (k % 4) * 3 + Math.sin(p.t / 200 + k) * 2; glow(bx(p.x + Math.cos(a) * r * 2), by(p.y + Math.sin(a) * r * 1.4), 2, k % 3 ? '#9fe0c8' : '#a8c0ff', .5); PX(bx(p.x + Math.cos(a) * r * 2), by(p.y + Math.sin(a) * r * 1.4), '#eafff6'); } },
+  hitAt: (x, y) => { const pos = { x, y };
+    ent(1300, (q, age) => { const i = bx(pos.x), j = by(pos.y); aEllFill(i, j + 6, 20, 10, '#2a3a8a', .22 * (1 - q));
+      for (let k = 0; k < 16; k++) { const a = k / 16 * 6.28 + age / 260, r = 18 * (1 - q * .6) + Math.sin(age / 150 + k) * 3; PX(i + Math.cos(a) * r, j + Math.sin(a) * r * .6 - q * 14, k % 2 ? '#9fe0c8' : '#d8f0ff', 1 - q); } });
+    for (let k = 0; k < 3; k++) setTimeoutGame(200 + k * 280, () => P(x + 10, y - 8, { vy: -36, vx: 14, life: 900, color: '#d8f0ff', shape: 'z', size: 1 })); }
+});
+
+/* -------------------------------- POISON -------------------------------- */
+sig('Sludge Bomb', {
+  shot: p => { if (!p._T) { const t = side(other(p.owner)); p._T = Math.max(300, Math.hypot(t.x - p.x, t.y - p.y) / p.speed * 1000); }
+    const f = Math.min(1, p.t / p._T), lift = Math.sin(f * Math.PI) * 36, i = bx(p.x), j = by(p.y - lift), sq = 1 + Math.sin(clock.t / 50) * .18;
+    aEllFill(bx(p.x), by(p.y) + 14, 5, 2, '#0b0f1a', .25); aEllFill(i, j, 6 * sq, 6 / sq, '#5a2088', 1); aEllFill(i - 1, j - 1, 5 * sq, 4.5 / sq, '#8a3ac8', 1); aDisc(i - 2, j - 3, 1.5, '#d8a0ff'); PX(i - 3, j - 4, '#ffffff');
+    if (Math.random() < .5) P(p.x, p.y - lift * 2 + 8, { vy: 60, g: 400, life: 300, ramp: 'poison', shape: 'drop', size: 1 }); },
+  impact: S => { const sd = side(S), h = headOf(S); VFX.shake(8, 260);
+    for (let k = 0; k < 16; k++) { const a = -Math.PI / 2 + (Math.random() - .5) * 3; P(h.x, h.y + 6, { vx: Math.cos(a) * rnd2(80, 220), vy: Math.sin(a) * rnd2(100, 260), g: 600, life: [500, 800], ramp: 'poison', shape: 'disc', size: [1, 2] }); }
+    for (let k = 0; k < 3; k++) addScar('splat', sd.x + rnd2(-16, 16), sd.y + rnd2(-4, 6), { color: '#5d2d78' });
+    ent(1100, () => { if (Math.random() < .35) P(sd.x + rnd2(-18, 18), sd.y - 2, { vy: -50, life: 600, color: '#b65cff', shape: 'bubble', size: 2 }); });
+    emit(h.x, h.y + 4, 6, { speed: [20, 60], vy: -40, life: 900, ramp: ['#8a3ac8', '#6a2a98', '#4a2068', '#2a1040'], shape: 'disc', size: 3, size2: 6 }); }
+});
+sig('Poison Jab', {
+  charge: S => { glowActor(S, '#b65cff', 600, .5); const sd = side(S); ent(260, q => { const i = bx(sd.x + sd.face * (16 + q * 10)), j = by(sd.y - 28); aLine(i, j, i + sd.face * 10 * q, j, '#d8a0ff', 1, 2); PX(i + sd.face * 10 * q, j, '#ffffff'); }); },
+  dash: S => { const sd = side(S); if (Math.random() < .4) P(sd.x, sd.y - 24, { life: 200, ramp: 'poison', size: 1 }); },
+  impact: S => { hitstop(55); VFX.shake(8, 240); const h = headOf(S), a = angTo(other(S));
+    ent(320, q => { const i = bx(h.x), j = by(h.y + 6), L = 46 * easeOut(Math.min(1, q * 3)); aLine(i - Math.cos(a) * L, j - Math.sin(a) * L, i + Math.cos(a) * L * .4, j + Math.sin(a) * L * .4, '#8a3ac8', 1 - q, 4); aLine(i - Math.cos(a) * L, j - Math.sin(a) * L, i + Math.cos(a) * L * .4, j + Math.sin(a) * L * .4, '#f6e6ff', 1 - q, 1);
+      for (let k = 0; k < 6; k++) { const b = a + Math.PI + (k - 2.5) * .45; aLine(i, j, i + Math.cos(b) * L * .4, j + Math.sin(b) * L * .3, '#d8a0ff', 1 - q, 1); } });
+    emit(h.x, h.y + 6, 14, { speed: [80, 200], ang: angTo(other(S)), spread: 1.4, g: 400, life: 500, ramp: 'poison', shape: 'drop', size: 1 }); }
+});
+
+/* -------------------------------- GROUND -------------------------------- */
+sig('Earth Power', {
+  exec: S => { dim(.35, 1000, '24,10,0'); },
+  wave: w => { const i = bx(w.x), j = by(w.y), r = w.r / 2, fl = .62;
+    for (let k = 0; k < 64; k++) { if ((k + (w.r | 0) / 20) % 4 < 1) continue; const a = k / 64 * 6.28; aRect(i + Math.cos(a) * r - 1, j + Math.sin(a) * r * fl - 1, 3, 2, k % 3 ? '#ff9a1f' : '#ffd23f', .85); }
+    w._n = w._n || 0; while (w._n * 34 < w.r) { w._n++; const a = Math.random() * 6.28, x = w.x + Math.cos(a) * w.r, y = w.y + Math.sin(a) * w.r * fl, hgt = rnd2(10, 20);
+      ent(520, q => { const g = q < .3 ? q / .3 : 1, f = q > .6 ? (1 - q) / .4 : 1; glow(bx(x), by(y) - 4, 6, '#ff9a1f', .4 * f); spikePx(bx(x), by(y), hgt * g, 3, RAMP.ground, f); }); addScar('crack', x, y); } },
+  impact: S => { const sd = side(S); hitstop(70); VFX.shake(14, 420); bigHop(S, 2.5, 400);
+    ent(700, q => { const i = bx(sd.x), j = by(sd.y), g = easeOut(Math.min(1, q * 4)), f = q > .6 ? (1 - q) / .4 : 1; glow(i, j - 8, 22 * f, '#ff9a1f', .6 * f);
+      for (let k = 0; k < 5; k++) spikePx(i + (k - 2) * 9, j + Math.abs(k - 2) * 2, (30 - Math.abs(k - 2) * 7) * g, 4, RAMP.ground, f); });
+    for (let k = 0; k < 10; k++) { const s = Math.floor(Math.random() * 1e6), x0 = sd.x, y0 = sd.y - 10, vx = rnd2(-160, 160), vy = rnd2(-360, -200);
+      ent(800, (q, age) => { const t = age / 1000; rockPx(bx(x0 + vx * t), by(y0 + vy * t + 900 * t * t), 2, s, RAMP.rock); }); } }
+});
+sig('Earthquake', {
+  exec: S => { bigHop(S, 3.5, 500); dim(.4, 1000, '20,12,4'); VFX.shake(16, 900); hitstop(40); },
+  wave: w => { const i = bx(w.x), j = by(w.y), r = w.r / 2, fl = .62;
+    for (let k = 0; k < 3; k++) { const rr = Math.max(0, r - k * 7); aRing(i, j, rr, rr * fl, k ? '#9a7038' : '#e7c27a', 1 - k * .3, k ? 1 : 3); }
+    if (Math.random() < .95) for (let n = 0; n < 2; n++) { const a = Math.random() * 6.28; P(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * fl, { vx: Math.cos(a) * 30, vy: rnd2(-260, -140), g: 900, life: 520, ramp: 'rock', shape: 'disc', size: [1, 2] }); }
+    if (Math.random() < .6) { const a = Math.random() * 6.28; P(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * fl, { vy: -20, drag: 1, life: 600, ramp: 'dust', shape: 'disc', size: 2, size2: 5 }); }
+    w._c = w._c || 0; if (w.r - w._c > 40) { w._c = w.r; const a = Math.random() * 6.28; addScar('crack', w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * fl); } },
+  impact: S => { bigHop(S, 3, 450); hitstop(60); const sd = side(S); emit(sd.x, sd.y - 4, 18, { speed: [60, 180], vy: -60, drag: 2, life: 700, ramp: 'dust', shape: 'disc', size: 2, size2: 5 }); }
+});
+
+/* -------------------------------- DARK -------------------------------- */
+sig('Crunch', {
+  charge: S => { dim(.35, 800, '10,6,14'); const sd = side(S); ent(300, () => { P(sd.x + rnd2(-20, 20), sd.y - rnd2(0, 50), { vy: -70, life: 400, ramp: 'dark', shape: 'disc', size: 1, size2: 3 }); }); },
+  dash: S => { if (Math.random() < .6) ghostOf(S, '#5a3a78', 200, .55); },
+  impact: S => { const h = headOf(S); hitstop(70); VFX.shake(11, 340);
+    ent(460, q => { const i = bx(h.x), j = by(h.y + 6); glow(i, j, 22, '#8a3ac8', .5 * (1 - q)); jawsPx(i - 1, j + 1, q, '#1e1628', 36); jawsPx(i, j, q, '#ffffff', 34);
+      if (q > .45) for (let k = 0; k < 5; k++) { const a = k * 1.26 + .5, r = 6 + (q - .45) * 50; aLine(i, j, i + Math.cos(a) * r, j + Math.sin(a) * r, '#d9cde8', 1 - q, 1); } });
+    setTimeoutGame(200, () => { emit(h.x, h.y + 6, 18, { speed: [120, 280], life: 420, ramp: 'dark', shape: 'shard', size: 1, spin: 10, g: 200 }); crackBurst(side(S).x, side(S).y, 3, 24); }); }
+});
+sig('Bite', {
+  impact: S => { const h = headOf(S); VFX.shake(6, 200);
+    ent(300, q => { const i = bx(h.x), j = by(h.y + 6), gap = Math.round(lerp(16, 1, Math.min(1, q * 2.2)));
+      for (let k = 0; k < 3; k++) { for (let s = 0; s < 6; s++) { aRect(i - gap - 6 + s, j - 8 + k * 6 + s / 2, 6 - s, 1, '#ffffff', 1 - q * .6); aRect(i + gap + s, j - 8 + k * 6 + s / 2, 6 - s, 1, '#ffffff', 1 - q * .6); } }
+      if (q > .45) aRing(i, j, (q - .45) * 30, (q - .45) * 20, '#5a4a6a', 1 - q); });
+    setTimeoutGame(130, () => emit(h.x, h.y + 6, 8, { speed: [60, 140], life: 260, ramp: 'dark', size: 1 })); }
+});
+
+/* -------------------------------- PSYCHIC -------------------------------- */
+sig('Rest', {
+  exec: S => { const sd = side(S); glowActor(S, '#a8c0ff', 1600, .35);
+    ent(1700, (q, age) => { const i = bx(sd.x), j = by(sd.y - 30), pulse = 30 + Math.sin(age / 200) * 2; aRing(i, j, pulse, pulse * .9, '#a8c0ff', .5 * (1 - q)); moonPx(i + 22, j - 30 - q * 10, 6, Math.min(1, q * 4) * (1 - q));
+      if (Math.random() < .2) P(sd.x + rnd2(-30, 30), sd.y - rnd2(20, 70), { life: 500, color: '#ffffff', shape: 'star', size: 1 }); });
+    for (let k = 0; k < 4; k++) setTimeoutGame(k * 350, () => P(sd.x + 14, sd.y - 54, { vx: 16, vy: -30, life: 1100, color: '#d8e4ff', shape: 'z', size: 1 })); }
+});
+sig('Psychic', {
+  mark: mk => { screenFlash('#ffa8de', .3); dim(.3, 800, '20,4,16'); const T = other(mk.owner); bigHop(T, 2.5, 600); punch(mk.x, mk.y - 30, 700, 1);
+    ent(800, (q, age) => { const i = bx(mk.x), j = by(mk.y - 32);
+      for (let k = 0; k < 4; k++) { const qq = (q * 2 + k / 4) % 1, r = 6 + qq * 34; aRing(i, j, r, r * .6, k % 2 ? '#ff6fc8' : '#ffa8de', (1 - qq) * (1 - q * .5)); }
+      for (let k = 0; k < 5; k++) { const a = age / 300 + k * 1.256, x = i + Math.cos(a) * 26, y = j + Math.sin(a) * 14; aRect(x - 1, y - 2, 3, 1, '#ffe2f4'); aRect(x, y - 1, 1, 3, '#ffe2f4'); PX(x + 1, y + 1, '#ff6fc8'); } });
+    setTimeoutGame(560, () => { emit(mk.x, mk.y - 32, 24, { speed: [80, 220], life: 500, ramp: 'psychic', shape: 'star', size: 1 }); VFX.shake(8, 220); }); },
+  impact: S => { glowActor(S, '#ff6fc8', 500, .5); }
+});
+sig('Calm Mind', {
+  exec: S => { const sd = side(S); glowActor(S, '#b9a4ff', 1300, .35);
+    ent(1400, (q, age) => { const i = bx(sd.x), j = by(sd.y - 30);
+      for (let k = 0; k < 3; k++) { const qq = (q * 1.5 + k / 3) % 1, r = 10 + qq * 40; aRing(i, j + 26, r, r * .35, '#b9a4ff', (1 - qq) * .7); }
+      const ey = j - 34, a = Math.min(1, q * 3) * (1 - q); for (let s = 0; s < 5; s++) { aRect(i - s, ey - 4 + s, s * 2 + 1, 1, '#d8ccff', a); aRect(i - s, ey + 4 - s, s * 2 + 1, 1, '#d8ccff', a); } aDisc(i, ey, 1.5, '#ffffff', a);
+      for (let k = 0; k < 3; k++) { const b = age / 500 + k * 2.09, x = i + Math.cos(b) * 30, y = j + Math.sin(b) * 12; aLine(x - 3, y + 2, x, y - 3, '#b9a4ff', .8); aLine(x, y - 3, x + 3, y + 2, '#b9a4ff', .8); aLine(x - 3, y + 2, x + 3, y + 2, '#b9a4ff', .8); } }); }
+});
+sig('Agility', {
+  exec: S => { const sd = side(S); glowActor(S, '#a8d8ff', 900, .4);
+    for (let k = 0; k < 6; k++) setTimeoutGame(k * 90, () => { const o = (k % 2 ? 1 : -1) * (18 + k * 6); ghostOf(S, '#7fc8ff', 300, .5, o, 0); });
+    ent(700, () => { if (Math.random() < .8) { const y = sd.y - rnd2(5, 60); P(sd.x - 50, y, { vx: 520, life: 160, color: '#ffffff', size: 1 }); } }); }
+});
+sig('Recover', {
+  exec: S => { const sd = side(S); glowActor(S, '#c8ffd8', 1200, .45);
+    ent(1300, q => { const i = bx(sd.x), top = by(sd.y - 300), bot = by(sd.y), a = Math.sin(q * Math.PI);
+      for (let x = -9; x <= 9; x++) aRect(i + x, top, 1, bot - top, Math.abs(x) < 3 ? '#ffffff' : '#c8ffd8', a * (Math.abs(x) < 3 ? .5 : .18));
+      aRing(i, bot, 16 + Math.sin(q * 12) * 2, 5, '#7dff9a', a); });
+    for (let k = 0; k < 10; k++) setTimeoutGame(k * 100, () => P(sd.x + rnd2(-18, 18), sd.y - rnd2(0, 20), { vy: -70, life: 800, color: '#7dff9a', shape: 'plus', size: 1 })); }
+});
+
+/* -------------------------------- FIRE -------------------------------- */
+sig('Flamethrower', {
+  charge: S => { glowActor(S, '#ff9a1f', 700, .4); const sd = side(S), total = WINDUP(MOVES['Flamethrower']) + 360;
+    ent(total, q => { const i = bx(sd.x + sd.face * 18), j = by(sd.y - 32); glow(i, j, 4 + q * 6, '#ff9a1f', .6); if (Math.random() < .7) { const a = Math.random() * 6.28; P(sd.x + sd.face * 18 + Math.cos(a) * 50, sd.y - 32 + Math.sin(a) * 40, { vx: -Math.cos(a) * 140, vy: -Math.sin(a) * 110, life: 340, ramp: 'fire', size: 1, add: true }); } }); },
+  beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .25), fade = q > .75 ? (1 - q) / .25 : 1, i0 = bx(b.x), j0 = by(b.y), len = 450 * grow, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    for (let k = 0; k < len; k += 5) { const f = k / 450, x = i0 + ca * k, y = j0 + sa * k, wob = Math.sin(k / 9 - clock.t / 35) * (2 + f * 4), r = 2 + f * 9 + Math.sin(k + clock.t / 40) * 1.2;
+      aDisc(x - sa * wob, y + ca * wob, r, RAMP.fire[Math.min(5, 2 + Math.floor(f * 4))], fade); aDisc(x - sa * wob, y + ca * wob, r * .55, RAMP.fire[f < .3 ? 0 : 1], fade); }
+    if (Math.random() < .9) { const d = rnd2(20, len) * 2; P(b.x + ca * d, b.y + sa * d, { vx: rnd2(-40, 40), vy: rnd2(-80, -20), life: 500, ramp: 'fire', size: 1, add: true }); }
+    if (Math.random() < .3) { const d = rnd2(60, len) * 2; P(b.x + ca * d, b.y + sa * d - 10, { vy: -40, life: 800, ramp: 'smoke', shape: 'disc', size: 2, size2: 5 }); } },
+  impact: S => { const sd = side(S); VFX.shake(9, 300);
+    ent(700, (q, age) => { const i = bx(sd.x), j = by(sd.y), f = q > .6 ? (1 - q) / .4 : 1; for (let k = 0; k < 5; k++) flamePx(i + (k - 2) * 8, j + Math.abs(k - 2), (22 - Math.abs(k - 2) * 5) * Math.min(1, q * 4), 4, age + k * 90, RAMP.fire, f); });
+    emit(sd.x, sd.y - 20, 18, { speed: [60, 160], vy: -80, life: [400, 700], ramp: 'fire', size: 1, add: true }); addScar('scorch', sd.x, sd.y); }
+});
+sig('Flare Blitz', {
+  charge: S => { glowActor(S, '#ff7a1a', 1100, .8); const sd = side(S);
+    ent(380, (q, age) => { const i = bx(sd.x), j = by(sd.y); for (let k = 0; k < 6; k++) flamePx(i + (k - 2.5) * 9, j + 2, 26 + Math.sin(age / 60 + k) * 6, 4, age + k * 70, RAMP.fire, .9); }); },
+  dash: S => { const sd = side(S); if (Math.random() < .6) ghostOf(S, '#ff7a1a', 220, .6);
+    for (let k = 0; k < 2; k++) P(sd.x + rnd2(-14, 14), sd.y - rnd2(0, 40), { vx: -sd.vx * .3 + rnd2(-30, 30), vy: rnd2(-90, -30), life: 420, ramp: 'fire', shape: 'disc', size: 2, size2: 0, add: true });
+    if (Math.random() < .3) addScar('scorch', sd.x, sd.y + 2); },
+  impact: (S, mv, crit) => { hitstop(crit ? 140 : 100); screenFlash('#ffb347', .6); VFX.shake(16, 480); const sd = side(S); punch(sd.x, sd.y - 30, 900, 1);
+    ent(800, (q, age) => { const i = bx(sd.x), j = by(sd.y), f = q > .55 ? (1 - q) / .45 : 1, g = easeOut(Math.min(1, q * 3));
+      for (let k = 0; k < 7; k++) flamePx(i + (k - 3) * 8, j + Math.abs(k - 3), (46 - Math.abs(k - 3) * 9) * g, 5, age + k * 50, RAMP.fire, f);
+      const r = easeOut(q) * 64; shockPx(i, j - 4, r, .35, '#ff9a1f', '#ffe36b', 1 - q, 2); });
+    for (let k = 0; k < 26; k++) P(sd.x + rnd2(-30, 30), sd.y - rnd2(40, 100), { vx: rnd2(-80, 80), vy: rnd2(-120, 20), g: 260, life: [600, 1000], ramp: 'fire', size: 1, add: true });
+    emit(sd.x, sd.y - 30, 10, { speed: [20, 60], vy: -60, life: 1000, ramp: 'smoke', shape: 'disc', size: 3, size2: 8 }); addScar('scorch', sd.x, sd.y); addScar('scorch', sd.x + 10, sd.y + 6); }
+});
+sig('Will-O-Wisp', {
+  shot: p => { for (let k = 0; k < 3; k++) { const a = p.t / 160 + k * 2.094, x = p.x + Math.cos(a) * 16, y = p.y + Math.sin(a) * 10 + Math.sin(p.t / 90 + k) * 3; flamePx(bx(x), by(y) + 3, 8, 2, clock.t + k * 100, RAMP.wisp, .95); glow(bx(x), by(y), 4, '#9f8bff', .4); }
+    if (Math.random() < .5) P(p.x, p.y, { vy: -20, life: 400, ramp: 'wisp', size: 1, add: true }); },
+  hitAt: (x, y) => { const T = { x, y };
+    ent(900, (q, age) => { for (let k = 0; k < 3; k++) { const a = age / 120 + k * 2.094, r = 26 * (1 - q), px = T.x + Math.cos(a) * r * 2, py = T.y + Math.sin(a) * r; flamePx(bx(px), by(py) + 3, 8, 2, age + k * 100, RAMP.wisp, 1 - q * .3); } if (q > .85) glow(bx(T.x), by(T.y), 14, '#7fd6ff', .7); }); }
+});
+
+/* -------------------------------- FLYING -------------------------------- */
+sig('Air Slash', {
+  shot: p => { const a = Math.atan2(p.vy, p.vx), spin = p.t / 25, i = bx(p.x), j = by(p.y);
+    for (let g = 2; g >= 0; g--) { const back = g * 3; for (let k = -8; k <= 8; k++) { const t = spin + k * .17, r = 10 - Math.abs(k) * .35; PX(i - Math.cos(a) * back + Math.cos(t) * r, j - Math.sin(a) * back + Math.sin(t) * r * .55, g ? '#a8c0f0' : (Math.abs(k) < 3 ? '#ffffff' : '#d7e6ff'), g ? .35 : 1); } }
+    if (Math.random() < .6) P(p.x, p.y, { vx: -p.vx * .2, vy: -p.vy * .2, life: 200, color: '#ffffff', size: 1 }); },
+  hitAt: (x, y) => { ent(240, q => { const i = bx(x), j = by(y); aLine(i - 14, j - 10, i + 14, j + 10, '#ffffff', 1 - q, 1); aLine(i - 14, j + 10, i + 14, j - 10, '#d7e6ff', 1 - q, 1); }); },
+  impact: S => { const h = headOf(S); emit(h.x, h.y + 8, 8, { speed: [40, 120], life: 600, color: '#ffffff', shape: 'feather', size: 1, spin: 4, g: 40 }); }
+});
+sig('Brave Bird', {
+  charge: S => { glowActor(S, '#8fd4ff', 1100, .7); const sd = side(S);
+    ent(380, q => { const i = bx(sd.x), j = by(sd.y - 30), open = easeOut(Math.min(1, q * 2));
+      for (const s of [-1, 1]) for (let k = 0; k < 7; k++) { const a = -Math.PI / 2 + s * (.5 + k * .22) * open, L = 18 + k * 3; aLine(i, j, i + Math.cos(a) * L * s * s, j + Math.sin(a) * L * .8, k % 2 ? '#7fd6ff' : '#d8f4ff', .85, 2); } }); },
+  dash: S => { const sd = side(S); ghostOf(S, '#7fd6ff', 220, .55); for (let k = 0; k < 2; k++) P(sd.x + rnd2(-12, 12), sd.y - rnd2(10, 50), { vx: -sd.vx * .3, vy: rnd2(-40, 10), life: 420, ramp: 'blueFire', shape: 'disc', size: 2, size2: 0, add: true }); },
+  impact: (S, mv, crit) => { hitstop(crit ? 130 : 95); screenFlash('#d8f4ff', .55); VFX.shake(14, 420); const h = headOf(S);
+    ent(600, q => { const i = bx(h.x), j = by(h.y + 8), r = easeOut(q) * 56; shockPx(i, j, r, .7, '#3f8cff', '#d8f4ff', 1 - q, 3); glow(i, j, 24 * (1 - q), '#7fd6ff', .8); });
+    emit(h.x, h.y + 8, 30, { speed: [140, 360], life: [300, 600], ramp: 'blueFire', shape: 'disc', size: [1, 2], add: true });
+    emit(h.x, h.y + 8, 12, { speed: [40, 140], life: [800, 1200], color: '#f0f6ff', shape: 'feather', size: 1, spin: 4, g: 30, drag: 1 }); }
+});
+
+/* -------------------------------- DRAGON -------------------------------- */
+sig('Dragon Pulse', {
+  charge: S => { glowActor(S, '#7d6bff', 800, .5); const sd = side(S), total = WINDUP(MOVES['Dragon Pulse']) + 360;
+    ent(total, (q, age) => { const i = bx(sd.x), j = by(sd.y - 30); for (let k = 0; k < 8; k++) { const a = age / 250 + k * .785, x = i + Math.cos(a) * 30, y = j + Math.sin(a) * 22; aRect(x - 1, y - 1, 3, 3, k % 2 ? '#a99bff' : '#e5e0ff', .9); aLine(x, y, i + Math.cos(a + .785) * 30, j + Math.sin(a + .785) * 22, '#4a3ad0', .5); } }); },
+  beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, i0 = bx(b.x), j0 = by(b.y), len = 450 * grow, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
+    for (let k = 0; k < len; k++) { const x = i0 + ca * k, y = j0 + sa * k, s = Math.sin(k / 6 - clock.t / 25) * 4; aRect(x - 3, y - 3, 6, 6, '#24187a', .8 * fade); aRect(x - sa * s - 1, y + ca * s - 1, 2, 2, '#a99bff', fade); aRect(x + sa * s - 1, y - ca * s - 1, 2, 2, '#e5e0ff', fade); }
+    for (let k = 0; k < 6; k++) { const d = (k * 75 + clock.t * .5) % len, rr = 4 + (d / len) * 8; aRing(i0 + ca * d, j0 + sa * d, rr * .6, rr, '#7d6bff', .8 * fade, 1); } },
+  impact: S => { hitstop(70); dim(.3, 500, '10,4,30'); const h = headOf(S); VFX.shake(11, 360);
+    ent(560, q => { const i = bx(h.x), j = by(h.y + 6), r = easeOut(q) * 50; for (let k = 0; k < 16; k++) { const a = k / 16 * 6.28, rr = r * (k % 2 ? .75 : 1.05); aLine(i + Math.cos(a) * r * .5, j + Math.sin(a) * r * .35, i + Math.cos(a) * rr, j + Math.sin(a) * rr * .7, '#7d6bff', 1 - q, 2); } glow(i, j, 18 * (1 - q), '#a99bff', .8); });
+    emit(h.x, h.y + 6, 20, { speed: [120, 300], life: 500, ramp: 'dragon', shape: 'shard', size: 1, spin: 8 }); }
+});
+sig('Dragon Dance', {
+  exec: S => { const sd = side(S); glowActor(S, '#a99bff', 1300, .45); bigHop(S, 2, 500);
+    ent(1300, (q, age) => { const i = bx(sd.x), j = by(sd.y);
+      for (let s = 0; s < 2; s++) for (let k = 0; k < 20; k++) { const t = k / 20, a = age / 140 + t * 9 + s * Math.PI, y = j - t * 70 * Math.min(1, q * 2.5), x = i + Math.cos(a) * 18 * (1 - t * .3); aRect(x - 1, y - 1, 2, 2, s ? RAMP.fire[1 + (k % 3)] : RAMP.dragon[1 + (k % 3)], (1 - t) * (q > .8 ? (1 - q) / .2 : 1)); }
+      aRing(i, j, 22, 7, '#7d6bff', .6 * (1 - q), 1); }); }
+});
+
+/* -------------------------------- BUG -------------------------------- */
+sig('X-Scissor', {
+  charge: S => { const sd = side(S); ent(260, q => { const i = bx(sd.x + sd.face * 14), j = by(sd.y - 30), L = 8 + q * 8; aLine(i - L, j - L, i + L, j + L, '#b6d636', 1, 2); aLine(i - L, j + L, i + L, j - L, '#e0f58a', 1, 2); PX(i, j, '#ffffff'); }); },
+  impact: S => { const h = headOf(S); VFX.shake(10, 320); hitstop(60);
+    const cut = (dir, delay) => ent(320, q => { const i = bx(h.x), j = by(h.y + 6), L = 34, d = Math.min(1, q * 3.5), x0 = i - L * dir, y0 = j - L, x1 = lerp(x0, i + L * dir, d), y1 = lerp(y0, j + L, d); aLine(x0, y0, x1, y1, '#86a82a', 1 - q, 5); aLine(x0, y0, x1, y1, '#e0f58a', 1 - q, 3); aLine(x0, y0, x1, y1, '#ffffff', 1 - q, 1); }, { delay });
+    cut(1, 0); cut(-1, 110); setTimeoutGame(160, () => { ent(300, q => { const i = bx(h.x), j = by(h.y + 6), s = 10 * (1 - q); aRect(i - s, j, s * 2 + 1, 1, '#ffffff', 1 - q); aRect(i, j - s, 1, s * 2 + 1, '#ffffff', 1 - q); }); emit(h.x, h.y + 6, 14, { speed: [100, 240], life: 360, ramp: 'bug', size: 1 }); }); }
+});
+sig('Pin Missile', {
+  shot: p => { const a = Math.atan2(p.vy, p.vx), i = bx(p.x), j = by(p.y), ca = Math.cos(a), sa = Math.sin(a);
+    for (let g = 0; g < 3; g++) for (let k = 0; k < 7; k++) PX(i - ca * (k + g * 5), j - sa * (k + g * 5), k === 0 ? '#ffffff' : '#b6d636', g ? .25 : 1);
+    PX(i - sa, j + ca, '#e0f58a'); if (Math.floor(clock.t / 60) % 2) PX(i, j - 1, '#ffffff'); },
+  hitAt: (x, y) => { ent(220, q => { const i = bx(x), j = by(y); for (let k = 0; k < 4; k++) { const a = k * 1.57 + .78; aLine(i, j, i + Math.cos(a) * 6 * (1 - q), j + Math.sin(a) * 6 * (1 - q), '#e0f58a', 1 - q, 1); } }); },
+  impact: S => { const h = headOf(S); P(h.x + rnd2(-10, 10), h.y + rnd2(-4, 14), { life: 260, color: '#ffffff', shape: 'star', size: 1 }); }
+});
+
+/* -------------------------------- FIGHTING -------------------------------- */
+sig('Close Combat', {
+  charge: S => { glowActor(S, '#ff8a5b', 800, .6); const sd = side(S); ent(300, (q, age) => { for (let k = 0; k < 4; k++) flamePx(bx(sd.x) + (k - 1.5) * 10, by(sd.y) + 2, 18 + Math.sin(age / 50 + k) * 4, 3, age + k * 60, RAMP.fight, .7); }); },
+  impact: (S, mv, crit) => { const h = headOf(S);
+    for (let k = 0; k < 7; k++) setTimeoutGame(k * 75, () => { const ox = rnd2(-18, 18), oy = rnd2(-14, 18), dir = Math.random() < .5 ? 1 : -1; VFX.shake(5, 80);
+      ent(200, q => { const i = bx(h.x + ox), j = by(h.y + oy); fistPx(i, j, 2, '#ffc08a', dir); powStar(i, j, 12, '#fff0d8', q); }); });
+    setTimeoutGame(560, () => { hitstop(crit ? 120 : 90); screenFlash('#ffc08a', .4); VFX.shake(13, 320);
+      ent(420, q => { const i = bx(h.x), j = by(h.y + 6); powStar(i, j, 30, '#ffffff', q); shockPx(i, j, easeOut(q) * 48, .7, '#ff8a5b', '#fff0d8', 1 - q, 2); });
+      emit(h.x, h.y + 6, 20, { speed: [140, 320], life: 400, ramp: 'fight', size: 1 }); }); }
+});
+
+/* -------------------------------- ROCK -------------------------------- */
+sig('Stone Edge', {
+  charge: S => { dim(.3, 1100, '20,14,6'); },
+  mark: mk => { hitstop(60); VFX.shake(13, 420); punch(mk.x, mk.y - 20, 800, 1);
+    const spires = Array.from({ length: 7 }, (_, k) => ({ dx: (k - 3) * 9 + rnd2(-3, 3), dy: rnd2(-6, 6), h: rnd2(18, 40), delay: k * 25 }));
+    ent(1100, (q, age) => { for (const s of spires) { const t = Math.max(0, age - s.delay), g = Math.min(1, t / 120), f = q > .75 ? (1 - q) / .25 : 1; spikePx(bx(mk.x + s.dx * 2), by(mk.y + s.dy), s.h * easeOut(g), 4, RAMP.rock, f); if (g > 0 && g < 1) PX(bx(mk.x + s.dx * 2), by(mk.y + s.dy) - s.h * g, '#fff2cf'); } });
+    for (let k = 0; k < 8; k++) { const sd = Math.floor(Math.random() * 1e6), vx = rnd2(-180, 180), vy = rnd2(-380, -200); ent(900, (q, age) => { const t = age / 1000; rockPx(bx(mk.x + vx * t), by(mk.y - 10 + vy * t + 900 * t * t), 2, sd); }); }
+    emit(mk.x, mk.y, 18, { speed: [40, 140], vy: -40, drag: 2, life: 700, ramp: 'dust', shape: 'disc', size: 2, size2: 5 }); crackBurst(mk.x, mk.y, 5, 40); },
+  impact: S => { const h = headOf(S); emit(h.x, h.y + 10, 8, { speed: [80, 200], life: 400, ramp: 'rock', size: 1, g: 500 }); }
+});
+
+/* -------------------------------- NORMAL (status) -------------------------------- */
+sig('Swords Dance', {
+  exec: S => { const sd = side(S); glowActor(S, '#ff8a72', 1300, .4);
+    ent(1300, (q, age) => { const i = bx(sd.x), j = by(sd.y - 30), spin = age / 180, rise = q > .65 ? (q - .65) / .35 : 0, R = 30 * (1 - rise * .8);
+      for (let k = 0; k < 6; k++) { const a = spin + k * 1.047, x = i + Math.cos(a) * R, y = j + Math.sin(a) * R * .5 - rise * 40; swordPx(x, y, rise ? -Math.PI / 2 : a + Math.PI / 2); }
+      if (q > .9) { glow(i, j - 40, 14, '#ffffff', .8); } });
+    setTimeoutGame(1180, () => { screenFlash('#fff0e0', .3); emit(sd.x, sd.y - 110, 14, { speed: [60, 160], life: 500, color: '#ffffff', shape: 'star', size: 1 }); }); }
+});
+
+/* -------------------------------- GHOST -------------------------------- */
+sig('Confuse Ray', {
+  shot: p => { const i = bx(p.x), j = by(p.y + Math.sin(p.t / 70) * 6), r = 4 + Math.sin(p.t / 50) * 1.5; glow(i, j, 10, p.t % 400 < 200 ? '#fff07a' : '#b9a4ff', .6); aDisc(i, j, r, '#fff6b0'); aDisc(i, j, r * .5, '#ffffff'); aRing(i, j, r + 4, r + 4, '#b9a4ff', .6); },
+  hitAt: (x, y) => { const T = { x, y };
+    ent(1100, (q, age) => { const i = bx(T.x), j = by(T.y) - 10; for (let k = 0; k < 24; k++) { const t = k / 24, a = age / 150 + t * 12, r = 3 + t * 16; PX(i + Math.cos(a) * r, j + Math.sin(a) * r * .5, k % 2 ? '#fff07a' : '#b9a4ff', 1 - q); }
+      for (let k = 0; k < 3; k++) { const a = age / 220 + k * 2.09, x2 = i + Math.cos(a) * 22, y2 = j - 8 + Math.sin(a) * 6; aRect(x2 - 2, y2, 5, 1, '#fff07a', 1 - q); aRect(x2, y2 - 2, 1, 5, '#fff07a', 1 - q); } }); }
+});
+sig('Shadow Ball', {
+  charge: S => { dim(.35, 900, '10,4,20'); const sd = side(S); ent(WINDUP(MOVES['Shadow Ball']), q => { const i = bx(sd.x + sd.face * 16), j = by(sd.y - 30); aDisc(i, j, 1 + q * 5, '#1e1628'); aRing(i, j, 10 * (1 - q) + 5, 10 * (1 - q) + 5, '#8c6bff', .7);
+    if (Math.random() < .8) { const a = Math.random() * 6.28; P(sd.x + sd.face * 16 + Math.cos(a) * 50, sd.y - 30 + Math.sin(a) * 40, { vx: -Math.cos(a) * 140, vy: -Math.sin(a) * 110, life: 340, ramp: 'ghost', size: 1 }); } }); },
+  shot: p => { const i = bx(p.x), j = by(p.y), r = 6 + Math.sin(clock.t / 60);
+    glow(i, j, 14, '#5a3ac8', .55); aDisc(i, j, r, '#2d2068'); aDisc(i, j, r * .6, '#0e0a14'); aRing(i, j, r + 3 + Math.sin(clock.t / 40) * 1.5, r + 3, '#8c6bff', .7);
+    for (let k = 0; k < 3; k++) { const a = clock.t / 80 + k * 2.09; for (let s = 0; s < 6; s++) PX(i + Math.cos(a + s * .2) * (r + 1 + s * .6), j + Math.sin(a + s * .2) * (r + 1 + s * .6), '#b9a4ff', 1 - s / 6); }
+    if (Math.random() < .7) P(p.x, p.y, { life: 400, ramp: 'ghost', shape: 'disc', size: 2, size2: 0 }); },
+  impact: S => { const h = headOf(S); VFX.shake(10, 320);
+    ent(560, q => { const i = bx(h.x), j = by(h.y + 6); if (q < .35) { const r = 30 * (1 - q / .35); aRing(i, j, r, r * .8, '#8c6bff', 1, 2); aDisc(i, j, 6 * (q / .35), '#0e0a14'); }
+      else { const t = (q - .35) / .65, r = easeOut(t) * 50; shockPx(i, j, r, .75, '#5a3ac8', '#b9a4ff', 1 - t, 2); glow(i, j, 18 * (1 - t), '#8c6bff', .7); } });
+    setTimeoutGame(200, () => { hitstop(60); emit(h.x, h.y + 6, 22, { speed: [100, 260], life: 600, ramp: 'ghost', shape: 'disc', size: [1, 2] }); }); }
+});
 
 /* =====================================================================
    Section 9: HUD and DOM
@@ -2989,7 +3943,7 @@ window.addEventListener('resize', () => resizeScene());
 
 function frame(now) {
   const realDt = Math.min(50, now - clock.last); clock.last = now;
-  const dt = clock.paused ? 0 : realDt * clock.speed;
+  const dt = clock.paused ? 0 : realDt * clock.speed * (now < HITSTOP.until ? .12 : 1);
   clock.t += dt;
   for (let i = tasks.length - 1; i >= 0; i--) { const k = tasks[i], p = clamp((clock.t - k.start) / k.dur, 0, 1); try { if (k.fn) k.fn(p); } catch (e) { console.error(e); } if (p >= 1) { tasks.splice(i, 1); k.res(); } }
   if (G && !clock.paused) {

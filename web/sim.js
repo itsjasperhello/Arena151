@@ -196,7 +196,7 @@ function updateCast(S, dt) {
       if (c.phase === 'go') {
         const target = c.accOk && present(fs) ? { x: t.x, y: t.y } : c.aim;
         const sp = mv.anim === 'dash' ? 1150 : 820, d = dist(sd, target), reach = mv.anim === 'slash' ? TOUCH + 22 : TOUCH;
-        if (d > reach && c.t < 700) { const k = Math.min(1, sp * dt / 1000 / d); [sd.x, sd.y] = clampWalk(sd.x + (target.x - sd.x) * k, sd.y + (target.y - sd.y) * k); VFX.dust(S); return; }
+        if (d > reach && c.t < 700) { const k = Math.min(1, sp * dt / 1000 / d); [sd.x, sd.y] = clampWalk(sd.x + (target.x - sd.x) * k, sd.y + (target.y - sd.y) * k); VFX.dashFx(S, mv); return; }
         if (c.accOk && present(fs) && dist(sd, t) < reach + 30) { c.landed = applyHit(S, mv, m); if (mv.anim === 'slash') VFX.slash(fs, mv); }
         else missAt(sd.x, sd.y - 40, S);
         const ang = Math.atan2(sd.y - t.y, sd.x - t.x); sd.kbx += Math.cos(ang) * 260; sd.kby += Math.sin(ang) * 260;
@@ -310,6 +310,7 @@ function groupHit(p) {
 function applyStatusMove(S, mv) {
   const fs = other(S); if (!present(fs) || G.phase !== 'battle') return false;
   const t = act(fs), e = mv.e;
+  VFX.moveImpact(fs, mv);
   if ((e.tw && typeEff('Electric', t.types) === 0) || (e.powder && t.types.includes('Grass'))) { VFX.text(fs, 'NO EFFECT', '#c9d3ee'); logLine(`It doesn't affect ${t.name}...`); return true; }
   if (e.st) inflict(fs, e.st[0], true);
   if (e.cf) confuse(fs, 0, true);
