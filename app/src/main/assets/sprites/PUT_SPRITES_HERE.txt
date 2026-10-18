@@ -1,1 +1,0 @@
-Optional: place 001.png ... 151.png here to replace the generated sprites. See README.txt.
