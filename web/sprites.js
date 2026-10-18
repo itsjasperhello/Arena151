@@ -434,7 +434,20 @@ function animFromImage(img, live) {   // PNG, or a GIF the browser animates by i
 }
 function liveHolder() {
   let el = document.getElementById('spriteHolder');
-  if (!el) { el = document.createElement('div'); el.id = 'spriteHolder'; el.setAttribute('aria-hidden', 'true'); el.style.cssText = 'position:fixed;left:0;top:0;opacity:.004;pointer-events:none;z-index:2147483647;display:flex;flex-wrap:wrap;width:1px';   // painted so browsers that can animate it keep doing so document.body.appendChild(el); }
+
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'spriteHolder';
+    el.setAttribute('aria-hidden', 'true');
+    el.style.cssText =
+      'position:fixed;left:0;top:0;opacity:.004;' +
+      'pointer-events:none;z-index:2147483647;' +
+      'display:flex;flex-wrap:wrap;width:1px';
+
+    // Keep the element painted so browsers can animate its sprites.
+    document.body.appendChild(el);
+  }
+
   return el;
 }
 function animFrameIndex(a, t) {
