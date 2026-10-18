@@ -4,7 +4,7 @@ A native Android app (Java + WebView) that runs the full Arena 151 game offline,
 
 - **Requires:** Android 8.0 (API 26) or newer.
 - **App ID:** `com.arena151.game`
-- **Version:** 7.0
+- **Version:** 7.1
 
 ## Build the APK on Windows (Android Studio)
 1. Install **Android Studio** (free) from developer.android.com/studio. It includes the Android SDK and Java.

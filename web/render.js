@@ -102,7 +102,7 @@ const VFX = {
     portraitShake(S);
   },
   impactAt(x, y, mv) { const R = MFX[mv.name]; if (R && R.hitAt) { try { R.hitAt(x, y, mv); } catch (e) { console.error(e); } return; } burstAt(x, y, fxOf(mv).col, 8, 160, 1); },
-  explode(x, y, mv) { const f = fxOf(mv); ringFx(x, y, f.col, 10, 90, 420); ringFx(x, y, f.core, 6, 60, 320); burstAt(x, y, f.col, 26, 300, 2); VFX.shake(7, 260); addScar('scorch', x, y + 30); },
+  explode(x, y, mv) { const R = MFX[mv.name]; if (R && R.explode) { try { R.explode(x, y, mv); } catch (e) { console.error(e); } return; } const f = fxOf(mv); ringFx(x, y, f.col, 10, 90, 420); ringFx(x, y, f.core, 6, 60, 320); burstAt(x, y, f.col, 26, 300, 2); VFX.shake(7, 260); addScar('scorch', x, y + 30); },
   status(S, st) { const h = head(S); ringFx(h.x, h.y + 10, STATUS_INFO[st].color, 10, 60, 420); },
   stage(S, k, d) { const h = head(S), up = d > 0; fx.push({ kind: 'arrows', x: h.x, y: h.y, color: up ? '#ff8a72' : '#76a7ff', up, t0: clock.t, life: 650 }); },
   heal(S, h, small) { const p = head(S); for (let i = 0; i < (small ? 5 : 14); i++) spark(p.x + (Math.random() - .5) * 50, p.y + 30, { color: '#7dff9a', vy: -80 - Math.random() * 60, vx: 0, life: 700, shape: 'plus' }); floatText(p.x, p.y - 20, '+' + h, { size: small ? 16 : 24, color: '#7dff9a' }); },
@@ -336,7 +336,7 @@ function draw(dt) {
   animateStage(b, OX, OY, clock.t);
   b.drawImage(scarCanvas, -OX, -OY);
   if (G) {
-    for (const mk of G.marks) { const q = mk.t / mk.delay, col = fxOf(mk.mv).col, i = bx(mk.x), j = by(mk.y), r = mk.r / 2; aEllFill(i, j, r, r * .6, col, .12 + q * .14); aRing(i, j, r, r * .6, col, .9); aRing(i, j, r * q, r * q * .6, '#ffffff', .8);
+    for (const mk of G.marks) { const RM = MFX[mk.mv.name]; if (RM && RM.markDraw) { try { RM.markDraw(mk, mk.t / mk.delay); } catch (e) { console.error(e); } bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'source-over'; continue; } const q = mk.t / mk.delay, col = fxOf(mk.mv).col, i = bx(mk.x), j = by(mk.y), r = mk.r / 2; aEllFill(i, j, r, r * .6, col, .12 + q * .14); aRing(i, j, r, r * .6, col, .9); aRing(i, j, r * q, r * q * .6, '#ffffff', .8);
       if (mk.kind === 'sky' && q > .45) { const fall = (q - .45) / .55; for (let s = 0; s < 4; s++) aDisc(bx(mk.x + (s - 1.5) * 22), by(lerp(mk.y - 300, mk.y - 10, fall) - s * 18), mk.mv.type === 'Rock' ? 3 : 2, s % 2 ? col : fxOf(mk.mv).core); } }
     for (const w of G.waves) { const RW = MFX[w.mv.name]; if (RW && RW.wave) { try { RW.wave(w); } catch (e) { console.error(e); } bctx.globalAlpha = 1; continue; } const col = fxOf(w.mv).col, r = w.r / 2; aRing(bx(w.x), by(w.y), r, r * .62, col, .95, 2); aRing(bx(w.x), by(w.y), r - 2, r * .62 - 1, '#ffffff', .6); if (w.kind === 'quake' && Math.random() < .5) { const a = Math.random() * 6.28; spark(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { color: '#a08a66', vy: -90, vx: 0, g: 300, life: 380 }); } }
   }
