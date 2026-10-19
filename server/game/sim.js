@@ -519,8 +519,12 @@ function simStep(dt) {
     updateWorld(dt);
     // Sudden Death: after 5:00, damage grows 25% every 30 seconds; at 10:00 the battle is decided on HP
     if (G.elapsed > 300000) { const od = 1 + Math.floor((G.elapsed - 300000) / 30000 + 1) * .25; if (od !== G.overtime) { if (!G.overtime) { VFX.big('SUDDEN DEATH!', '#ff6a5a'); logLine('Sudden Death! Damage keeps rising until someone falls.', 't'); } G.overtime = od; } }
+    // No-damage rule: 30 s against the AI (online battles allow longer), with a warning 10 s before it ends the battle
+    const staleMs = G.staleMs || 30000, quiet = G.time - G.lastDmgT;
+    if (quiet < 1000) G.staleWarned = false;
     if (G.elapsed > 600000) endBattle(decideByHp('Ten-minute limit reached. Decided by remaining HP.'), 'TIME!');
-    else if (G.time - G.lastDmgT > 30000) endBattle(decideByHp('No damage for 30 seconds. Decided by remaining HP.'), 'STALEMATE');
+    else if (quiet > staleMs) endBattle(decideByHp(`No damage for ${Math.round(staleMs / 1000)} seconds. Decided by remaining HP.`), 'STALEMATE');
     else if (G.timeLimit && G.elapsed / 1000 >= G.timeLimit) endBattle(decideByHp('Time limit reached. Decided by remaining HP.'), 'TIME!');
+    else if (!G.staleWarned && quiet > staleMs - 10000) { G.staleWarned = true; VFX.big('ATTACK — 10 SECONDS!', '#ffd84a'); logLine('No damage for a while. The battle ends in 10 seconds unless someone lands a hit.', 't'); }
   }
 }

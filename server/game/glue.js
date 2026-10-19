@@ -20,6 +20,7 @@ function __init(teamA, teamB, names, arena, timeLimit) {
   TEAM_NAME.A = names.A; TEAM_NAME.B = names.B;
   const id = setArena(arena);
   G = newBattle(teamA, teamB, { auto: false, timeLimit: timeLimit || 0 }); G.human = { A: true, B: true }; G.phase = 'intro';
+  G.staleMs = 90000;          // two people need longer than the AI to find each other; a warning shows 10 s before
   __events = []; __needPick = false; __ended = null;
   return id;
 }

@@ -15,7 +15,7 @@ const { WebSocketServer } = require('ws');
 const PORT = +process.env.PORT || 8151;
 const VERSION = fs.readFileSync(path.join(__dirname, 'game', 'VERSION'), 'utf8').trim();
 const WW = 1000;                 // arena width in world units (positions are mirrored around this)
-const TICK = 16, SNAP_EVERY = 50, PICK_TIMEOUT = 20000, CUE_TIMEOUT = 6000, READY_TIMEOUT = 15000;
+const TICK = 16, SNAP_EVERY = 50, PICK_TIMEOUT = 15000, CUE_TIMEOUT = 6000, READY_TIMEOUT = 15000;
 const CODE = ['data.js', 'fxdata.js', 'arenas.js', 'sim.js', 'glue.js'].map(f => fs.readFileSync(path.join(__dirname, 'game', f), 'utf8')).join('\n;\n');
 const SCRIPT = new vm.Script(CODE, { filename: 'arena151-game.js' });
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -46,7 +46,7 @@ function mirrorEvent(ev) {
   return [name, ...args.map((a, i) => (POS_EVENTS.has(name) && i === 0 && typeof a === 'number') ? WW - a : (a === 'A' || a === 'B') ? swapSide(a) : a)];
 }
 function mirrorSnap(s) {
-  return { ...s, sides: { A: mirror(s.sides.B), B: mirror(s.sides.A) }, teams: { A: s.teams.B, B: s.teams.A },
+  return { ...s, sides: { A: mirror(s.sides.B), B: mirror(s.sides.A) }, teams: { A: s.teams.B, B: s.teams.A }, pickLeft: s.pickLeft ? { A: s.pickLeft.B, B: s.pickLeft.A } : null,
     shots: mirror(s.shots), beams: mirror(s.beams), marks: mirror(s.marks), waves: mirror(s.waves) };
 }
 
@@ -111,6 +111,7 @@ setInterval(() => {
     if ((room.snapAt += dt) >= SNAP_EVERY) {
       room.snapAt = 0;
       const snap = ctx.__snapshot(), ev = ctx.__takeEvents();
+      snap.pickLeft = { A: room.pickSince.A ? Math.max(0, PICK_TIMEOUT - (now - room.pickSince.A)) : 0, B: room.pickSince.B ? Math.max(0, PICK_TIMEOUT - (now - room.pickSince.B)) : 0 };
       sendSnap(room, 'A', snap, ev);
       sendSnap(room, 'B', mirrorSnap(snap), ev.map(mirrorEvent));
     }

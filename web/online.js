@@ -106,7 +106,12 @@ function applySnap(s, events) {
   }
   // your Pokémon fainted: choose the next one (the server waits up to 20 seconds, then picks for you)
   if (G.phase === 'pick' && G.sides.A.state === 'wait' && !NET.pickShown) { NET.pickShown = true; onNeedPick(); }
-  if (G.phase === 'pick' && G.sides.B.state === 'wait' && G.sides.A.state !== 'wait' && wasPhase !== 'pick') toast('Your opponent is choosing their next Pokémon…');
+  if (G.phase === 'pick' && s.pickLeft) {           // live countdown so nobody wonders why the battle stopped
+    const secs = Math.ceil(Math.max(s.pickLeft.A, s.pickLeft.B) / 1000);
+    if (secs !== NET.pickSecs) { NET.pickSecs = secs;
+      if (G.sides.A.state === 'wait') { const h = document.querySelector('#ovSwitch h2, #ovSwitch h3'); if (h) h.textContent = `Choose your next Pokémon — ${secs}s`; }
+      else toast(`Your opponent is choosing their next Pokémon… ${secs}s`); }
+  } else NET.pickSecs = null;
   if (G.phase !== 'pick') NET.pickShown = false;
   updateHUD();
 }
