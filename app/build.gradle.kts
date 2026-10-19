@@ -10,8 +10,8 @@ android {
         applicationId = "com.arena151.game"
         minSdk = 26          // Android 8.0+
         targetSdk = 35
-        versionCode = 20
-        versionName = "12.0"
+        versionCode = 21
+        versionName = "13.0"
     }
 
     // One fixed signing key, kept in the repo, so every APK GitHub builds can install as an

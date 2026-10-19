@@ -5,7 +5,7 @@
    is a few layers of tone or filtered noise with sweeps, wobble, repeats
    and delays, tuned to that move.
    Music: put  <Stage_Name>.mp3  (spaces as underscores) in the "music"
-   folder; Menu.mp3 (optional) plays on the title screen.
+   folder; Opening.mp3 (optional) plays on the start screen.
    ===================================================================== */
 let AC = null, SFX_OUT = null, NOISE = null, VOICES = 0;
 function audioCtx() {
@@ -196,9 +196,9 @@ function hookMoveSfx() {
 }
 setTimeout(hookMoveSfx, 0);
 
-/* ---------- stage music: music/<Stage_Name>.mp3, optional music/Menu.mp3 ---------- */
+/* ---------- stage music: music/<Stage_Name>.mp3, optional music/Opening.mp3 on the start screen ---------- */
 const MUSIC = { el: null, file: null, missing: new Set(), vol: 0 };
-const musicFileFor = () => (typeof G === 'undefined' || !G || G.phase === 'title') ? 'Menu.mp3' : STAGE.name.replace(/\s+/g, '_') + '.mp3';
+const musicFileFor = () => ((typeof START !== 'undefined' && START.open) || typeof G === 'undefined' || !G || G.phase === 'title') ? 'Opening.mp3' : STAGE.name.replace(/\s+/g, '_') + '.mp3';
 const musicTargetVol = () => .7 * ((window.SETTINGS && SETTINGS.musicVol != null) ? SETTINGS.musicVol : .5);
 function musicTick() {
   const want = musicFileFor(), quiet = document.hidden || (typeof clock !== 'undefined' && clock.paused && G && G.phase === 'battle');
@@ -233,5 +233,5 @@ setInterval(musicTick, 60);
 })();
 (function audioHelp() {
   const grid = document.querySelector('#helpOv .qgrid'); if (!grid) return;
-  grid.insertAdjacentHTML('beforeend', '<p>Music: put <b>Stage_Name.mp3</b> files (for example <b>Metro_Plaza.mp3</b>) in the <b>music</b> folder; <b>Menu.mp3</b> plays on the title screen</p>');
+  grid.insertAdjacentHTML('beforeend', '<p>Music: put <b>Stage_Name.mp3</b> files (for example <b>Metro_Plaza.mp3</b>) in the <b>music</b> folder; <b>Opening.mp3</b> plays on the start screen</p>');
 })();
