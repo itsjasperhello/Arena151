@@ -55,7 +55,7 @@ function loadTrainer(name) {
 const customTrainer = S => TR_ANIM[TRSEL[S]] || null;
 function trainerAnimFor(S) { return customTrainer(S); }
 const trainerFacesRight = name => name in TRSEL.flip ? !!TRSEL.flip[name] : FACES_RIGHT_BY_DEFAULT.has(name);
-const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? S === 'B' : S === 'A';   // Red faces right, Gold faces left
+const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? S === 'B' : S === 'A';   // Red faces right, Blue faces left
 loadTrainer(TRSEL.A); loadTrainer(TRSEL.B);
 
 drawTrainer = function (S) {          // the sprite is drawn on the screen layer; the ground layer only gets its shadow
@@ -81,7 +81,7 @@ function drawCustomTrainers(c) {
     c.restore();
   }
 }
-// VS screen card: always right-facing (the VS screen flips Gold's side itself).
+// VS screen card: always right-facing (the VS screen flips Blue's side itself).
 trainerCanvas = function (S) {
   const key = S + TRSEL[S] + 'card'; if (TRAINER_CACHE[key]) return TRAINER_CACHE[key];
   const c = document.createElement('canvas'); c.width = 64; c.height = 96; const a = customTrainer(S); if (!a) return c;

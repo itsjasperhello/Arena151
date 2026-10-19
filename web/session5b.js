@@ -31,14 +31,14 @@ function toastMsg(text) { if (typeof camToast === 'function') camToast(text, '')
   const anchor = $('bClear'); if (!anchor) return;
   const row = document.createElement('div'); row.className = 'presetRow';
   row.innerHTML = `<label for="presetSel">Team presets</label><select id="presetSel"></select>
-    <button class="btn ghost" id="pSaveA" type="button">Save Red's team</button><button class="btn ghost" id="pSaveB" type="button">Save Gold's team</button>
-    <button class="btn" id="pLoadA" type="button">Load to Red</button><button class="btn" id="pLoadB" type="button">Load to Gold</button>
+    <button class="btn ghost" id="pSaveA" type="button">Save Red's team</button><button class="btn ghost" id="pSaveB" type="button">Save Blue's team</button>
+    <button class="btn" id="pLoadA" type="button">Load to Red</button><button class="btn" id="pLoadB" type="button">Load to Blue</button>
     <button class="btn ghost" id="pSwap" type="button">Swap sides</button>`;
   anchor.parentNode.insertAdjacentElement('afterend', row);
   const sel = $('presetSel');
   const refresh = () => { const cur = sel.value || '0'; sel.innerHTML = QOL.presets.map((p, k) => `<option value="${k}">Preset ${k + 1}${p ? ': ' + p.slice(0, 3).join(', ') + '…' : ' (empty)'}</option>`).join(''); sel.value = cur; };
   const save = S => { QOL.presets[+sel.value] = readPickers(S); saveQol(); refresh(); toastMsg(`Saved to preset ${+sel.value + 1}`); };
-  const load = S => { const p = QOL.presets[+sel.value]; if (!validTeam(p)) { toastMsg('That preset is empty'); return; } const a = readPickers('A'), b = readPickers('B'); setPickers(S === 'A' ? p : a, S === 'B' ? p : b); toastMsg(`Preset ${+sel.value + 1} loaded for ${S === 'A' ? 'Red' : 'Gold'}`); };
+  const load = S => { const p = QOL.presets[+sel.value]; if (!validTeam(p)) { toastMsg('That preset is empty'); return; } const a = readPickers('A'), b = readPickers('B'); setPickers(S === 'A' ? p : a, S === 'B' ? p : b); toastMsg(`Preset ${+sel.value + 1} loaded for ${TEAM_NAME[S]}`); };
   $('pSaveA').onclick = () => save('A'); $('pSaveB').onclick = () => save('B'); $('pLoadA').onclick = () => load('A'); $('pLoadB').onclick = () => load('B'); $('pSwap').onclick = swapSides;
   refresh();
 })();

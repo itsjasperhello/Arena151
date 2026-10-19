@@ -133,7 +133,7 @@ async function startBattle(picksA, picksB, stageId) {
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
   $('log').innerHTML = ''; $('timer').textContent = '0:00'; movesKey = ''; rosterKey = '';
-  logLine(`Red and Gold meet in the ${STAGE.name}. Live battle — six Pokémon each.`, 't');
+  logLine(`${TEAM_NAME.A} and ${TEAM_NAME.B} meet in the ${STAGE.name}. Live battle — six Pokémon each.`, 't');
   updateHUD(true); warmSprites([...G.picks.A, ...G.picks.B]);
   try {
     await playIntro(my); guard(my);
@@ -189,7 +189,7 @@ function showResults() {
   $('resStats').innerHTML = `<span>Battle time</span><b>${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}</b>
     <span>Attacks used</span><b>${st.A.moves} – ${st.B.moves}</b>
     <span>Red damage / KOs</span><b>${st.A.dmg} / ${st.A.kos}</b>
-    <span>Gold damage / KOs</span><b>${st.B.dmg} / ${st.B.kos}</b>
+    <span>Blue damage / KOs</span><b>${st.B.dmg} / ${st.B.kos}</b>
     <span>Pokémon left</span><b>${left('A')} – ${left('B')}</b>
     <span>Biggest hit</span><b>${st.best ? `${st.best.amt} (${st.best.move})` : '—'}</b>`;
   showOverlay('ovResults', true); $('rRematch').focus();

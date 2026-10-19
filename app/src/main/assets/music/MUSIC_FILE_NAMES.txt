@@ -1,0 +1,19 @@
+ARENA 151 - MUSIC FILES
+=======================
+Put MP3 files in this folder (app/src/main/assets/music), named after each stage with
+underscores instead of spaces. Each one loops while you battle on that stage:
+
+  Metro_Plaza.mp3
+  Stratos_Fortress.mp3
+  Prism_Grotto.mp3
+  Mirage_Oasis.mp3
+  Verdant_Ruins.mp3
+  Ice_Island.mp3
+  Cyberpoke_Future.mp3
+
+  Menu.mp3            (optional) plays on the title screen
+
+Names must match exactly, including capital letters. Any file you leave out is simply
+silent on that stage. Music fades between stages, pauses with the game, and its volume
+is set in Settings > Music volume (move sounds have their own slider).
+After adding files, push to GitHub to build a new APK.

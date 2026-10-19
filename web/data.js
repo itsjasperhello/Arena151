@@ -17,7 +17,7 @@ function mulberry(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79
 const rnd = () => Math.random();
 const randInt = (a, b) => a + Math.floor(rnd() * (b - a + 1));
 const other = s => (s === 'A' ? 'B' : 'A');
-const TEAM_NAME = { A: 'Red', B: 'Gold' };
+const TEAM_NAME = { A: 'Red', B: 'Blue' };
 
 /* =====================================================================
    Section 2: data — roster, types, moves
