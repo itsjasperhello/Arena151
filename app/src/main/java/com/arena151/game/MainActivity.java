@@ -123,6 +123,20 @@ public class MainActivity extends Activity {
     /** Methods callable from the game as window.AndroidApp.* */
     public class Bridge {
 
+        /** Lists the files bundled in any assets folder (sprites, music, cry) as a JSON array. */
+        @JavascriptInterface
+        public String listAssets(String dir) {
+            StringBuilder out = new StringBuilder("[");
+            try {
+                String[] names = getAssets().list(dir.replaceAll("[^A-Za-z0-9_-]", ""));
+                if (names != null) for (int i = 0; i < names.length; i++) {
+                    if (i > 0) out.append(',');
+                    out.append('"').append(names[i].replace("\\", "\\\\").replace("\"", "\\\"")).append('"');
+                }
+            } catch (Exception e) { /* missing folder: empty list */ }
+            return out.append(']').toString();
+        }
+
         /** Lists the files bundled in assets/sprites as a JSON array, so new trainer files appear automatically. */
         @JavascriptInterface
         public String listSprites() {

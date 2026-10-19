@@ -267,3 +267,16 @@ details.panel summary{cursor:pointer;font-weight:800;font-size:15px}
 .appmode .toast{bottom:auto;top:58px}
 @media (orientation:portrait){.appmode .rotate{display:flex;position:fixed;inset:0;z-index:50;background:#0c1120;color:#fff;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);text-align:center}.appmode .rotate div{font-size:64px}.appmode .rotate p{font-size:20px;margin:6px 20px}}
 .appmode:not(.inbattle) .stick,.appmode:not(.inbattle) .tright,.appmode:not(.inbattle) .troster{visibility:hidden}
+
+/* charging: fills left to right in the move's colour while the move winds up, then glows while it fires */
+.move .chfill{position:absolute;left:0;top:0;bottom:0;width:calc(var(--ch,0)*100%);background:linear-gradient(90deg,color-mix(in srgb,var(--mc) 25%,transparent),color-mix(in srgb,var(--mc) 70%,transparent));pointer-events:none}
+.move.charging{box-shadow:0 0 0 3px #ffd84a,0 0 16px 2px #ffd84aaa;animation:moveCharge .5s ease-in-out infinite alternate}
+.move.charging .cdtxt{color:#ffe36b;font-size:14px;letter-spacing:.04em}
+.move.queued:not(.charging){box-shadow:0 0 0 3px #fff;outline:2px dashed #ffffffaa;outline-offset:2px}
+.move.queued:not(.charging) .cdtxt{font-size:13px}
+@keyframes moveCharge{from{filter:brightness(1)}to{filter:brightness(1.18)}}
+@media (prefers-reduced-motion:reduce){.move.charging{animation:none}}
+/* every touch control claims its finger: no pinch/scroll can steal the joystick when a second finger taps */
+.touch-ui,.touch-ui *,#moves,#moves .move,.roster .card,#tMega{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* state labels stay readable over any fill colour */
+.move .cdtxt{-webkit-text-stroke:3px #0a0e1a;paint-order:stroke fill;text-shadow:none}

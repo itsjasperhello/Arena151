@@ -41,6 +41,11 @@ function moveDescription(mv) {
   const kind = { contact: 'charges in', dash: 'fast dash', slash: 'close slash', projectile: 'projectile', beam: 'beam — dodge the aim line', bolt: 'strikes the target spot', sky: 'falls on the target spot', psy: 'grips the target spot', quake: 'shockwave around the user', wave: 'shockwave around the user', burst: 'exploding shot', stars: 'homing stars', leaves: 'leaf volley', wind: 'wind blades', multi: 'rapid shots', drain: 'draining shot', dig: 'burrows under the target', hex: 'slow status shot', powder: 'slow powder' }[mv.anim];
   return `${mv.name}: ${[kind, ...out].filter(Boolean).join('; ')}. Cooldown ${(cooldownOf(mv) / 1000).toFixed(1)}s.`;
 }
+// Fire on touch-down rather than click: a second finger tapping while the first steers never produces a click.
+function onTap(el, fn) {
+  el.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.button !== 0) return; if (el.disabled) return; e.preventDefault(); fn(e); });
+  el.onclick = e => { if (e.detail === 0) fn(e); };      // keyboard activation
+}
 function renderMoves() {
   const el = $('moves'); if (!G) { el.innerHTML = ''; return; }
   const m = act('A'), foe = act('B'), key = m.name + '|' + foe.name + '|' + G.sides.A.active + '|' + G.auto;
@@ -52,9 +57,9 @@ function renderMoves() {
     const effTag = eff === null ? '' : eff === 0 ? '<span class="me imm">No effect</span>' : eff > 1 ? `<span class="me se">${eff}× effective</span>` : eff < 1 ? `<span class="me nve">${eff}× effective</span>` : '<span class="me"></span>';
     const cat = mv.cat === 'P' ? 'Physical' : mv.cat === 'S' ? 'Special' : 'Status';
     b.innerHTML = `<span class="key">${i + 1}</span><span class="mn">${mv.name}</span><span class="mp">${mv.cat === 'X' ? '—' : mv.e.fix ? mv.e.fix * HP_MULT : mv.pow}</span>
-      <span class="mm">${mv.type} · ${cat} · ${mv.acc == null ? 'never misses' : mv.acc + '%'} · ${(cooldownOf(mv) / 1000).toFixed(1)}s</span>${effTag}<span class="cdfill"></span><span class="cdtxt"></span>`;
+      <span class="mm">${mv.type} · ${cat} · ${mv.acc == null ? 'never misses' : mv.acc + '%'} · ${(cooldownOf(mv) / 1000).toFixed(1)}s</span>${effTag}<span class="chfill"></span><span class="cdfill"></span><span class="cdtxt"></span>`;
     b.title = moveDescription(mv);
-    b.onclick = () => queueMove(i);
+    onTap(b, () => queueMove(i));
     el.appendChild(b);
   });
 }
@@ -65,7 +70,11 @@ function updateCooldowns() {
     const b = btns[i], mv = MOVES[m.moves[i]]; if (!mv) continue;
     const cd = m.cd[i], frac = cd > 0 ? clamp(cd / cooldownOf(mv), 0, 1) : 0;
     b.style.setProperty('--cd', frac.toFixed(3));
-    const txt = cd > 0 ? (cd / 1000).toFixed(1) : '';
+    // charging: the move has been triggered and is winding up (or firing); queued: waiting for the current action
+    const c = sd.cast, charging = !!(c && c.idx === i && G.phase === 'battle');
+    const ch = charging ? (c.phase === 'wind' ? clamp(c.t / Math.max(1, WINDUP(mv)), 0, 1) : 1) : 0;
+    b.style.setProperty('--ch', ch.toFixed(3)); b.classList.toggle('charging', charging);
+    const txt = charging ? (c.phase === 'wind' ? 'CHARGING' : 'FIRING') : sd.queued === i ? 'QUEUED' : cd > 0 ? (cd / 1000).toFixed(1) : '';
     const t = b.querySelector('.cdtxt'); if (t.textContent !== txt) t.textContent = txt;
     b.classList.toggle('ready', cd <= 0 && G.phase === 'battle');
     b.classList.toggle('queued', sd.queued === i);
@@ -81,7 +90,7 @@ function rosterCard(m, i, S, opts = {}) {
   el.appendChild(cv);
   el.insertAdjacentHTML('beforeend', `<div class="cn">${m.mega ? 'Mega ' : ''}${m.name}</div><div class="cb"><i style="width:${f * 100}%;background:${hpColor(f)}"></i></div>`);
   el.title = `${m.name} — ${m.hp}/${m.max} HP${m.status ? ' — ' + STATUS_INFO[m.status].name : ''}`;
-  if (opts.button) { el.disabled = !opts.pickable; if (opts.onPick) el.onclick = () => opts.onPick(i); }
+  if (opts.button) { el.disabled = !opts.pickable; if (opts.onPick) onTap(el, () => opts.onPick(i)); }
   return el;
 }
 let rosterKey = '';
@@ -446,7 +455,7 @@ function initAppMode() {
   const body = $('drawerBody'); body.appendChild(document.querySelector('.deck')); body.appendChild($('builder')); $('builder').open = true;
   $('tMenu').onclick = openMenu; $('drawerClose').onclick = closeMenu;
   $('tPause').onclick = togglePause;
-  $('tMega').onclick = () => { if (G && !G.auto && megaEvolve('A')) haptic(40); };
+  onTap($('tMega'), () => { if (G && !G.auto && megaEvolve('A')) haptic(40); });
   $('tTeams').onclick = $('rTeams').onclick = openMenu;
   for (const id of ['bApply', 'bNew', 'bRematch']) { const b = $(id), old = b.onclick; b.onclick = e => { closeMenu(); old && old(e); }; }
   try { $('optHaptics').checked = store.get('arena151.haptics') !== '0'; } catch (e) { }
