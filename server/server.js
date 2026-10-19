@@ -16,6 +16,9 @@ const PORT = +process.env.PORT || 8151;
 const VERSION = fs.readFileSync(path.join(__dirname, 'game', 'VERSION'), 'utf8').trim();
 const WW = 1000;                 // arena width in world units (positions are mirrored around this)
 const TICK = 16, SNAP_EVERY = 50, PICK_TIMEOUT = 15000, CUE_TIMEOUT = 6000, READY_TIMEOUT = 15000;
+const GRACE = 20000;                         // a dropped player has this long to reconnect before forfeiting
+const MAX_BUFFER = 128 * 1024;               // stop queueing snapshots for a phone that is not keeping up
+const crypto = require('crypto');
 const CODE = ['data.js', 'fxdata.js', 'arenas.js', 'sim.js', 'glue.js'].map(f => fs.readFileSync(path.join(__dirname, 'game', f), 'utf8')).join('\n;\n');
 const SCRIPT = new vm.Script(CODE, { filename: 'arena151-game.js' });
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -61,10 +64,11 @@ function startRoom(room) {
   const ctx = vm.createContext({ console, Math, JSON, Date });
   SCRIPT.runInContext(ctx); room.ctx = ctx;
   room.arenaId = ctx.__init(room.info.A.team, room.info.B.team, { A: room.info.A.trainer, B: room.info.B.trainer }, room.arena, room.timeLimit);
-  room.state = 'intro'; room.seen = { A: {}, B: {} }; room.ready = {}; room.cues = {}; room.snapAt = 0; room.pickSince = {}; room.over = false; room.rematch = {};
+  room.state = 'intro'; room.seen = { A: {}, B: {} }; room.pendingEv = { A: [], B: [] }; room.away = {}; room.tokens = room.tokens || { A: crypto.randomUUID(), B: crypto.randomUUID() }; room.ready = {}; room.cues = {}; room.snapAt = 0; room.pickSince = {}; room.over = false; room.rematch = {};
   for (const S of ['A', 'B']) {
     const me = room.info[S], opp = room.info[swapSide(S)];
-    send(room.players[S], { t: 'start', arena: room.arenaId, timeLimit: room.timeLimit, me, opp, role: S === 'A' ? 'host' : 'guest' });
+    room.startMsg = room.startMsg || {}; room.startMsg[S] = { arena: room.arenaId, timeLimit: room.timeLimit, me, opp, role: S === 'A' ? 'host' : 'guest', code: room.code, token: room.tokens[S] };
+    send(room.players[S], { t: 'start', ...room.startMsg[S] });
   }
   log(`room ${room.code}: battle on ${room.arenaId} — ${room.info.A.trainer} vs ${room.info.B.trainer}`);
   runIntro(room).catch(e => log('intro error', e));
@@ -88,38 +92,56 @@ function closeRoom(room, why) { room.closed = true; rooms.delete(room.code); log
 
 // Team data changes rarely (except cooldowns), so each player only gets the Pokémon that changed since their last snapshot.
 function sendSnap(room, S, snap, ev) {
-  const ws = room.players[S]; if (!ws || ws.readyState !== 1) return;
+  const ws = room.players[S], pend = room.pendingEv[S];
+  pend.push(...ev); if (pend.length > 400) pend.splice(0, pend.length - 400);
+  if (!ws || ws.readyState !== 1 || ws.bufferedAmount > MAX_BUFFER) return;   // phone is behind or away: its events wait for the next snapshot
+  ev = pend.splice(0, pend.length);
   const seen = room.seen[S], tm = { A: {}, B: {} };
   for (const T of ['A', 'B']) snap.teams[T].forEach((mon, i) => { const j = JSON.stringify(mon), key = T + i; if (seen[key] !== j) { seen[key] = j; tm[T][i] = mon; } });
   const { teams, ...rest } = snap;
-  ws.send(JSON.stringify({ t: 'snap', s: { ...rest, tm }, ev }));
+  ws.send(JSON.stringify({ t: 'snap', s: { ...rest, tm, sw: Date.now() }, ev }));
 }
 /* ---------- the loop: simulate, then stream snapshots ---------- */
-let last = Date.now();
-setInterval(() => {
-  const now = Date.now(), dt = Math.min(100, now - last); last = now;
-  for (const room of rooms.values()) {
-    if (!room.ctx || room.closed) continue;
-    const ctx = room.ctx;
-    let left = dt; while (left > 0) { const step = Math.min(TICK, left); try { ctx.__step(step); } catch (e) { log('sim error', e); } left -= step; }
+function tickRoom(room, now, dt) {
+    const ctx = room.ctx, awayS = ['A', 'B'].find(S => room.away[S]);
+    if (awayS) {                                                  // someone dropped: hold the battle while they reconnect
+      const expired = ['A', 'B'].filter(S => room.away[S] && now - room.away[S] > GRACE);
+      if (expired.length) {
+        if (room.away.A && room.away.B) { closeRoom(room, 'both players gone'); return; }
+        const gone = expired[0]; log(`room ${room.code}: ${gone} did not come back`); try { ctx.__forfeit(gone); } catch (e) { }
+        const other = room.players[swapSide(gone)]; send(other, { t: 'opponentLeft' }); if (other) other.room = null; closeRoom(room, 'reconnect timed out'); return;
+      }
+      for (const S of ['A', 'B']) if (room.pickSince[S]) room.pickSince[S] += dt;   // pick timers wait too
+    } else {
+      let left = dt; while (left > 0) { const step = Math.min(TICK, left); ctx.__step(step); left -= step; }
+    }
     const st = ctx.__state();
     // pick phase: each waiting player has a time limit, then the best replacement is sent automatically
     for (const S of ['A', 'B']) {
-      if (st.waiting.includes(S)) { room.pickSince[S] = room.pickSince[S] || now; if (now - room.pickSince[S] > PICK_TIMEOUT) { ctx.__autoPick(S); room.pickSince[S] = 0; } }
+      if (st.waiting.includes(S)) { room.pickSince[S] = room.pickSince[S] || now; if (!awayS && now - room.pickSince[S] > PICK_TIMEOUT) { ctx.__autoPick(S); room.pickSince[S] = 0; } }
       else room.pickSince[S] = 0;
     }
     if ((room.snapAt += dt) >= SNAP_EVERY) {
       room.snapAt = 0;
       const snap = ctx.__snapshot(), ev = ctx.__takeEvents();
       snap.pickLeft = { A: room.pickSince.A ? Math.max(0, PICK_TIMEOUT - (now - room.pickSince.A)) : 0, B: room.pickSince.B ? Math.max(0, PICK_TIMEOUT - (now - room.pickSince.B)) : 0 };
+      snap.hold = awayS ? { side: awayS, left: Math.max(0, GRACE - (now - room.away[awayS])) } : null;
       sendSnap(room, 'A', snap, ev);
-      sendSnap(room, 'B', mirrorSnap(snap), ev.map(mirrorEvent));
+      const m = mirrorSnap(snap); if (m.hold) m.hold = { side: swapSide(m.hold.side), left: m.hold.left };
+      sendSnap(room, 'B', m, ev.map(mirrorEvent));
     }
     if (st.ended && !room.over) {
       room.over = true; room.state = 'over';
       for (const S of ['A', 'B']) send(room.players[S], { t: 'over', winner: st.ended.winner === 'draw' ? 'draw' : (st.ended.winner === S ? 'A' : 'B'), big: st.ended.big, reason: st.ended.reason });
       log(`room ${room.code}: winner ${st.ended.winner}`);
     }
+}
+let last = Date.now();
+setInterval(() => {
+  const now = Date.now(), dt = Math.min(100, now - last); last = now;
+  for (const room of rooms.values()) {
+    if (!room.ctx || room.closed) continue;
+    try { tickRoom(room, now, dt); } catch (e) { if (!room.errLogged) { room.errLogged = true; log(`room ${room.code} tick error`, e); } }
   }
 }, TICK);
 
@@ -138,7 +160,7 @@ wss.on('connection', (ws, req) => {
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
     try { handle(ws, m); } catch (e) { log('message error', e); }
   });
-  ws.on('close', () => leave(ws));
+  ws.on('close', () => leave(ws, false));
 });
 function handle(ws, m) {
     const room = ws.room;
@@ -172,7 +194,17 @@ function handle(ws, m) {
       case 'rematch':
         if (room && room.over) { room.rematch[sideOf(room, ws)] = true; const other = room.players[swapSide(sideOf(room, ws))]; send(other, { t: 'rematchAsked' }); if (room.rematch.A && room.rematch.B) startRoom(room); }
         break;
-      case 'leave': leave(ws); break;
+      case 'leave': leave(ws, true); break;
+      case 'ping': send(ws, { t: 'pong', c: m.c }); break;
+      case 'resume': {
+        const r = rooms.get(String(m.code || '').toUpperCase()); const S = r && r.tokens && ['A', 'B'].find(k => r.tokens[k] === m.token);
+        if (!r || !S || r.closed) return send(ws, { t: 'resumeFailed' });
+        const old = r.players[S]; if (old && old !== ws) { old.room = null; try { old.terminate(); } catch (e) { } }
+        r.players[S] = ws; ws.room = r; delete r.away[S]; r.seen[S] = {};
+        send(ws, { t: 'resumed', ...r.startMsg[S], phase: r.state }); send(r.players[swapSide(S)], { t: 'oppBack' });
+        log(`room ${r.code}: ${S} reconnected`);
+        break;
+      }
     }
 }
 function cleanInfo(m) {
@@ -180,15 +212,18 @@ function cleanInfo(m) {
   if (!validTeam(team)) return null;
   return { trainer: String(m.trainer || 'Trainer').slice(0, 24), trainerFile: String(m.trainerFile || '').slice(0, 40), team };
 }
-function leave(ws) {
+function leave(ws, deliberate) {
   const room = ws.room; if (!room) return; ws.room = null;
   const S = sideOf(room, ws); if (!S) return;
   const other = room.players[swapSide(S)]; room.players[S] = null;
+  if (!deliberate && room.ctx && !room.over) {                    // connection dropped mid-match: hold it for them (both, if both drop)
+    room.away[S] = Date.now(); send(other, { t: 'oppAway', secs: GRACE / 1000 }); log(`room ${room.code}: ${S} dropped, waiting ${GRACE / 1000}s`); return;
+  }
   if (other) {
     if (room.ctx && !room.over) { try { room.ctx.__forfeit(S); } catch (e) { } }
     send(other, { t: 'opponentLeft' }); other.room = null;
   }
-  closeRoom(room, 'player left');
+  closeRoom(room, deliberate ? 'player left' : 'player disconnected');
 }
 setInterval(() => { for (const ws of wss.clients) { if (!ws.isAlive) { ws.terminate(); continue; } ws.isAlive = false; ws.ping(); } }, 15000);
 server.listen(PORT, () => log(`Arena 151 server v${VERSION} listening on port ${PORT}`));

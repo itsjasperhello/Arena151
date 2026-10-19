@@ -5,7 +5,8 @@
    server streams; between snapshots it glides Pokémon and projectiles
    so motion stays smooth. You always play Red, on the left.
    ===================================================================== */
-const NET = { ws: null, active: false, mode: 'local', url: '', status: '', code: null, over: false, pickShown: false, steerOn: false, lastSteer: 0, prevTrsel: null };
+const NET = { ws: null, active: false, mode: 'local', url: '', status: '', code: null, over: false, pickShown: false, steerOn: false, lastSteer: 0, prevTrsel: null,
+  latest: null, evq: [], lastRx: 0, token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
 try { NET.url = localStorage.getItem('arena151.server') || ''; NET.mode = localStorage.getItem('arena151.mode') === 'online' ? 'online' : 'local'; } catch (e) { }
 const netSend = msg => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(msg)); };
 function serverUrl(input) {
@@ -25,11 +26,11 @@ function netConnect() {
   netStatus('Connecting to ' + url + '…');
   return new Promise((res, rej) => {
     let ws; try { ws = new WebSocket(url); } catch (e) { netStatus('Could not open a connection to ' + url, 'err'); return rej(); }
-    ws._url = url; NET.ws = ws; let ok = false;
+    ws._url = url; NET.ws = ws; NET.wsUrl = url; let ok = false;
     const fail = setTimeout(() => { if (!ok) { netStatus('No answer from ' + url + '. Is the server running, and is this device on the same network?', 'err'); try { ws.close(); } catch (e) { } rej(); } }, 6000);
     ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', v: APP_VERSION }));
-    ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } if (m.t === 'hi' && !ok) { ok = true; clearTimeout(fail); netStatus('Connected to the server (v' + m.v + ').', 'ok'); res(); } onNetMessage(m); };
-    ws.onclose = () => { clearTimeout(fail); if (NET.ws === ws) { NET.ws = null; if (NET.active && !NET.over) { netStatus('Connection lost.', 'err'); endOnline('A', 'DISCONNECTED', 'Connection to the server was lost.', true); } } if (!ok) rej(); };
+    ws.onmessage = e => { NET.lastRx = performance.now(); let m; try { m = JSON.parse(e.data); } catch (x) { return; } if (m.t === 'hi' && !ok) { ok = true; clearTimeout(fail); netStatus('Connected to the server (v' + m.v + ').', 'ok'); res(); } onNetMessage(m); };
+    ws.onclose = () => { clearTimeout(fail); if (NET.ws === ws) { NET.ws = null; if (NET.active && !NET.over) startReconnect(); } if (!ok) rej(); };
     ws.onerror = () => {};
   });
 }
@@ -53,7 +54,12 @@ function onNetMessage(m) {
     case 'hosted': NET.code = m.code; $('olCodeShow').textContent = m.code; netStatus('Game created. Tell your friend the code — waiting for them to join…', 'ok'); break;
     case 'joined': NET.code = m.code; netStatus('Joined! Starting…', 'ok'); break;
     case 'start': beginOnline(m); break;
-    case 'snap': if (NET.active && G) applySnap(m.s, m.ev); break;
+    case 'snap': if (NET.active && G) { NET.latest = m.s; NET.evq.push(...(m.ev || [])); if (NET.evq.length > 500) NET.evq.splice(0, NET.evq.length - 500); } break;
+    case 'pong': NET.rtt = Math.round(performance.now() - m.c); break;
+    case 'oppAway': NET.oppAway = performance.now() + m.secs * 1000; toast('Your opponent lost connection — waiting for them to come back…'); break;
+    case 'oppBack': NET.oppAway = 0; toast('Your opponent is back!'); break;
+    case 'resumed': NET.reconnecting = 0; NET.lastRx = performance.now(); netBanner(''); toast('Reconnected!'); break;
+    case 'resumeFailed': NET.reconnecting = 0; netBanner(''); endOnline('B', 'DISCONNECTED', 'Could not rejoin the match.'); break;
     case 'countdown': if (NET.active) battleCountdown(epoch); break;
     case 'over': if (NET.active) endOnline(m.winner, m.big, m.reason); break;
     case 'rematchAsked': toast('Your opponent wants a rematch — tap Rematch to play again.'); break;
@@ -61,6 +67,7 @@ function onNetMessage(m) {
   }
 }
 async function beginOnline(m) {
+  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.lastRx = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
   if (!NET.prevTrsel) NET.prevTrsel = { ...TRSEL };
   NET.active = true; NET.over = false; NET.pickShown = false; NET.steerOn = false;
   hideStart();
@@ -87,7 +94,7 @@ function mergeWorld(arr, incoming) {
   arr.length = 0; arr.push(...out);
 }
 function applySnap(s, events) {
-  const wasPhase = G.phase;
+  const wasPhase = G.phase; NET.lastHold = s.hold || null;
   if (G.phase !== 'over') G.phase = s.ph; G.time = s.time; G.elapsed = s.el; G.overtime = s.ot; G.lastDmgT = s.lastDmgT;
   for (const S of ['A', 'B']) {
     const sd = G.sides[S], o = dec(s.sides[S]), tx = o.x, ty = o.y; delete o.x; delete o.y;
@@ -118,6 +125,10 @@ function applySnap(s, events) {
 // Between snapshots: glide toward the server's positions and keep projectiles and timers moving.
 function netStep(dt) {
   if (!G) return;
+  if (NET.latest) { const snap = NET.latest, ev = NET.evq; NET.latest = null; NET.evq = []; applySnap(snap, ev); }
+  const now0 = performance.now(), age = now0 - NET.lastRx;
+  watchConnection(age, now0);
+  if (age > 300) return;                                   // no fresh data: hold still rather than run ahead of the server
   G.time += dt; if (G.phase === 'battle') G.elapsed += dt;
   const k = 1 - Math.exp(-dt / 55);
   for (const S of ['A', 'B']) {
@@ -148,7 +159,9 @@ function endOnline(winner, big, reason, keepConnection) {
 const _simStep = simStep; simStep = dt => NET.active ? netStep(dt) : _simStep(dt);
 const _queueMove = queueMove; queueMove = i => {
   if (!NET.active) return _queueMove(i);
-  if (!G || G.phase !== 'battle') return; netSend({ t: 'mv', i }); const sd = side('A'); if (!sd.cast) { sd.queued = i; sd.queuedT = 600; }
+  if (!G || G.phase !== 'battle') return;
+  if (performance.now() - NET.lastRx > 600 || !NET.ws || NET.ws.readyState !== 1) { toast('Waiting for the connection…'); return; }
+  netSend({ t: 'mv', i }); const sd = side('A'); if (!sd.cast) { sd.queued = i; sd.queuedT = 600; }
 };
 const _requestSwitch = requestSwitch; requestSwitch = (S, idx) => { if (!NET.active) return _requestSwitch(S, idx); if (S === 'A') netSend({ t: 'sw', i: idx }); return true; };
 const _megaEvolve = megaEvolve; megaEvolve = S => { if (!NET.active) return _megaEvolve(S); if (S === 'A' && canMega('A')) { netSend({ t: 'mega' }); return true; } return false; };
@@ -206,3 +219,48 @@ function syncOnlineUi() {
   for (const b of document.querySelectorAll('#startOv .st-mode button')) { b.classList.toggle('on', b.dataset.m === NET.mode); b.setAttribute('aria-pressed', String(b.dataset.m === NET.mode)); }
   if (NET.mode === 'online' && !NET.status) netStatus('Enter your server address, then host a game or join one with a code.');
 }
+
+/* ---------- connection health: banner, reconnect-and-resume, ping ---------- */
+(function netUi() {
+  const st = document.createElement('style');
+  st.textContent = `#netBanner{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:9;display:none;padding:8px 16px;border-radius:12px;font:700 14px var(--ui);color:#fff;
+  background:rgba(170,40,40,.92);box-shadow:0 6px 20px rgba(0,0,0,.4);pointer-events:none;text-align:center;white-space:nowrap}
+#netBanner.show{display:block}#netBanner.warn{background:rgba(190,120,20,.95)}
+#netPing{position:absolute;left:50%;top:44px;transform:translateX(-50%);z-index:7;font:700 11px var(--ui);color:#8affb0;text-shadow:0 1px 2px #000;pointer-events:none;display:none}
+#netPing.show{display:block}#netPing.mid{color:#ffd84a}#netPing.bad{color:#ff8a8a}`;
+  document.head.appendChild(st);
+  const host = scene.parentElement;
+  const b = document.createElement('div'); b.id = 'netBanner'; b.setAttribute('role', 'status'); host.appendChild(b);
+  const p = document.createElement('div'); p.id = 'netPing'; host.appendChild(p);
+})();
+function netBanner(text, warn) { const b = $('netBanner'); if (!b) return; b.textContent = text; b.classList.toggle('show', !!text); b.classList.toggle('warn', !!warn); }
+function watchConnection(age, now) {
+  const p = $('netPing');
+  if (p) { const on = NET.active && NET.rtt != null; p.classList.toggle('show', on); if (on) { p.textContent = `ping ${NET.rtt} ms`; p.classList.toggle('mid', NET.rtt >= 120 && NET.rtt < 250); p.classList.toggle('bad', NET.rtt >= 250); } }
+  if (!NET.active || NET.over) { netBanner(''); return; }
+  const hold = NET.lastHold;
+  if (NET.reconnecting) netBanner(`Reconnecting… ${Math.max(0, Math.ceil((NET.reconnecting - now) / 1000))}s`);
+  else if (hold && hold.side === 'B') netBanner(`Opponent's connection dropped — waiting ${Math.ceil(hold.left / 1000)}s`, true);
+  else if (age > 1500) netBanner('Connection unstable — waiting for the server…', true);
+  else netBanner('');
+  if (age > 5000 && !NET.reconnecting && NET.ws) {       // stalled: abandon this connection right away (a stalled close never completes) and reconnect
+    const dead = NET.ws; NET.ws = null; dead.onclose = dead.onmessage = null; try { dead.close(); } catch (e) { } startReconnect();
+  }
+}
+// Reconnect to the same match with this player's token (the server holds the battle for 20 seconds).
+function startReconnect() {
+  if (NET.reconnecting || NET.over) return;
+  NET.reconnecting = performance.now() + 20000; netBanner('Reconnecting…');
+  const attempt = () => {
+    if (!NET.reconnecting || NET.over) return;
+    if (performance.now() > NET.reconnecting) { NET.reconnecting = 0; netBanner(''); endOnline('B', 'DISCONNECTED', 'Lost the connection to the server.'); return; }
+    let ws; try { ws = new WebSocket(NET.wsUrl); } catch (e) { setTimeout(attempt, 1500); return; }
+    ws._url = NET.wsUrl; const giveUp = setTimeout(() => { if (ws.readyState !== 1) { try { ws.close(); } catch (e) { } } }, 4000);   // an attempt never hangs
+    ws.onopen = () => { clearTimeout(giveUp); NET.ws = ws; ws.send(JSON.stringify({ t: 'hello', v: APP_VERSION })); ws.send(JSON.stringify({ t: 'resume', code: NET.code, token: NET.token })); };
+    ws.onmessage = e => { NET.lastRx = performance.now(); let m; try { m = JSON.parse(e.data); } catch (x) { return; } onNetMessage(m); };
+    ws.onclose = () => { if (NET.ws === ws) NET.ws = null; if (NET.reconnecting) setTimeout(attempt, 1500); else if (NET.active && !NET.over) startReconnect(); };
+    ws.onerror = () => {};
+  };
+  attempt();
+}
+setInterval(() => { if (NET.active && !NET.over && NET.ws && NET.ws.readyState === 1) netSend({ t: 'ping', c: performance.now() }); }, 2000);

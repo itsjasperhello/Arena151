@@ -10,7 +10,7 @@ Open **PowerShell** in this `server` folder (in File Explorer: open the folder, 
 docker compose up -d --build
 ```
 
-The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.2",...}`.
+The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.3",...}`.
 
 ## 2. Find this PC's address
 
@@ -40,6 +40,10 @@ On both phones, on the start screen tap **ONLINE vs PLAYER**, enter the server a
 * **Friend:** set their trainer and team, type the code, tap **Join game**.
 
 Each player always plays from the left as Red. Online battles can't be paused. If a Pokémon faints, its trainer has 15 seconds to pick the next one (both phones show the countdown; then the best one is sent out automatically). If neither player lands a hit for 90 seconds the battle is decided on remaining HP, with an on-screen warning 10 seconds before. If someone leaves, the other player wins.
+
+## Connection drops
+
+If a phone's connection stalls or drops mid-match, it reconnects to the same match by itself. While it's gone, the battle is paused and the other phone shows *"Opponent's connection dropped — waiting 20s"*; if it isn't back within 20 seconds, the other player wins. Each phone shows its ping under the timer during online battles (green is good; yellow or red means a weak Wi-Fi signal).
 
 ## Everyday commands
 
