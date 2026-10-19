@@ -137,9 +137,10 @@ async function startBattle(picksA, picksB, stageId) {
   updateHUD(true); warmSprites([...G.picks.A, ...G.picks.B]);
   try {
     await playIntro(my); guard(my);
-    spawnIn('A', 0); await wait(250); guard(my); spawnIn('B', 0);
-    await wait(1000); guard(my);
-    VFX.big('FIGHT!', '#ffd23f'); await wait(600); guard(my);
+    // Red comes out and cries, then Blue; the battle waits for both, then counts down 3 · 2 · 1 · GO!
+    spawnIn('A', 0); await sendOutDone('A'); guard(my);
+    spawnIn('B', 0); await sendOutDone('B'); guard(my);
+    await battleCountdown(my); guard(my);
     G.phase = 'battle'; G.lastDmgT = G.time; updateHUD(); autosave();
   } catch (e) { if (!(e instanceof Cancelled)) console.error(e); }
 }

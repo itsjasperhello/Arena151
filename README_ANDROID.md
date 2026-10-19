@@ -4,7 +4,7 @@ A native Android app (Java + WebView) that runs the full Arena 151 game offline,
 
 - **Requires:** Android 8.0 (API 26) or newer.
 - **App ID:** `com.arena151.game`
-- **Version:** 13.0
+- **Version:** 13.1
 
 ## Build the APK on Windows (Android Studio)
 1. Install **Android Studio** (free) from developer.android.com/studio. It includes the Android SDK and Java.
@@ -55,6 +55,9 @@ Every `<Name>_trainer.png` (animated PNG) in `app/src/main/assets/sprites/` is a
 
 ## Music
 Put `<Stage_Name>.mp3` files (for example `Metro_Plaza.mp3`) in `app/src/main/assets/music/`; `Opening.mp3` plays on the start screen. See `MUSIC_FILE_NAMES.txt` there for the exact names.
+
+## Cries
+Put each Pokémon's cry in `app/src/main/assets/cry/` as `<sprite name>.mp3` (for example `pikachu.mp3`, `mr-mime.mp3`). See `CRY_FILE_NAMES.txt` there for all 151 names.
 
 ## Updating the game
 The game code lives in `web/` (the same source as the desktop build). After changing it, run:
