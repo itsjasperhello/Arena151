@@ -12,13 +12,15 @@ const bigHop = (S, k, ms = 600) => { const sd = side(S); sd.hopK = k; sd.hop = 1
 const angTo = S => { const a = side(S), b = side(other(S)); return Math.atan2(b.y - a.y, b.x - a.x); };
 const easeOut = q => 1 - (1 - q) * (1 - q);
 
+const GHOST_CACHE = new WeakMap();
 // Afterimage: a coloured silhouette of the Pokémon's current frame, left on the ground layer to fade.
 function ghostOf(S, col, life = 260, a0 = .5, dx = 0, dy = 0) {
   const sd = side(S), m = act(S); if (!m || sd.state !== 'idle' && sd.state !== 'mega') return;
   const sp = spriteOf(m.name, m.mega); let src, w, h, cx, foot, flip, k;
   if (sp.custom) { const back = sd.view === 'back' && sp.back, an = ensureAnim(back ? sp.back : sp.front); src = an.frames[animFrameIndex(an, clock.t)]; w = an.w; h = an.h; cx = an.cx; foot = an.foot; flip = back ? sd.face < 0 : sd.face > 0; k = .5; }
   else { src = sp.frames[0]; w = sp.w; h = sp.h; cx = w / 2; foot = sp.foot; flip = sd.face < 0; k = 1; }
-  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, w, h);
+  let per = GHOST_CACHE.get(src); if (!per) { per = {}; GHOST_CACHE.set(src, per); }      // one silhouette per frame and colour, reused
+  let c = per[col]; if (!c) { c = per[col] = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, w, h); }
   const X = sd.x + dx, Y = sd.y + dy;
   ent(life, q => { const b = bctx; b.save(); b.globalAlpha = a0 * (1 - q); b.globalCompositeOperation = 'lighter'; b.translate(bx(X), by(Y)); b.scale(flip ? -k : k, k); b.drawImage(c, -cx, -(h - foot)); b.restore(); }, { under: true });
 }

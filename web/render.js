@@ -177,7 +177,7 @@ function drawCrowd() {
   if (crowdState.length !== STAGE.crowd.length || crowdState.stage !== STAGE_ID) { crowdState.length = 0; crowdState.stage = STAGE_ID; STAGE.crowd.forEach(([x, y], k) => crowdState.push({ x, y, pal: CROWD_PALS[k % CROWD_PALS.length], react: -9999, mark: '!', ph: Math.random() * 6 })); }
   for (const c of crowdState) {
     const i = bx(c.x), j = by(c.y), since = clock.t - c.react, hop = since < 400 ? Math.round(Math.sin(since / 400 * Math.PI) * 3) : 0;
-    drawSpectator(bctx, i, j - hop, c.pal, c.x < 500 ? 1 : -1);
+    if (!STAGE.painted) drawSpectator(bctx, i, j - hop, c.pal, c.x < 500 ? 1 : -1);
     if (since < 1000) { const w = c.mark.length * 3 + 3, top = j - hop - 26; aRect(i - w / 2, top, w, 8, '#ffffff'); aRect(i - 1, top + 8, 2, 2, '#ffffff'); for (let q = 0; q < c.mark.length; q++) { aRect(i - w / 2 + 2 + q * 3, top + 1, 1, 4, '#d0202a'); aRect(i - w / 2 + 2 + q * 3, top + 6, 1, 1, '#d0202a'); } }
     else if (STAGE_ID === 'cavern' && Math.floor((clock.t + c.ph * 1000) / 2600) % 4 === 0) { const top = j - hop - 25; aRect(i - 4, top, 9, 6, '#ffffff'); for (let q = 0; q < 3; q++) aRect(i - 3 + q * 3, top + 3, 1, 1, '#5a5a6a'); aRect(i - 1, top + 6, 2, 1, '#ffffff'); }
   }
