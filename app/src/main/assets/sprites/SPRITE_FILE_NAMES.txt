@@ -179,3 +179,12 @@ Optional Mega Evolution sprites (otherwise the normal sprite gets a pink Mega gl
      gyarados-mega.gif        gyarados-mega (1).gif
      aerodactyl-mega.gif        aerodactyl-mega (1).gif
      mewtwo-mega.gif        mewtwo-mega (1).gif
+
+Optional custom trainers (your own files; they face LEFT by default, so Red's is mirrored automatically.
+If yours face right, change Settings > Custom trainer art faces):
+     trainer-red.gif          trainer-gold.gif            (standing / idle)
+     trainer-red-throw.gif    trainer-gold-throw.gif      (sending out a Pokemon)
+     trainer-red-command.gif  trainer-gold-command.gif    (calling a move)
+     trainer-red-win.gif      trainer-gold-win.gif        (cheering)
+     trainer-red-lose.gif     trainer-gold-lose.gif       (defeated)
+Only the base file is required; missing poses use it. PNG works too. Without any files the built-in trainers are used.

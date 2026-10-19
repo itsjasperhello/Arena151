@@ -49,7 +49,21 @@ const ARENAS = {
     flags: [[497, 263, 513, 298], [692, 263, 708, 298], [422, 235, 440, 258], [767, 235, 785, 258], [505, 568, 530, 600], [675, 568, 700, 600], [532, 625, 552, 668], [652, 625, 672, 668], [215, 495, 240, 525], [965, 495, 990, 525]],
     crowd: [[345, 255, 490, 300], [715, 255, 860, 300], [905, 345, 960, 400], [905, 500, 960, 545], [690, 605, 800, 655], [245, 320, 300, 380], [245, 495, 300, 550]],
     xtorches: [[548, 820], [655, 820], [548, 190], [652, 190]], xtrees: [[0, 0, 240, 260], [960, 0, 1200, 260], [0, 560, 240, 896], [980, 560, 1200, 896]],
-    xscroll: [{ r: [90, 250, 135, 390], m: 'water', vy: 42 }, { r: [1090, 250, 1135, 390], m: 'water', vy: 42 }, { r: [130, 390, 205, 720], m: 'water', vy: 9 }, { r: [1005, 390, 1080, 720], m: 'water', vy: 9 }, { r: [200, 705, 1010, 790], m: 'water', vx: 7 }] }
+    xscroll: [{ r: [90, 250, 135, 390], m: 'water', vy: 42 }, { r: [1090, 250, 1135, 390], m: 'water', vy: 42 }, { r: [130, 390, 205, 720], m: 'water', vy: 9 }, { r: [1005, 390, 1080, 720], m: 'water', vy: 9 }, { r: [200, 705, 1010, 790], m: 'water', vx: 7 }] },
+  glacier: { name: 'Ice Island', ambient: 'snow', amb2: ['snowfall'], walk: [[74, 83, 926, 497]],
+    trainers: { A: { x: 36, y: 288 }, B: { x: 966, y: 288 } }, entry: { A: { x: 200, y: 290 }, B: { x: 800, y: 290 } }, grade: ['rgba(190,225,255,1)', .04, .25],
+    scroll: [{ r: [140, 250, 205, 720], m: 'ice', vx: 0, vy: 6 }, { r: [995, 250, 1060, 720], m: 'ice', vx: 0, vy: 6 }, { r: [230, 730, 1000, 795], m: 'ice', vx: 6, vy: 0 }, { r: [50, 235, 125, 395], m: 'falls', vx: 0, vy: 40 }, { r: [1075, 235, 1150, 395], m: 'falls', vx: 0, vy: 40 }],
+    torches: [[232, 262], [528, 268], [552, 285], [652, 285], [676, 268], [972, 262], [540, 598], [660, 598], [548, 822], [655, 822]],
+    flags: [[497, 263, 513, 298], [692, 263, 708, 298], [422, 235, 440, 258], [767, 235, 785, 258], [505, 568, 530, 600], [675, 568, 700, 600], [532, 625, 552, 668], [652, 625, 672, 668], [210, 495, 238, 528], [962, 495, 992, 528]],
+    crowd: [[345, 255, 490, 300], [715, 255, 860, 300], [905, 345, 960, 400], [905, 500, 960, 545], [690, 605, 800, 655], [245, 320, 300, 380], [245, 495, 300, 550]] },
+  cyber: { name: 'Cyberpoke Future', ambient: 'motes', amb2: ['sparks', 'data'], walk: [[74, 82, 926, 498]],
+    trainers: { A: { x: 11, y: 276 }, B: { x: 976, y: 276 } }, entry: { A: { x: 200, y: 290 }, B: { x: 800, y: 290 } }, grade: ['rgba(90,200,255,1)', .05, .35],
+    scroll: [{ r: [115, 240, 205, 730], m: 'neon', vx: 0, vy: 14 }, { r: [995, 240, 1085, 730], m: 'neon', vx: 0, vy: 14 }, { r: [200, 680, 1000, 810], m: 'neon', vx: 12, vy: 0 }, { r: [50, 225, 130, 395], m: 'neon', vx: 0, vy: 45 }, { r: [1070, 225, 1150, 395], m: 'neon', vx: 0, vy: 45 }],
+    pulse: [[350, 330, 860, 590]], pulse2: [[350, 330, 860, 590]],
+    torches: [[528, 268, 'blue'], [552, 280, 'blue'], [652, 280, 'blue'], [676, 268, 'blue'], [540, 598, 'blue'], [660, 598, 'blue'], [545, 825, 'blue'], [655, 825, 'blue']],
+    glows: [[330, 325, '#7ff7ff', 10], [875, 325, '#7ff7ff', 10], [928, 640, '#7ff7ff', 8], [600, 455, '#7ff7ff', 24]],
+    flags: [[497, 263, 513, 298], [692, 263, 708, 298], [422, 235, 440, 258], [767, 235, 785, 258], [532, 625, 552, 668], [652, 625, 672, 668], [210, 495, 238, 528], [962, 495, 992, 528]],
+    crowd: [[345, 255, 490, 300], [715, 255, 860, 300], [905, 345, 960, 400], [905, 500, 960, 545], [690, 605, 800, 655], [245, 320, 300, 380], [245, 495, 300, 550]] }
 };
 // merge the "x" (outer scenery) lists into the main ones
 for (const a of Object.values(ARENAS)) for (const k of ['torches', 'glows', 'trees', 'scroll', 'flags', 'cloth', 'crowd']) { const x = a['x' + k]; if (x) a[k] = (a[k] || []).concat(x); }
@@ -74,33 +88,44 @@ function setStage(id) {
 }
 
 /* ---------- loading and preparing the art ---------- */
-const STAGE_IMGS = {}, STAGE_ANIM = {};
-for (const id of Object.keys(STAGE_IMG)) { const im = new Image(); im.src = STAGE_IMG[id]; STAGE_IMGS[id] = im; }
+const STAGE_HDIMG = {}, STAGE_ANIM = {};
+const hdK = id => STAGE_MAP[id].U / STAGE_MAP[id].s;          // HD pixels per game art pixel
+// The HD image is decoded only when its arena is used, so phones hold one arena in memory at a time.
 function buildStage(id) {
   if (STAGE_CACHE[id]) return STAGE_CACHE[id];
+  for (const k of Object.keys(STAGE_HDIMG)) if (k !== id) { STAGE_HDIMG[k].src = ''; delete STAGE_HDIMG[k]; delete STAGE_CACHE[k]; delete STAGE_ANIM[k]; }
   const e = EXT(id), c = document.createElement('canvas'); c.width = e.W; c.height = e.H; STAGE_CACHE[id] = c;
-  const paint = () => { c.getContext('2d').drawImage(STAGE_IMGS[id], 0, 0); prepAnim(id, c); };
-  const im = STAGE_IMGS[id]; if (im.complete && im.naturalWidth) paint(); else im.addEventListener('load', paint, { once: true });
-  return c;
+  const im = new Image(); STAGE_HDIMG[id] = im;
+  im.onload = () => { if (STAGE_HDIMG[id] !== im) return; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, e.W, e.H); prepAnim(id, im); };
+  im.src = STAGE_IMG[id]; return c;
 }
 const MASKS = {
+  ice: (r, g, b) => b > 70 && b > r + 30 && r < 140 && g < 190,
+  falls: (r, g, b) => b > 150 && b >= r,
+  neon: (r, g, b) => g > 150 && b > 170 && r < 150,
+  orange: (r, g, b) => r > 190 && g > 90 && g < 190 && b < 110,
   water: (r, g, b) => b > 120 && b > r + 40 && b > g - 20 && !(r > 170 && g > 220),
   sky: (r, g, b) => (b > 170 && b > r + 12) || (r > 200 && g > 208 && b > 214),
   cyan: (r, g, b) => g > 140 && b > 160 && r < 130
 };
 function regionArt(id, R) { const e = EXT(id), [a, b] = imgToArt(id, R[0], R[1]), [c, d] = imgToArt(id, R[2], R[3]); const x0 = clamp(Math.floor(a), -e.l, e.W - e.l - 1), y0 = clamp(Math.floor(b), -e.t, e.H - e.t - 1); return [x0, y0, Math.max(1, clamp(Math.ceil(c), x0 + 1, e.W - e.l) - x0), Math.max(1, clamp(Math.ceil(d), y0 + 1, e.H - e.t) - y0)]; }
-function maskCanvases(src, rect, test, bright, e) {
-  const [x, y, w, h] = rect, data = src.getContext('2d').getImageData(x + e.l, y + e.t, w, h), tex = new ImageData(w, h), msk = new ImageData(w, h), pts = [];
-  for (let k = 0; k < w * h; k++) { const o = k * 4, r = data.data[o], g = data.data[o + 1], b = data.data[o + 2]; if (!test(r, g, b)) continue;
-    tex.data[o] = Math.min(255, r * (bright || 1)); tex.data[o + 1] = Math.min(255, g * (bright || 1)); tex.data[o + 2] = Math.min(255, b * (bright || 1)); tex.data[o + 3] = 255; msk.data[o + 3] = 255; if (k % 7 === 0) pts.push([x + k % w, y + Math.floor(k / w)]); }
-  const mk = d => { const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').putImageData(d, 0, 0); return c; };
-  return { tex: mk(tex), mask: mk(msk), pts };
+function maskCanvases(im, id, rect, test, bright) {
+  const [x, y, w, h] = rect, K = hdK(id), k = Math.min(K, 1.25), m = STAGE_MAP[id], W = Math.max(1, Math.round(w * k)), H = Math.max(1, Math.round(h * k));
+  const grab = document.createElement('canvas'); grab.width = W; grab.height = H; const gx = grab.getContext('2d', { willReadFrequently: true });
+  gx.imageSmoothingQuality = 'high'; gx.drawImage(im, (x + m.l) * K, (y + m.t) * K, w * K, h * K, 0, 0, W, H);
+  const data = gx.getImageData(0, 0, W, H), tex = new ImageData(W, H), msk = new ImageData(W, H), pts = [];
+  for (let n = 0; n < W * H; n++) { const o = n * 4, r = data.data[o], g = data.data[o + 1], b = data.data[o + 2]; if (!test(r, g, b)) continue;
+    tex.data[o] = Math.min(255, r * (bright || 1)); tex.data[o + 1] = Math.min(255, g * (bright || 1)); tex.data[o + 2] = Math.min(255, b * (bright || 1)); tex.data[o + 3] = 255; msk.data[o + 3] = 255;
+    if (n % 23 === 0) pts.push([x + (n % W) / k, y + Math.floor(n / W) / k]); }
+  const mk = d => { const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').putImageData(d, 0, 0); return c; };
+  return { tex: mk(tex), mask: mk(msk), pts, W, H };
 }
-function prepAnim(id, src) {
+function prepAnim(id, im) {
   const A = ARENAS[id], S = { scroll: [], pulse: [], sparkle: [] };
   try {
-    for (const sc of A.scroll || []) { const rect = regionArt(id, sc.r), mc = maskCanvases(src, rect, MASKS[sc.m], 1, EXT(id)); S.scroll.push({ rect, ...mc, vx: sc.vx || 0, vy: sc.vy || 0, tmp: Object.assign(document.createElement('canvas'), { width: rect[2], height: rect[3] }) }); if (sc.m === 'water') S.sparkle.push(...mc.pts); }
-    for (const R of A.pulse || []) { const rect = regionArt(id, R), mc = maskCanvases(src, rect, MASKS.cyan, 1.6, EXT(id)); S.pulse.push({ rect, ...mc }); }
+    for (const sc of A.scroll || []) { const rect = regionArt(id, sc.r), mc = maskCanvases(im, id, rect, MASKS[sc.m], 1); S.scroll.push({ rect, ...mc, vx: sc.vx || 0, vy: sc.vy || 0, tmp: Object.assign(document.createElement('canvas'), { width: mc.W, height: mc.H }) }); if (sc.m === 'water' || sc.m === 'ice' || sc.m === 'neon') S.sparkle.push(...mc.pts); }
+    for (const R of A.pulse || []) { const rect = regionArt(id, R), mc = maskCanvases(im, id, rect, MASKS.cyan, 1.6); S.pulse.push({ rect, ...mc }); }
+    for (const R of A.pulse2 || []) { const rect = regionArt(id, R), mc = maskCanvases(im, id, rect, MASKS.orange, 1.5); S.pulse.push({ rect, ...mc, slow: true }); }
   } catch (e) { console.error(e); }
   S.flags = (A.flags || []).map(R => regionArt(id, R)); S.cloth = (A.cloth || []).map(R => regionArt(id, R)); S.trees = (A.trees || []).map(R => regionArt(id, R));
   S.crowd = (A.crowdBox || []).map(R => regionArt(id, R)); S.props = (A.props || []).map(([x, y, r]) => [...imgToArt(id, x, y), r * STAGE_MAP[id].s]);
@@ -116,25 +141,28 @@ function hookCrowdHype() {   // attached on first use: VFX is defined by a later
 }
 const FIRE_PAL = ['#ffffff', '#fff6b0', '#ffd23f', '#ff9a1f', '#e8541c', '#8a2a14'], BLUE_PAL = ['#ffffff', '#d8f4ff', '#7fd6ff', '#3f8cff', '#2a5ad0', '#1a2a70'];
 function animateStage(c, ox, oy, t) {
-  hookCrowdHype(); const S = STAGE_ANIM[STAGE_ID], src = stageCanvas; if (!S || !src) return; const e = EXT(STAGE_ID), L = e.l, T = e.t, lvl = (window.SETTINGS && SETTINGS.quality) || 'high';
+  hookCrowdHype(); const S = STAGE_ANIM[STAGE_ID], HD = STAGE_HDIMG[STAGE_ID]; if (!S || !HD || !HD.complete) return; const k = hdK(STAGE_ID);
+  // hb: copy a slice of the HD art (source in stage-canvas units); vis: is an art-space rectangle on screen?
+  const hb = (u, v, w, h, dx, dy, dw, dh) => c.drawImage(HD, u * k, v * k, w * k, h * k, dx, dy, dw, dh);
+  const vw = DW / cam.pz, vh = DH / cam.pz, vis = (x, y, w, h) => x + w > ox && y + h > oy && x < ox + vw && y < oy + vh; const e = EXT(STAGE_ID), L = e.l, T = e.t, lvl = (window.SETTINGS && SETTINGS.quality) || 'high';
   const X = i => Math.round(i - ox), Y = j => Math.round(j - oy);
   // flowing water and drifting clouds: the painted texture scrolls inside its own shape
-  for (const sc of S.scroll) { const [x, y, w, h] = sc.rect, k = sc.tmp.getContext('2d'), dx = ((t / 1000 * sc.vx) % w + w) % w, dy = ((t / 1000 * sc.vy) % h + h) % h;
-    k.globalCompositeOperation = 'copy'; k.drawImage(sc.tex, Math.round(dx), Math.round(dy)); k.globalCompositeOperation = 'source-over';
-    for (const [ex, ey] of [[dx - w, dy], [dx, dy - h], [dx - w, dy - h]]) k.drawImage(sc.tex, Math.round(ex), Math.round(ey));
-    k.globalCompositeOperation = 'destination-in'; k.drawImage(sc.mask, 0, 0); k.globalCompositeOperation = 'source-over'; c.drawImage(sc.tmp, X(x), Y(y)); }
+  for (const sc of S.scroll) { if (!vis(...sc.rect)) continue; const [x, y, w, h] = sc.rect, W = sc.W, H = sc.H, kk = W / w, g = sc.tmp.getContext('2d'), dx = ((t / 1000 * sc.vx * kk) % W + W) % W, dy = ((t / 1000 * sc.vy * kk) % H + H) % H;
+    g.globalCompositeOperation = 'copy'; g.drawImage(sc.tex, Math.round(dx), Math.round(dy)); g.globalCompositeOperation = 'source-over';
+    for (const [ex, ey] of [[dx - W, dy], [dx, dy - H], [dx - W, dy - H]]) g.drawImage(sc.tex, Math.round(ex), Math.round(ey));
+    g.globalCompositeOperation = 'destination-in'; g.drawImage(sc.mask, 0, 0); g.globalCompositeOperation = 'source-over'; c.drawImage(sc.tmp, X(x), Y(y), w, h); }
   for (let k = 0; k < 18 && S.sparkle.length; k++) { const p = S.sparkle[(Math.floor(t / 140) * 37 + k * 131) % S.sparkle.length]; if ((Math.floor(t / 90) + k) % 3 === 0) aRect(X(p[0]), Y(p[1]), 2, 1, '#e8fbff', .9); }
   // energy lines pulse
-  for (const p of S.pulse) { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = .18 + .22 * (Math.sin(t / 380) + 1) / 2; c.drawImage(p.tex, X(p.rect[0]), Y(p.rect[1])); c.restore();
-    const band = ((t / 6) % (p.rect[2] + 60)) - 30; c.save(); c.beginPath(); c.rect(X(p.rect[0] + band), Y(p.rect[1]), 14, p.rect[3]); c.clip(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = .7; c.drawImage(p.tex, X(p.rect[0]), Y(p.rect[1])); c.restore(); }
+  for (const p of S.pulse) { if (!vis(...p.rect)) continue; const [px, py, pw, ph] = p.rect; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = .18 + .22 * (Math.sin(t / (p.slow ? 700 : 380)) + 1) / 2; c.drawImage(p.tex, X(px), Y(py), pw, ph); c.restore();
+    const band = ((t / 6) % (p.rect[2] + 60)) - 30; c.save(); c.beginPath(); c.rect(X(p.rect[0] + band), Y(p.rect[1]), 14, p.rect[3]); c.clip(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = .7; c.drawImage(p.tex, X(px), Y(py), pw, ph); c.restore(); }
   // crowds bob in alternating groups; they jump higher and faster when the action heats up
   if (lvl === 'low') { for (const [i, j, kind] of S.torches) flamePx(X(i), Y(j), 6, 2, t + i * 9, kind === 'blue' ? BLUE_PAL : FIRE_PAL, .95); return; }
   const hype = clock.t < CROWD_HYPE, beat = hype ? 160 : 420, amp = hype ? 2 : 1;
-  for (const [x, y, w, h] of S.crowd) for (let b = 0; b < w; b += 6) { const up = ((Math.floor(t / beat) + Math.floor(b / 6) + (hype ? 0 : Math.floor(b / 18))) % 2) * amp; if (up) c.drawImage(src, x + b + L, y + T, Math.min(6, w - b), h, X(x + b), Y(y) - up, Math.min(6, w - b), h); }
+  for (const [x, y, w, h] of S.crowd) if (vis(x, y, w, h)) for (let b = 0; b < w; b += 6) { const up = ((Math.floor(t / beat) + Math.floor(b / 6) + (hype ? 0 : Math.floor(b / 18))) % 2) * amp; if (up) hb(x + b + L, y + T, Math.min(6, w - b), h, X(x + b), Y(y) - up, Math.min(6, w - b), h); }
   // banners and awnings ripple; trees sway
-  for (const [x, y, w, h] of S.flags) for (let k = 0; k < w; k++) { const d = Math.round(Math.sin(t / 220 + k * .45 + x) * 1.4 * (k + 1) / w); if (d) c.drawImage(src, x + k + L, y + T, 1, h, X(x + k), Y(y) + d, 1, h); }
-  for (const [x, y, w, h] of S.cloth) for (let k = 0; k < w; k += 2) { const d = Math.round(Math.sin(t / 380 + k * .18 + y) * .9); if (d) c.drawImage(src, x + k + L, y + T, 2, h, X(x + k), Y(y) + d, 2, h); }
-  if (lvl !== 'low') for (const [x, y, w, h] of S.trees) for (let r = 0; r < h * .7; r += 2) { const d = Math.round(Math.sin(t / 1100 + x * .1) * 1.3 * (1 - r / (h * .7))); if (d) c.drawImage(src, x + L, y + r + T, w, 2, X(x) + d, Y(y + r), w, 2); }
+  for (const [x, y, w, h] of S.flags) if (vis(x, y, w, h)) for (let q = 0; q < w; q++) { const d = Math.round(Math.sin(t / 220 + q * .45 + x) * 1.4 * (q + 1) / w); if (d) hb(x + q + L, y + T, 1, h, X(x + q), Y(y) + d, 1, h); }
+  for (const [x, y, w, h] of S.cloth) if (vis(x, y, w, h)) for (let q = 0; q < w; q += 2) { const d = Math.round(Math.sin(t / 380 + q * .18 + y) * .9); if (d) hb(x + q + L, y + T, 2, h, X(x + q), Y(y) + d, 2, h); }
+  if (lvl !== 'low') for (const [x, y, w, h] of S.trees) if (vis(x, y, w, h)) for (let r = 0; r < h * .7; r += 2) { const d = Math.round(Math.sin(t / 1100 + x * .1) * 1.3 * (1 - r / (h * .7))); if (d) hb(x + L, y + r + T, w, 2, X(x) + d, Y(y + r), w, 2); }
   for (const [i, j, r] of S.props) { const a = t / 28; glow(X(i), Y(j), r * .7, '#c8d0dc', .08); for (let k = 0; k < 4; k++) { const b = a + k * Math.PI / 2; aLine(X(i), Y(j), X(i + Math.cos(b) * r), Y(j + Math.sin(b) * r * .55), '#7a8494', .55, 3); } }
   // torches and glowing crystals / lamps
   for (const [i, j, kind] of S.torches) { const pal = kind === 'blue' ? BLUE_PAL : FIRE_PAL; glow(X(i), Y(j) - 3, 7 + Math.sin(t / 90 + i) * 1.2, pal[2], .3); flamePx(X(i), Y(j), 6 + Math.sin(t / 70 + i) * 1.5, 2, t + i * 9, pal, .95); if (Math.random() < .04) P(fromArtX(i), fromArtY(j) - 8, { vy: -40, vx: rnd2(-10, 10), life: 600, ramp: kind === 'blue' ? 'blueFire' : 'fire', size: 1, add: true }); }
@@ -153,7 +181,9 @@ function animateFront(b, ox, oy, t) {
     if (kind === 'fireflies' && r() < .03) AMB.push({ k: kind, x: L + r() * AW, y: T + r() * AH, vx: 0, vy: 0, ph: r() * 6, life: 4000 + r() * 4000, t0: t });
     if (kind === 'sparks' && r() < .08) AMB.push({ k: kind, x: 120 + r() * 460, y: 80 + r() * 280, vx: 0, vy: -6, ph: r() * 6, col: r() < .5 ? '#7ff7ff' : '#ff8ad8', life: 1600, t0: t });
     if (kind === 'wind' && r() < .05) AMB.push({ k: kind, x: L - 30, y: T + r() * AH, vx: 160 + r() * 80, vy: 0, life: 9e9 });
-    if (kind === 'birds' && r() < .004) AMB.push({ k: kind, x: L - 20, y: T + 20 + r() * 220, vx: 40 + r() * 20, vy: rnd2(-3, 3), ph: r() * 6, life: 9e9 }); }
+    if (kind === 'birds' && r() < .004) AMB.push({ k: kind, x: L - 20, y: T + 20 + r() * 220, vx: 40 + r() * 20, vy: rnd2(-3, 3), ph: r() * 6, life: 9e9 });
+    if (kind === 'snowfall' && r() < .5) AMB.push({ k: kind, x: L + r() * AW, y: T - 4, vx: rnd2(-6, 10), vy: 18 + r() * 22, ph: r() * 6, sz: r() < .25 ? 2 : 1, life: 9e9 });
+    if (kind === 'data' && r() < .06) AMB.push({ k: kind, x: L + r() * AW, y: T + AH * (.3 + r() * .7), vx: 0, vy: -(20 + r() * 25), life: 2600, t0: t, col: r() < .7 ? '#7ff7ff' : '#ff9a4a' }); }
   for (let n = AMB.length - 1; n >= 0; n--) { const p = AMB[n]; p.x += p.vx * dt / 1000; p.y += p.vy * dt / 1000;
     if (p.x > L + AW + 30 || p.y > T + AH + 10 || (p.t0 !== undefined && t - p.t0 > p.life)) { AMB.splice(n, 1); continue; }
     const i = X(p.x), j = Y(p.y);
@@ -162,8 +192,27 @@ function animateFront(b, ox, oy, t) {
     else if (p.k === 'fireflies') { p.x += Math.sin(t / 900 + p.ph) * .25; p.y += Math.cos(t / 1100 + p.ph) * .2; const a = (Math.sin(t / 300 + p.ph) + 1) / 2; glow(i, j, 3, '#f8ff9a', .5 * a); aRect(i, j, 1, 1, '#ffffe0', a); }
     else if (p.k === 'sparks') { const a = Math.sin((t - p.t0) / p.life * Math.PI); aRect(i, j, 1, 1, p.col, a); if (a > .8) { aRect(i - 1, j, 3, 1, p.col, a * .5); aRect(i, j - 1, 1, 3, p.col, a * .5); } }
     else if (p.k === 'wind') { aRect(i, j, 14, 1, '#ffffff', .25); }
+    else if (p.k === 'snowfall') { p.x += Math.sin(t / 700 + p.ph) * .25; aRect(i, j, p.sz, p.sz, '#ffffff', .85); }
+    else if (p.k === 'data') { const a = Math.sin((t - p.t0) / p.life * Math.PI); for (let n = 0; n < 4; n++) if ((Math.floor(t / 120) + n) % 3) aRect(i, j + n * 3, 1, 2, p.col, a * (1 - n / 5)); }
     else if (p.k === 'birds') { const f = Math.floor(t / 160 + p.ph) % 2; aRect(i - 2, j - f, 2, 1, '#2a2a34'); aRect(i + 1, j - f, 2, 1, '#2a2a34'); aRect(i, j, 1, 1, '#2a2a34'); }
   }
 }
 function drawStageForeground(b, ox, oy, t) { animateFront(b, ox, oy, t); }
 function drawStageBackdrop() { }
+
+/* ---------- HD arena layer: painted straight onto the screen at full resolution ---------- */
+function drawStageHD(c, ox, oy, vw, vh, pz) {
+  const m = STAGE_MAP[STAGE_ID], HD = STAGE_HDIMG[STAGE_ID]; if (!m) return;
+  c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  const low = window.SETTINGS && SETTINGS.quality === 'low';      // low effects quality: the lighter pixel version of the arena
+  if (HD && HD.complete && HD.naturalWidth && !low) {
+    const k = hdK(STAGE_ID), IW = HD.naturalWidth, IH = HD.naturalHeight;
+    let sx = (ox + m.l) * k, sy = (oy + m.t) * k, sw = vw * k, sh = vh * k, dx = 0, dy = 0, dw = vw * pz, dh = vh * pz;
+    if (sx < 0) { dx -= sx / k * pz; dw += sx / k * pz; sw += sx; sx = 0; } if (sy < 0) { dy -= sy / k * pz; dh += sy / k * pz; sh += sy; sy = 0; }
+    if (sx + sw > IW) { const cut = sx + sw - IW; dw -= cut / k * pz; sw -= cut; } if (sy + sh > IH) { const cut = sy + sh - IH; dh -= cut / k * pz; sh -= cut; }
+    if (sw > 0 && sh > 0) c.drawImage(HD, sx, sy, sw, sh, dx, dy, dw, dh);
+    c.setTransform(pz, 0, 0, pz, 0, 0); const keep = bctx; bctx = c;
+    try { animateStage(c, ox, oy, clock.t); } catch (e) { console.error(e); } finally { bctx = keep; }
+  } else if (stageCanvas) { const e = EXT(STAGE_ID); c.imageSmoothingEnabled = false; c.drawImage(stageCanvas, ox + e.l, oy + e.t, vw, vh, 0, 0, vw * pz, vh * pz); }
+  c.restore();
+}

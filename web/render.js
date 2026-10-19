@@ -331,10 +331,7 @@ function draw(dt) {
   OX = cam.left; OY = cam.top;
   if (clock.t < shakeState.until) { OX += Math.round((Math.random() - .5) * shakeState.amp / 2); OY += Math.round((Math.random() - .5) * shakeState.amp / 2); } else shakeState.amp = 0;
   const b = bctx; b.setTransform(1, 0, 0, 1, 0, 0); b.imageSmoothingEnabled = false;
-  b.fillStyle = '#05070d'; b.fillRect(0, 0, buf.width, buf.height);
-  drawStageBackdrop(b, OX, OY, clock.t);
-  { const e = EXT(STAGE_ID); b.drawImage(stageCanvas, -OX - e.l, -OY - e.t); }
-  animateStage(b, OX, OY, clock.t);
+  b.clearRect(0, 0, buf.width, buf.height);   // the arena itself is painted in HD on the screen layer
   b.drawImage(scarCanvas, -OX, -OY);
   if (G) {
     for (const mk of G.marks) { const RM = MFX[mk.mv.name]; if (RM && RM.markDraw) { try { RM.markDraw(mk, mk.t / mk.delay); } catch (e) { console.error(e); } bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'source-over'; continue; } const q = mk.t / mk.delay, col = fxOf(mk.mv).col, i = bx(mk.x), j = by(mk.y), r = mk.r / 2; aEllFill(i, j, r, r * .6, col, .12 + q * .14); aRing(i, j, r, r * .6, col, .9); aRing(i, j, r * q, r * q * .6, '#ffffff', .8);
@@ -348,7 +345,9 @@ function draw(dt) {
   drawEnts(true);
   const c = sctx; c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
   c.fillStyle = '#05070d'; c.fillRect(0, 0, DW, DH);
+  drawStageHD(c, OX, OY, vw, vh, cam.pz);
   c.drawImage(buf, 0, 0, vw, vh, 0, 0, vw * cam.pz, vh * cam.pz);
+  if (typeof drawCustomTrainers === 'function') drawCustomTrainers(c);
   if (dimState.a > 0) { const over = clock.t - dimState.until, f = over > 0 ? 1 - over / 400 : 1; if (f <= 0) dimState.a = 0; else { c.fillStyle = `rgba(${dimState.col},${(dimState.a * f).toFixed(3)})`; c.fillRect(0, 0, DW, DH); } }
   for (const S of order) drawActorSprite(S);
   // effects layer above the sprites
