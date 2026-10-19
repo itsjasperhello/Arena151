@@ -391,7 +391,7 @@ window.addEventListener('resize', () => resizeScene());
 
 function frame(now) {
   const realDt = Math.min(50, now - clock.last); clock.last = now;
-  const dt = clock.paused ? 0 : realDt * clock.speed * (now < HITSTOP.until ? .12 : 1);
+  const dt = clock.paused ? 0 : realDt * clock.speed * (now < HITSTOP.until && (!window.SETTINGS || SETTINGS.hitstop) ? .12 : 1);
   clock.t += dt;
   for (let i = tasks.length - 1; i >= 0; i--) { const k = tasks[i], p = clamp((clock.t - k.start) / k.dur, 0, 1); try { if (k.fn) k.fn(p); } catch (e) { console.error(e); } if (p >= 1) { tasks.splice(i, 1); k.res(); } }
   if (G && !clock.paused) {

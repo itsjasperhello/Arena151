@@ -221,7 +221,7 @@ function drawActorSprite(S) {
     const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
     // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
     const flip = useBack ? sd.face < 0 : sd.face > 0;
-    const unit = Math.max(1, Math.round(cam.pz / 2)) * scale, still = a.frames.length < 2 && !a.live;
+    const unit = (cam.pz >= 2 ? Math.round(cam.pz / 2) : cam.pz / 2) * scale, still = a.frames.length < 2 && !a.live;   // shrinks with the camera when zoomed out
     const bob = still && !frozen ? (moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / 430) % 2) * unit : 0;
     const dw = Math.max(1, Math.round(a.w * unit)), dh = Math.max(1, Math.round(a.h * unit));
     c.save(); c.imageSmoothingEnabled = false; c.globalAlpha = alpha;
@@ -333,7 +333,7 @@ function draw(dt) {
   const b = bctx; b.setTransform(1, 0, 0, 1, 0, 0); b.imageSmoothingEnabled = false;
   b.fillStyle = '#05070d'; b.fillRect(0, 0, buf.width, buf.height);
   drawStageBackdrop(b, OX, OY, clock.t);
-  b.drawImage(stageCanvas, -OX, -OY);
+  { const e = EXT(STAGE_ID); b.drawImage(stageCanvas, -OX - e.l, -OY - e.t); }
   animateStage(b, OX, OY, clock.t);
   b.drawImage(scarCanvas, -OX, -OY);
   if (G) {

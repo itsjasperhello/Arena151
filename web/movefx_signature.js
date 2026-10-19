@@ -15,6 +15,7 @@ const easeOut = q => 1 - (1 - q) * (1 - q);
 const GHOST_CACHE = new WeakMap();
 // Afterimage: a coloured silhouette of the Pokémon's current frame, left on the ground layer to fade.
 function ghostOf(S, col, life = 260, a0 = .5, dx = 0, dy = 0) {
+  if (window.SETTINGS && SETTINGS.quality === 'low') return;
   const sd = side(S), m = act(S); if (!m || sd.state !== 'idle' && sd.state !== 'mega') return;
   const sp = spriteOf(m.name, m.mega); let src, w, h, cx, foot, flip, k;
   if (sp.custom) { const back = sd.view === 'back' && sp.back, an = ensureAnim(back ? sp.back : sp.front); src = an.frames[animFrameIndex(an, clock.t)]; w = an.w; h = an.h; cx = an.cx; foot = an.foot; flip = back ? sd.face < 0 : sd.face > 0; k = .5; }
