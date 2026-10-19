@@ -123,6 +123,20 @@ public class MainActivity extends Activity {
     /** Methods callable from the game as window.AndroidApp.* */
     public class Bridge {
 
+        /** Lists the files bundled in assets/sprites as a JSON array, so new trainer files appear automatically. */
+        @JavascriptInterface
+        public String listSprites() {
+            StringBuilder out = new StringBuilder("[");
+            try {
+                String[] names = getAssets().list("sprites");
+                if (names != null) for (int i = 0; i < names.length; i++) {
+                    if (i > 0) out.append(',');
+                    out.append('"').append(names[i].replace("\\", "\\\\").replace("\"", "\\\"")).append('"');
+                }
+            } catch (Exception e) { /* no folder: empty list */ }
+            return out.append(']').toString();
+        }
+
         /** Writes a save file to Downloads/Arena151 and returns where it went ("" on failure). */
         @JavascriptInterface
         public String saveFile(String name, String text) {

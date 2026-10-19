@@ -21,9 +21,9 @@ function updateHUD(force) {
     $('hp' + S).textContent = `${m.hp}`;
     const port = $('portrait' + S), pk = m.name + (m.mega ? '#M' : '') + (spriteOf(m.name, m.mega).custom ? 'C' : ''); if (port.dataset.mon !== pk || force) { drawSpriteTo(port, m.name, { portrait: true, mega: m.mega, faceRight: S === 'A', bg: mix(TYPE_COLOR[m.types[0]], '#20284a', .55) }); port.dataset.mon = pk; }
     $('port' + S).classList.toggle('fnt', m.hp <= 0);
-    const toks = (S === 'B' ? `<span class="team-tag">GOLD</span>` : '') +
+    const toks = (S === 'B' ? `<span class="team-tag">${trainerLabel('B')}</span>` : '') +
       sd.team.map((t, i) => `<span class="tok ${t.hp <= 0 ? 'fnt' : ''} ${t.status ? 'st' : ''} ${i === sd.active ? 'active' : ''}" title="${t.name} ${t.hp}/${t.max}"></span>`).join('') +
-      (S === 'A' ? `<span class="team-tag">RED</span>` : '');
+      (S === 'A' ? `<span class="team-tag">${trainerLabel('A')}</span>` : '');
     if (hudKey[S] !== toks) { $('tok' + S).innerHTML = toks; hudKey[S] = toks; }
   }
   renderRosters();
@@ -177,7 +177,7 @@ async function onBattleEnd(w, bigTxt) {
 }
 function showResults() {
   const w = G.winner, banner = $('resBanner');
-  banner.textContent = w === 'draw' ? 'DRAW!' : `${w === 'A' ? 'RED' : 'GOLD'} WINS!`;
+  banner.textContent = w === 'draw' ? 'DRAW!' : `${trainerLabel(w)} WINS!`;
   banner.className = 'banner ' + (w === 'B' ? 'gold' : w === 'draw' ? 'draw' : '');
   banner.style.animation = 'none'; void banner.offsetWidth; banner.style.animation = '';
   $('resTitle').textContent = G.auto ? (w === 'draw' ? 'Draw' : `${TEAM_NAME[w]} wins`) : w === 'A' ? 'Victory' : w === 'B' ? 'Defeat' : 'Draw';

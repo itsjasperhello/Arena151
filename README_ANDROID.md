@@ -4,7 +4,7 @@ A native Android app (Java + WebView) that runs the full Arena 151 game offline,
 
 - **Requires:** Android 8.0 (API 26) or newer.
 - **App ID:** `com.arena151.game`
-- **Version:** 10.1
+- **Version:** 11.0
 
 ## Build the APK on Windows (Android Studio)
 1. Install **Android Studio** (free) from developer.android.com/studio. It includes the Android SDK and Java.
@@ -49,6 +49,9 @@ The full list of names (including `nidoran-f`, `nidoran-m`, `mr-mime` and `farfe
 - **Mirroring:** both views are mirrored so the Pokémon faces where it is heading.
 - **Animation:** every GIF frame plays at its own speed.
 - **Fallbacks:** if there's no back GIF, the front one is used for both views. If there's no GIF, a PNG with the same name is used.
+
+## Trainers
+Every `<Name>_trainer.png` (animated PNG) in `app/src/main/assets/sprites/` is a trainer option for either side, chosen in the team builder above each side's Pokémon list. Add a file, rebuild, and it appears automatically: the app lists the folder itself. Underscores become spaces (`Lt_Surge_trainer.png` shows as "Lt Surge"). Sprites are expected to face left; tick "Sprite faces right" under a picker for any that don't.
 
 ## Updating the game
 The game code lives in `web/` (the same source as the desktop build). After changing it, run:

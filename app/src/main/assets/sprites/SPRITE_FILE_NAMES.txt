@@ -180,11 +180,10 @@ Optional Mega Evolution sprites (otherwise the normal sprite gets a pink Mega gl
      aerodactyl-mega.gif        aerodactyl-mega (1).gif
      mewtwo-mega.gif        mewtwo-mega (1).gif
 
-Optional custom trainers (your own files; they face LEFT by default, so Red's is mirrored automatically.
-If yours face right, change Settings > Custom trainer art faces):
-     trainer-red.gif          trainer-gold.gif            (standing / idle)
-     trainer-red-throw.gif    trainer-gold-throw.gif      (sending out a Pokemon)
-     trainer-red-command.gif  trainer-gold-command.gif    (calling a move)
-     trainer-red-win.gif      trainer-gold-win.gif        (cheering)
-     trainer-red-lose.gif     trainer-gold-lose.gif       (defeated)
-Only the base file is required; missing poses use it. PNG works too. Without any files the built-in trainers are used.
+TRAINERS
+--------
+Every file named  <Name>_trainer.png  in this folder is a trainer you can pick for either side
+(team builder, above each side's Pokemon list). Use an animated PNG (APNG); a still PNG works too.
+Underscores become spaces in the name: Lt_Surge_trainer.png -> "Lt Surge".
+To add a trainer, drop the file here and rebuild the app - it appears in the list automatically.
+Sprites are expected to face LEFT; if one faces right, tick "Sprite faces right" under the picker.
