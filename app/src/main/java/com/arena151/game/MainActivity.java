@@ -71,6 +71,8 @@ public class MainActivity extends Activity {
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
         WebSettings s = web.getSettings();
+        // Online battles: the game page is https://appassets..., the battle server on your network is ws:// (plain).
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);                 // autosaves and save slots
         s.setMediaPlaybackRequiresUserGesture(false);

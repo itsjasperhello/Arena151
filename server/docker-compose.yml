@@ -1,0 +1,9 @@
+services:
+  arena151:
+    build: .
+    container_name: arena151-server
+    ports:
+      - "8151:8151"
+    restart: unless-stopped
+    environment:
+      - PORT=8151

@@ -49,7 +49,7 @@ const accMult = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
 const effSpe = m => m.stats.spe * stageMult(m.stages.spe) * (m.status === 'par' ? .5 : 1);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const present = s => { const sd = side(s); return sd.state === 'idle' && !sd.dig && act(s).hp > 0; };
-const controlledByAI = s => s === 'B' || G.auto;
+const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s === 'B');   // online battles mark both sides human
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
 
 function calcDamage(u, t, mv, crit, eff, roll = true) {

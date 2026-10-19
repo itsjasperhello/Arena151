@@ -1,0 +1,9 @@
+{
+  "name": "arena151-server",
+  "version": "14.1.0",
+  "description": "Arena 151 online battle server",
+  "main": "server.js",
+  "private": true,
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "ws": "8.18.0" }
+}
