@@ -10,7 +10,7 @@ Open **PowerShell** in this `server` folder (in File Explorer: open the folder, 
 docker compose up -d --build
 ```
 
-The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.3",...}`.
+The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.4",...}`.
 
 ## 2. Find this PC's address
 
@@ -40,6 +40,16 @@ On both phones, on the start screen tap **ONLINE vs PLAYER**, enter the server a
 * **Friend:** set their trainer and team, type the code, tap **Join game**.
 
 Each player always plays from the left as Red. Online battles can't be paused. If a Pokémon faints, its trainer has 15 seconds to pick the next one (both phones show the countdown; then the best one is sent out automatically). If neither player lands a hit for 90 seconds the battle is decided on remaining HP, with an on-screen warning 10 seconds before. If someone leaves, the other player wins.
+
+## Tournaments (up to 16 players)
+
+On the start screen's online panel, type your name, choose **Up to N players** (2–16) and tap **Host tournament**. Everyone else types the 4-letter code and taps **Join game**. The host's arena choice and time limit apply to every match.
+
+When the host taps **START TOURNAMENT**, the server draws a random single-elimination bracket. If the player count isn't 2, 4, 8 or 16, some players get a first-round **bye** (picked at random). Each match starts by itself a few seconds after both players are known, so quick matches don't wait for slow ones. After each match, players return to the bracket; knocked-out players can keep watching the bracket until the champion is crowned.
+
+* A player who leaves before their next match gives the opponent a **walkover**.
+* A dropped connection gets the usual 20 seconds to reconnect, straight back into the tournament and their live match.
+* If a match ends exactly tied on HP, a coin flip decides who advances (a bracket needs a winner).
 
 ## Connection drops
 
