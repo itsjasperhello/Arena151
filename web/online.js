@@ -238,12 +238,23 @@ function watchConnection(age, now) {
   const p = $('netPing');
   if (p) { const on = NET.active && NET.rtt != null; p.classList.toggle('show', on); if (on) { p.textContent = `ping ${NET.rtt} ms`; p.classList.toggle('mid', NET.rtt >= 120 && NET.rtt < 250); p.classList.toggle('bad', NET.rtt >= 250); } }
   if (!NET.active || NET.over) { netBanner(''); return; }
-  const hold = NET.lastHold;
+  const hold = NET.lastHold, rxAge = now - NET.lastRx;
   if (NET.reconnecting) netBanner(`Reconnecting… ${Math.max(0, Math.ceil((NET.reconnecting - now) / 1000))}s`);
   else if (hold && hold.side === 'B') netBanner(`Opponent's connection dropped — waiting ${Math.ceil(hold.left / 1000)}s`, true);
-  else if (age > 1500) netBanner(NET.rtt != null && NET.rtt < 250 ? 'Battle updates paused — resyncing…' : 'Connection unstable — waiting for the server…', true);
+  else if (rxAge > 3000) netBanner('Connection unstable — waiting for the server…', true);
+  else if (age > 1500) netBanner('Battle updates paused — resyncing…', true);
   else netBanner('');
-  if (age > 3000 && !NET.reconnecting && NET.ws && !(hold && hold.side === 'B')) {   // no battle updates: abandon this connection and rejoin on a fresh one
+  if (NET.reconnecting || !NET.ws) return;
+  if (age < 1500) NET.resyncs = 0;
+  // The server answers but battle updates stopped: ask for a full update on this same connection (no reconnect, no pause).
+  if (age > 2500 && rxAge < 2500 && now - (NET.lastResync || 0) > 3000 && !(hold && hold.side === 'B')) {
+    NET.lastResync = now; NET.resyncs = (NET.resyncs || 0) + 1;
+    if (NET.resyncs <= 3) { netSend({ t: 'resync', code: NET.code, token: NET.token, why: `no battle update for ${Math.round(age / 100) / 10}s` }); return; }
+  }
+  // Truly dead (nothing at all for 8 s), or three resyncs did not help: reconnect on a fresh connection.
+  if (rxAge > 8000 || (NET.resyncs > 3 && age > 2500)) {
+    NET.reconnectWhy = rxAge > 8000 ? `nothing received for ${Math.round(rxAge / 1000)}s` : 'resync did not restore updates';
+    NET.resyncs = 0;
     const dead = NET.ws; NET.ws = null; dead.onclose = dead.onmessage = null; try { dead.close(); } catch (e) { } startReconnect();
   }
 }
@@ -256,11 +267,11 @@ function startReconnect() {
     if (performance.now() > NET.reconnecting) { NET.reconnecting = 0; netBanner(''); endOnline('B', 'DISCONNECTED', 'Lost the connection to the server.'); return; }
     let ws; try { ws = new WebSocket(NET.wsUrl); } catch (e) { setTimeout(attempt, 1500); return; }
     ws._url = NET.wsUrl; const giveUp = setTimeout(() => { if (ws.readyState !== 1) { try { ws.close(); } catch (e) { } } }, 4000);   // an attempt never hangs
-    ws.onopen = () => { clearTimeout(giveUp); NET.ws = ws; ws.send(JSON.stringify({ t: 'hello', v: APP_VERSION })); ws.send(JSON.stringify({ t: 'resume', code: NET.code, token: NET.token })); };
+    ws.onopen = () => { clearTimeout(giveUp); NET.ws = ws; ws.send(JSON.stringify({ t: 'hello', v: APP_VERSION })); ws.send(JSON.stringify({ t: 'resume', code: NET.code, token: NET.token, why: NET.reconnectWhy || 'connection lost' })); NET.reconnectWhy = ''; };
     ws.onmessage = e => { NET.lastRx = performance.now(); let m; try { m = JSON.parse(e.data); } catch (x) { return; } onNetMessage(m); };
     ws.onclose = () => { if (NET.ws === ws) NET.ws = null; if (NET.reconnecting) setTimeout(attempt, 1500); else if (NET.active && !NET.over) startReconnect(); };
     ws.onerror = () => {};
   };
   attempt();
 }
-setInterval(() => { if (NET.active && !NET.over && NET.ws && NET.ws.readyState === 1) netSend({ t: 'ping', c: performance.now() }); }, 2000);
+setInterval(() => { if (NET.ws && NET.ws.readyState === 1) netSend({ t: 'ping', c: performance.now() }); }, 2000);   // in battle, lobby or bracket

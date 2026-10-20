@@ -10,7 +10,7 @@ Open **PowerShell** in this `server` folder (in File Explorer: open the folder, 
 docker compose up -d --build
 ```
 
-The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.5",...}`.
+The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.6",...}`.
 
 ## 2. Find this PC's address
 
@@ -55,7 +55,13 @@ When the host taps **START TOURNAMENT**, the server draws a random single-elimin
 
 If a phone's connection stalls or drops mid-match, it reconnects to the same match by itself. While it's gone, the battle is paused and the other phone shows *"Opponent's connection dropped — waiting 20s"*; if it isn't back within 20 seconds, the other player wins. Each phone shows its ping under the timer during online battles (green is good; yellow or red means a weak Wi-Fi signal).
 
-If a phone stops receiving battle updates while its connection still answers (you'd see *"Battle updates paused — resyncing…"*), it rejoins the match on a fresh connection within about 3 seconds. The server log records why, for example `has not taken a snapshot for 3s` or `battle step error`, so `docker compose logs` shows the cause if it keeps happening.
+If a phone stops receiving battle updates while its connection still answers, it asks the server for a full update over the same connection (no reconnect, and the battle keeps going for the other player). A phone only reconnects when it hears nothing at all for 8 seconds. Each recovery is logged with its reason, so `docker compose logs` shows what happened.
+
+## Capacity and performance
+
+Battles run in a pool of worker threads, one per CPU core by default (up to 8), so a busy match never slows the others. Each battle uses about 4–5 ms of CPU per second. In testing, 100 simultaneous games (200 players) stayed connected with no player ever going a second without an update, even when squeezed onto a single core; at one worker's share of 100 games (13–25 games) a worker uses only 2–4 ms of every 16 ms tick. Each player uses roughly 25–55 KB/s of bandwidth.
+
+To use more cores, set `WORKERS` in `docker-compose.yml` (for example `WORKERS=12`) and run `docker compose up -d --build`. Docker Desktop can use all of your PC's cores by default. <http://localhost:8151/health> shows how many games each worker is running and its tick time (`avgTickMs` well under 16 means plenty of headroom).
 
 ## Everyday commands
 
@@ -63,6 +69,7 @@ If a phone stops receiving battle updates while its connection still answers (yo
 |---|---|
 | Start / update after changes | `docker compose up -d --build` |
 | Watch the server log | `docker compose logs -f` |
+| Check load per worker | open <http://localhost:8151/health> |
 | Stop | `docker compose down` |
 | Restart | `docker compose restart` |
 

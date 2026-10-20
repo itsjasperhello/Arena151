@@ -2,7 +2,7 @@ FROM node:20-alpine
 WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev
-COPY server.js ./
+COPY server.js battle-worker.js ./
 COPY game ./game
 ENV PORT=8151
 EXPOSE 8151

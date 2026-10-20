@@ -29,11 +29,11 @@ function __step(dt) { clock.t += dt; simStep(dt); __tagIds(); }
 function __spawn(S) { spawnIn(S, side(S).active || 0); __tagIds(); }
 function __startBattle() { G.phase = 'battle'; G.lastDmgT = G.time; }
 function __takeEvents() { const e = __events; __events = []; return e; }
-function __snapshot() {
+function __snapshot(full) {          // full: every Pokémon (keyframes); otherwise only the active ones are copied
   const sides = {}, teams = {};
   for (const S of ['A', 'B']) {
     const sd = G.sides[S], o = {}; for (const k in sd) if (k !== 'team') o[k] = __enc(sd[k], 1); sides[S] = o;
-    teams[S] = sd.team.map(m => __enc(m, 1));
+    teams[S] = sd.team.map((m, i) => (full !== false || i === sd.active) ? __enc(m, 1) : null);
   }
   return { ph: G.phase, time: G.time, el: G.elapsed, ot: G.overtime || 0, lastDmgT: G.lastDmgT, sides, teams,
     shots: __enc(G.shots, 0), beams: __enc(G.beams, 0), marks: __enc(G.marks, 0), waves: __enc(G.waves, 0) };

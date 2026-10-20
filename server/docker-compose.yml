@@ -7,3 +7,5 @@ services:
     restart: unless-stopped
     environment:
       - PORT=8151
+      # Battle worker threads. Leave unset to use one per CPU core (up to 8); raise it on a big machine, e.g. WORKERS=12.
+      # - WORKERS=8
