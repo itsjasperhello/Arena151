@@ -6,7 +6,7 @@
    so motion stays smooth. You always play Red, on the left.
    ===================================================================== */
 const NET = { ws: null, active: false, mode: 'local', url: '', status: '', code: null, over: false, pickShown: false, steerOn: false, lastSteer: 0, prevTrsel: null,
-  latest: null, evq: [], lastRx: 0, token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
+  latest: null, evq: [], lastRx: 0, lastSnap: 0, token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
 try { NET.url = localStorage.getItem('arena151.server') || ''; NET.mode = localStorage.getItem('arena151.mode') === 'online' ? 'online' : 'local'; } catch (e) { }
 const netSend = msg => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(msg)); };
 function serverUrl(input) {
@@ -54,11 +54,11 @@ function onNetMessage(m) {
     case 'hosted': NET.code = m.code; $('olCodeShow').textContent = m.code; netStatus('Game created. Tell your friend the code — waiting for them to join…', 'ok'); break;
     case 'joined': NET.code = m.code; netStatus('Joined! Starting…', 'ok'); break;
     case 'start': beginOnline(m); break;
-    case 'snap': if (NET.active && G) { NET.latest = m.s; NET.evq.push(...(m.ev || [])); if (NET.evq.length > 500) NET.evq.splice(0, NET.evq.length - 500); } break;
+    case 'snap': NET.lastSnap = performance.now(); if (NET.active && G) { NET.latest = m.s; NET.evq.push(...(m.ev || [])); if (NET.evq.length > 500) NET.evq.splice(0, NET.evq.length - 500); } break;
     case 'pong': NET.rtt = Math.round(performance.now() - m.c); break;
     case 'oppAway': NET.oppAway = performance.now() + m.secs * 1000; toast('Your opponent lost connection — waiting for them to come back…'); break;
     case 'oppBack': NET.oppAway = 0; toast('Your opponent is back!'); break;
-    case 'resumed': NET.reconnecting = 0; NET.lastRx = performance.now(); netBanner(''); toast('Reconnected!'); break;
+    case 'resumed': NET.reconnecting = 0; NET.lastRx = NET.lastSnap = performance.now(); netBanner(''); toast('Reconnected!'); break;
     case 'resumeFailed': NET.reconnecting = 0; netBanner(''); endOnline('B', 'DISCONNECTED', 'Could not rejoin the match.'); break;
     case 'countdown': if (NET.active) battleCountdown(epoch); break;
     case 'over': if (NET.active) endOnline(m.winner, m.big, m.reason); break;
@@ -67,7 +67,7 @@ function onNetMessage(m) {
   }
 }
 async function beginOnline(m) {
-  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.lastRx = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
+  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.lastRx = NET.lastSnap = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
   if (!NET.prevTrsel) NET.prevTrsel = { ...TRSEL };
   NET.active = true; NET.over = false; NET.pickShown = false; NET.steerOn = false;
   hideStart();
@@ -126,7 +126,7 @@ function applySnap(s, events) {
 function netStep(dt) {
   if (!G) return;
   if (NET.latest) { const snap = NET.latest, ev = NET.evq; NET.latest = null; NET.evq = []; applySnap(snap, ev); }
-  const now0 = performance.now(), age = now0 - NET.lastRx;
+  const now0 = performance.now(), age = now0 - NET.lastSnap;      // battle updates only: a ping reply is not proof the battle is flowing
   watchConnection(age, now0);
   if (age > 300) return;                                   // no fresh data: hold still rather than run ahead of the server
   G.time += dt; if (G.phase === 'battle') G.elapsed += dt;
@@ -160,7 +160,7 @@ const _simStep = simStep; simStep = dt => NET.active ? netStep(dt) : _simStep(dt
 const _queueMove = queueMove; queueMove = i => {
   if (!NET.active) return _queueMove(i);
   if (!G || G.phase !== 'battle') return;
-  if (performance.now() - NET.lastRx > 600 || !NET.ws || NET.ws.readyState !== 1) { toast('Waiting for the connection…'); return; }
+  if (performance.now() - NET.lastSnap > 600 || !NET.ws || NET.ws.readyState !== 1) { toast('Waiting for the connection…'); return; }
   netSend({ t: 'mv', i }); const sd = side('A'); if (!sd.cast) { sd.queued = i; sd.queuedT = 600; }
 };
 const _requestSwitch = requestSwitch; requestSwitch = (S, idx) => { if (!NET.active) return _requestSwitch(S, idx); if (S === 'A') netSend({ t: 'sw', i: idx }); return true; };
@@ -241,9 +241,9 @@ function watchConnection(age, now) {
   const hold = NET.lastHold;
   if (NET.reconnecting) netBanner(`Reconnecting… ${Math.max(0, Math.ceil((NET.reconnecting - now) / 1000))}s`);
   else if (hold && hold.side === 'B') netBanner(`Opponent's connection dropped — waiting ${Math.ceil(hold.left / 1000)}s`, true);
-  else if (age > 1500) netBanner('Connection unstable — waiting for the server…', true);
+  else if (age > 1500) netBanner(NET.rtt != null && NET.rtt < 250 ? 'Battle updates paused — resyncing…' : 'Connection unstable — waiting for the server…', true);
   else netBanner('');
-  if (age > 5000 && !NET.reconnecting && NET.ws) {       // stalled: abandon this connection right away (a stalled close never completes) and reconnect
+  if (age > 3000 && !NET.reconnecting && NET.ws && !(hold && hold.side === 'B')) {   // no battle updates: abandon this connection and rejoin on a fresh one
     const dead = NET.ws; NET.ws = null; dead.onclose = dead.onmessage = null; try { dead.close(); } catch (e) { } startReconnect();
   }
 }

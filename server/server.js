@@ -18,6 +18,12 @@ const WW = 1000;                 // arena width in world units (positions are mi
 const TICK = 16, SNAP_EVERY = 50, PICK_TIMEOUT = 15000, CUE_TIMEOUT = 6000, READY_TIMEOUT = 15000;
 const GRACE = 20000;                         // a dropped player has this long to reconnect before forfeiting
 const MAX_BUFFER = 128 * 1024;               // stop queueing snapshots for a phone that is not keeping up
+const STUCK_MS = 3000;                       // a connection that has not taken a snapshot for this long is closed (the phone reconnects)
+const errSeen = new Map();
+function logErr(room, kind, e) {             // logs each kind of problem at most every 10 s per room
+  const k = room.code + kind, now = Date.now(); if (now - (errSeen.get(k) || 0) < 10000) return; errSeen.set(k, now);
+  log(`room ${room.code}: ${kind} error —`, (e && e.stack) || e);
+}
 const crypto = require('crypto');
 const CODE = ['data.js', 'fxdata.js', 'arenas.js', 'sim.js', 'glue.js'].map(f => fs.readFileSync(path.join(__dirname, 'game', f), 'utf8')).join('\n;\n');
 const SCRIPT = new vm.Script(CODE, { filename: 'arena151-game.js' });
@@ -95,7 +101,13 @@ function closeRoom(room, why) { room.closed = true; rooms.delete(room.code); log
 function sendSnap(room, S, snap, ev) {
   const ws = room.players[S], pend = room.pendingEv[S];
   pend.push(...ev); if (pend.length > 400) pend.splice(0, pend.length - 400);
-  if (!ws || ws.readyState !== 1 || ws.bufferedAmount > MAX_BUFFER) return;   // phone is behind or away: its events wait for the next snapshot
+  if (!ws || ws.readyState !== 1) return;
+  if (ws.bufferedAmount > MAX_BUFFER || (room.muteWs === ws && Date.now() < room.muteUntil)) {   // phone is not taking snapshots
+    room.stuckSince = room.stuckSince || {}; room.stuckSince[S] = room.stuckSince[S] || Date.now();
+    if (Date.now() - room.stuckSince[S] > STUCK_MS) { log(`room ${room.code}: ${S} has not taken a snapshot for ${STUCK_MS / 1000}s (buffer ${Math.round(ws.bufferedAmount / 1024)} KB) — closing that connection so the phone reconnects`); room.stuckSince[S] = 0; try { ws.terminate(); } catch (e) { } }
+    return;
+  }
+  if (room.stuckSince) room.stuckSince[S] = 0;
   ev = pend.splice(0, pend.length);
   const seen = room.seen[S], tm = { A: {}, B: {} };
   for (const T of ['A', 'B']) snap.teams[T].forEach((mon, i) => { const j = JSON.stringify(mon), key = T + i; if (seen[key] !== j) { seen[key] = j; tm[T][i] = mon; } });
@@ -114,9 +126,12 @@ function tickRoom(room, now, dt) {
       }
       for (const S of ['A', 'B']) if (room.pickSince[S]) room.pickSince[S] += dt;   // pick timers wait too
     } else {
-      let left = dt; while (left > 0) { const step = Math.min(TICK, left); ctx.__step(step); left -= step; }
+      let left = dt; while (left > 0) {
+        const step = Math.min(TICK, left); left -= step;
+        try { if (process.env.ARENA_TEST && room.throwUntil > now) throw new Error('test error in battle step'); ctx.__step(step); } catch (e) { logErr(room, 'battle step', e); }
+      }
     }
-    const st = ctx.__state();
+    let st; try { st = ctx.__state(); } catch (e) { logErr(room, 'state', e); return; }
     // pick phase: each waiting player has a time limit, then the best replacement is sent automatically
     for (const S of ['A', 'B']) {
       if (st.waiting.includes(S)) { room.pickSince[S] = room.pickSince[S] || now; if (!awayS && now - room.pickSince[S] > PICK_TIMEOUT) { ctx.__autoPick(S); room.pickSince[S] = 0; } }
@@ -124,12 +139,12 @@ function tickRoom(room, now, dt) {
     }
     if ((room.snapAt += dt) >= SNAP_EVERY) {
       room.snapAt = 0;
-      const snap = ctx.__snapshot(), ev = ctx.__takeEvents();
+      let snap, ev;
+      try { snap = ctx.__snapshot(); ev = ctx.__takeEvents(); } catch (e) { logErr(room, 'snapshot', e); return; }
       snap.pickLeft = { A: room.pickSince.A ? Math.max(0, PICK_TIMEOUT - (now - room.pickSince.A)) : 0, B: room.pickSince.B ? Math.max(0, PICK_TIMEOUT - (now - room.pickSince.B)) : 0 };
       snap.hold = awayS ? { side: awayS, left: Math.max(0, GRACE - (now - room.away[awayS])) } : null;
-      sendSnap(room, 'A', snap, ev);
-      const m = mirrorSnap(snap); if (m.hold) m.hold = { side: swapSide(m.hold.side), left: m.hold.left };
-      sendSnap(room, 'B', m, ev.map(mirrorEvent));
+      try { sendSnap(room, 'A', snap, ev); } catch (e) { logErr(room, 'send A', e); }
+      try { const m = mirrorSnap(snap); if (m.hold) m.hold = { side: swapSide(m.hold.side), left: m.hold.left }; sendSnap(room, 'B', m, ev.map(mirrorEvent)); } catch (e) { logErr(room, 'send B', e); }
     }
     if (st.ended && !room.over) {
       room.over = true; room.state = 'over';
@@ -175,6 +190,8 @@ function handle(ws, m) {
       case 'tstart': tourStart(ws); break;
       case 'tleave': tourLeave(ws); break;
       case 'tresume': tourResume(ws, m); break;
+      case 'dbgMute': if (process.env.ARENA_TEST && room) { room.muteWs = ws; room.muteUntil = Date.now() + (+m.ms || 10000); } break;
+      case 'dbgThrow': if (process.env.ARENA_TEST && room) room.throwUntil = Date.now() + (+m.ms || 3000); break;
       case 'dbgWin': if (process.env.ARENA_TEST && room && room.ctx && !room.over) { const S = sideOf(room, ws); room.ctx.__forfeit(swapSide(S)); } break;
       case 'host': {
         if (ws.tour) tourLeave(ws);
@@ -210,7 +227,7 @@ function handle(ws, m) {
         const r = rooms.get(String(m.code || '').toUpperCase()); const S = r && r.tokens && ['A', 'B'].find(k => r.tokens[k] === m.token);
         if (!r || !S || r.closed) return send(ws, { t: 'resumeFailed' });
         const old = r.players[S]; if (old && old !== ws) { old.room = null; try { old.terminate(); } catch (e) { } }
-        r.players[S] = ws; ws.room = r; delete r.away[S]; r.seen[S] = {};
+        r.players[S] = ws; ws.room = r; delete r.away[S]; r.seen[S] = {}; if (r.stuckSince) r.stuckSince[S] = 0;
         send(ws, { t: 'resumed', ...r.startMsg[S], phase: r.state }); send(r.players[swapSide(S)], { t: 'oppBack' });
         log(`room ${r.code}: ${S} reconnected`);
         break;
@@ -357,7 +374,7 @@ function tourResume(ws, msg) {
   const room = m.match;
   if (room && !room.closed) {                                       // back into the live match
     const S = room.memberIds.A === m.id ? 'A' : 'B';
-    room.players[S] = ws; ws.room = room; delete room.away[S]; room.seen[S] = {};
+    room.players[S] = ws; ws.room = room; delete room.away[S]; room.seen[S] = {}; if (room.stuckSince) room.stuckSince[S] = 0;
     send(ws, { t: 'resumed', ...room.startMsg[S], phase: room.state }); send(room.players[swapSide(S)], { t: 'oppBack' });
   }
   log(`tournament ${t.code}: ${m.name} reconnected`); tourBroadcast(t);

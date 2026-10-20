@@ -10,7 +10,7 @@ Open **PowerShell** in this `server` folder (in File Explorer: open the folder, 
 docker compose up -d --build
 ```
 
-The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.4",...}`.
+The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.5",...}`.
 
 ## 2. Find this PC's address
 
@@ -54,6 +54,8 @@ When the host taps **START TOURNAMENT**, the server draws a random single-elimin
 ## Connection drops
 
 If a phone's connection stalls or drops mid-match, it reconnects to the same match by itself. While it's gone, the battle is paused and the other phone shows *"Opponent's connection dropped — waiting 20s"*; if it isn't back within 20 seconds, the other player wins. Each phone shows its ping under the timer during online battles (green is good; yellow or red means a weak Wi-Fi signal).
+
+If a phone stops receiving battle updates while its connection still answers (you'd see *"Battle updates paused — resyncing…"*), it rejoins the match on a fresh connection within about 3 seconds. The server log records why, for example `has not taken a snapshot for 3s` or `battle step error`, so `docker compose logs` shows the cause if it keeps happening.
 
 ## Everyday commands
 
