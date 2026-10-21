@@ -111,7 +111,8 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
   #startOv .st-mon .pic{height:46px} #startOv .st-mon img,#startOv .st-mon canvas{max-height:46px} #startOv .st-team{gap:6px}
   #startOv .st-arena{width:150px} #startOv .st-arena img,#startOv .st-arena.rand .pic{height:78px} #startOv .st-go{font-size:26px;padding:11px 40px}
 }
-@media (max-width:760px){ #startOv .st-grid{grid-template-columns:1fr;} #startOv .st-vs{order:0} }
+@media (max-width:760px) and (min-height:561px){ #startOv .st-grid{grid-template-columns:1fr;} #startOv .st-vs{order:0} }   /* narrow AND tall only: landscape phones (incl. iPhone safe areas) keep side by side */
+@media (max-height:380px){ #startOv .st-wrap{padding-top:4px;padding-bottom:2px} }   /* shortest iPhone landscape safe areas */
 @media (prefers-reduced-motion:reduce){ #startOv .st-ball,#startOv .st-vsball{animation:none} }`;
   document.head.appendChild(st);
 })();

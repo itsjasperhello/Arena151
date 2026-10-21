@@ -1,0 +1,69 @@
+# Builds the Arena 151 iPhone app (unsigned .ipa) on a GitHub macOS runner.
+# It uses the same game, sprites, music and cries as the Android app (copied from app/src/main/assets).
+# Install the .ipa with Sideloadly or AltStore, which sign it with your Apple ID — see ios/README_IOS.md.
+name: Build iOS app (IPA)
+
+on:
+  workflow_dispatch:            # Actions tab → "Build iOS app (IPA)" → Run workflow
+  push:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/build-ipa.yml'
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rebuild game from source
+        run: |
+          python3 web/build.py
+          grep -o "APP_VERSION = '[^']*'" app/src/main/assets/index.html
+
+      - name: Copy the game into the iOS app
+        run: |
+          rm -rf ios/www && mkdir -p ios/www
+          cp -R app/src/main/assets/. ios/www/
+          echo "index.html: $(du -h ios/www/index.html | cut -f1)"
+          for d in sprites music cry; do echo "$d: $(ls ios/www/$d 2>/dev/null | wc -l | tr -d ' ') files"; done
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Arena151.xcodeproj \
+            -scheme Arena151 \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            build | tail -n 60
+
+      - name: Package the IPA
+        working-directory: ios
+        run: |
+          APP=build/Build/Products/Release-iphoneos/Arena151.app
+          test -d "$APP" || { echo "Build did not produce $APP"; exit 1; }
+          test -f "$APP/www/index.html" || { echo "The game was not bundled"; exit 1; }
+          mkdir -p Payload && cp -R "$APP" Payload/
+          zip -qry Arena151-unsigned.ipa Payload
+          ls -lh Arena151-unsigned.ipa
+
+      - name: Upload the IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Arena151-ipa-${{ github.sha }}
+          path: ios/Arena151-unsigned.ipa
+          if-no-files-found: error

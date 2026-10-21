@@ -1,0 +1,34 @@
+# Arena 151 iOS app — XcodeGen project definition (the GitHub workflow turns this into Arena151.xcodeproj).
+name: Arena151
+options:
+  bundleIdPrefix: com.arena151
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "15.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+targets:
+  Arena151:
+    type: application
+    platform: iOS
+    sources:
+      - path: Arena151
+        excludes:
+          - "Info.plist"
+      # The game (index.html, sprites/, music/, cry/) copied from the Android project by the workflow, kept as one folder.
+      - path: www
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: Arena151
+        PRODUCT_BUNDLE_IDENTIFIER: com.arena151.game
+        INFOPLIST_FILE: Arena151/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_BITCODE: NO
+    scheme: {}
