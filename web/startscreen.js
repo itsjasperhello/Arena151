@@ -119,7 +119,7 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
 
 /* ---------- markup ---------- */
 (function startMarkup() {
-  const ov = document.createElement('div'); ov.id = 'startOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Set up a battle');
+  const ov = document.createElement('div'); ov.id = 'startOv'; ov.classList.add('show');   // the first thing on screen, even while loading ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Set up a battle');
   const balls = Array.from({ length: 9 }, (_, k) => { const s = 70 + (k * 37) % 120; return `<div class="st-ball" style="width:${s}px;height:${s}px;left:${(k * 13 + 4) % 96}%;top:${100 + (k * 23) % 60}%;animation-duration:${26 + (k * 7) % 22}s;animation-delay:-${(k * 5) % 20}s"></div>`; }).join('');
   const side = (S, cls, label) => `<section class="st-side ${cls}" aria-label="${label}">
       <div class="st-tag">${label}</div>
@@ -137,6 +137,7 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
     <div class="st-sec">Choose your arena</div><div class="st-arenas" id="stArenas"></div>
     <div class="st-foot"><label>Time limit <select id="stTime"><option value="0">None</option><option value="180">3:00</option><option value="300">5:00</option><option value="600">10:00</option></select></label>
       <button class="st-go" id="stGo">BATTLE!</button>
+      <button class="st-btn" id="stContinue" type="button" hidden>Continue last battle</button>
       <button class="st-btn" id="stBack" hidden>Back to battle</button><button class="st-btn" id="stSettings">Settings</button><button class="st-btn" id="stHelp">Controls</button></div>
   </div>`;
   document.body.appendChild(ov);
@@ -224,6 +225,7 @@ $('stSettings').onclick = () => { const b = $('bSettings'); if (b) b.click(); };
 $('stBack').onclick = () => { hideStart(); clock.paused = false; };
 $('stHelp').onclick = () => { const b = $('bHelp'); if (b) b.click(); };
 function syncTrainerPickers() { for (const S of ['A', 'B']) { const s = $('trSel' + S); if (s) s.value = TRSEL[S]; } if (typeof refreshTrainerLabels === 'function') refreshTrainerLabels(); try { drawMinis(); } catch (e) { } }
+$('stContinue').onclick = () => { hideStart(); loadKey('auto'); };
 $('stGo').onclick = () => {
   $('stageSel').value = START.arena; $('timeLimit').value = $('stTime').value;
   watchMode = START.ctrl.A === 'ai'; syncWatchButton(); syncTrainerPickers();

@@ -49,16 +49,16 @@
       var phaseTitle = typeof G !== 'undefined' && G && G.phase === 'title';
       var startOpen = typeof START !== 'undefined' && START && START.open;
       var ov = document.getElementById('startOv'), ovShown = ov && getComputedStyle(ov).display !== 'none';
-      if (startOpen || ovShown || !phaseTitle || document.getElementById('a151Menu')) return;
+      if (startOpen || !phaseTitle || document.getElementById('a151Menu')) return;
       if (typeof showStart === 'function') { try { showStart(); } catch (x) { add('showStart: ' + (x && x.message)); } }
-      if ((typeof START !== 'undefined' && START && START.open) || (ov && getComputedStyle(ov).display !== 'none')) return;
+      if (typeof START !== 'undefined' && START && START.open) return;
       var m = el('div', 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(10,12,30,.92);font:16px system-ui,Segoe UI,Arial,sans-serif;color:#fff');
       m.id = 'a151Menu';
       var box = el('div', 'background:#1b2150;border:2px solid #6fb8ff;border-radius:16px;padding:22px 26px;text-align:center;max-width:460px');
       box.appendChild(el('div', 'font-size:28px;font-weight:800;color:#ffd84a;margin-bottom:8px', 'ARENA 151'));
       box.appendChild(el('div', 'opacity:.85;margin-bottom:14px', 'The main menu could not load in this browser. You can still play against the AI, or reload to try again.'));
       var b1 = el('button', 'margin:4px;padding:10px 18px;border-radius:10px;border:0;font-weight:800;background:#ffd84a;cursor:pointer', 'Battle vs AI');
-      b1.onclick = function () { m.parentNode.removeChild(m); var t = document.getElementById('tStart'); if (t) t.click(); else if (typeof startBattle === 'function') startBattle(); };
+      b1.onclick = function () { m.parentNode.removeChild(m); try { startBattle(readPickers('A'), readPickers('B')); } catch (x) { add('start battle: ' + (x && x.message)); } };
       var b2 = el('button', 'margin:4px;padding:10px 18px;border-radius:10px;border:0;font-weight:800;cursor:pointer', 'Reload');
       b2.onclick = function () { location.reload(); };
       box.appendChild(b1); box.appendChild(b2); m.appendChild(box); document.body.appendChild(m);

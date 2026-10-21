@@ -75,7 +75,7 @@ async function beginOnline(m) {
   TRSEL.B = TRAINERS.includes(m.opp.trainerFile) ? m.opp.trainerFile : (TRAINERS[1] || TRAINERS[0]);
   loadTrainer(TRSEL.A); loadTrainer(TRSEL.B); try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
   watchMode = false; syncWatchButton();
-  setStage(m.arena); resetScene(); const my = epoch; $('titleStage').textContent = STAGE.name;
+  setStage(m.arena); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show');
   G = newBattle(m.me.team, m.opp.team, { auto: false, timeLimit: m.timeLimit || 0 }); G.phase = 'intro'; G.online = true;
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));

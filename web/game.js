@@ -132,12 +132,12 @@ function onSpritesChanged() { clearTimeout(spritesDirtyT); spritesDirtyT = setTi
    ===================================================================== */
 const DEFAULT_A = ['Pikachu', 'Blastoise', 'Venusaur', 'Snorlax', 'Charizard', 'Lapras'];
 const DEFAULT_B = ['Arcanine', 'Pinsir', 'Golbat', 'Jolteon', 'Gyarados', 'Alakazam'];
-const showOverlay = (id, on) => $(id).classList.toggle('show', on);
+const showOverlay = (id, on) => { const e = $(id); if (e) e.classList.toggle('show', on); };
 let introSkip = null, autosaveT = 0;
 function resetScene() { cancelAll(); buildScars(); crowdState.length = 0; for (const k in groupState) delete groupState[k]; trainerWalk.A = trainerWalk.B = 1; slide.t = -9999; bigText.t = -9999; }
 function chooseStage() { const v = $('stageSel').value; return v === 'random' ? pickBy(STAGE_ORDER, Math.random) : v; }
 async function startBattle(picksA, picksB, stageId) {
-  setStage(stageId || chooseStage()); resetScene(); const my = epoch; $('titleStage').textContent = STAGE.name;
+  setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
@@ -273,7 +273,7 @@ function validateSave(raw) {
   return d;
 }
 async function restore(d) {
-  setStage(d.stage || 'summit'); resetScene(); const my = epoch; $('titleStage').textContent = STAGE.name;
+  setStage(d.stage || 'summit'); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   G = newBattle(d.sides.A.team.map(t => t.name), d.sides.B.team.map(t => t.name), { auto: !!d.auto, timeLimit: d.timeLimit || 0 });
   watchMode = G.auto; syncWatchButton();
   for (const S of ['A', 'B']) {
@@ -323,7 +323,7 @@ function renderSlots() {
     div.appendChild(row); el.appendChild(div);
   }
   const auto = store.get(SAVE_PREFIX + 'auto'); let can = false; if (auto) { try { can = validateSave(auto).phase !== 'over'; } catch { } }
-  $('tContinue').hidden = !can;
+  const cont = $('stContinue'); if (cont) cont.hidden = !can;          // "Continue last battle" lives on the start screen
 }
 function exportSave() {
   if (!SAVEABLE()) { toast('Start a battle first.'); return; }
@@ -360,10 +360,7 @@ function toggleSpeed() { clock.speed = clock.speed === 1 ? 2 : 1; $('bSpeed').te
 const rematch = () => { if (G) startBattle(G.picks.A, G.picks.B, STAGE_ID); };
 const openBuilder = () => { $('builder').open = true; $('builder').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' }); };
 
-$('tStart').onclick = () => startBattle(readPickers('A'), readPickers('B'));
-$('tRandom').onclick = () => { randomize(); startBattle(readPickers('A'), readPickers('B')); };
-$('tContinue').onclick = () => loadKey('auto');
-$('tTeams').onclick = openBuilder; $('rTeams').onclick = openBuilder;
+$('rTeams').onclick = openBuilder;
 $('rRematch').onclick = rematch; $('bRematch').onclick = rematch;
 $('rRandom').onclick = () => { randomize(); startBattle(readPickers('A'), readPickers('B')); };
 $('bNew').onclick = () => startBattle(readPickers('A'), readPickers('B'));
@@ -373,7 +370,7 @@ $('bPause').onclick = togglePause; $('bSpeed').onclick = toggleSpeed; $('bWatch'
 $('bMega').onclick = () => { if (G && !G.auto) megaEvolve('A'); };
 function toggleCam() { camLock = !camLock; $('bCam').textContent = `Camera: ${camLock ? 'fixed' : 'dynamic'}`; }
 $('bCam').onclick = toggleCam;
-$('stageSel').onchange = () => { const v = $('stageSel').value; if (G && G.phase === 'title' && v !== 'random') { setStage(v); crowdState.length = 0; $('titleStage').textContent = STAGE.name; } };
+$('stageSel').onchange = () => { const v = $('stageSel').value; if (G && G.phase === 'title' && v !== 'random') { setStage(v); crowdState.length = 0; ($('titleStage') || {}).textContent = STAGE.name; } };
 $('bQuick').onclick = () => toast(writeSave('1') ? 'Quick saved to slot 1.' : 'Start a battle first.');
 $('bExport').onclick = exportSave;
 $('bImport').onclick = () => $('importFile').click();
@@ -456,7 +453,7 @@ function initAppMode() {
   $('tMenu').onclick = openMenu; $('drawerClose').onclick = closeMenu;
   $('tPause').onclick = togglePause;
   onTap($('tMega'), () => { if (G && !G.auto && megaEvolve('A')) haptic(40); });
-  $('tTeams').onclick = $('rTeams').onclick = openMenu;
+  $('rTeams').onclick = openMenu;
   for (const id of ['bApply', 'bNew', 'bRematch']) { const b = $(id), old = b.onclick; b.onclick = e => { closeMenu(); old && old(e); }; }
   try { $('optHaptics').checked = store.get('arena151.haptics') !== '0'; } catch (e) { }
   $('optHaptics').onchange = () => store.set('arena151.haptics', $('optHaptics').checked ? '1' : '0');
@@ -482,7 +479,7 @@ function initAppMode() {
 
 function boot() {
   initAppMode();
-  setStage('cavern'); $('titleStage').textContent = STAGE.name;
+  setStage('cavern'); ($('titleStage') || {}).textContent = STAGE.name;
   buildPickers(); setPickers(DEFAULT_A, DEFAULT_B); drawWave(); drawMinis(); resizeScene(); syncWatchButton();
   const legacy = store.get(LEGACY_KEY) || store.get(OLD_PREFIX + 'auto');
   if (legacy && !store.get(SAVE_PREFIX + 'auto')) { try { store.set(SAVE_PREFIX + 'auto', JSON.stringify(validateSave(legacy))); } catch { } }
