@@ -19,6 +19,8 @@ const TEST = !!process.env.ARENA_TEST;
 const CODE = ['data.js', 'fxdata.js', 'arenas.js', 'sim.js', 'glue.js'].map(f => fs.readFileSync(path.join(__dirname, 'game', f), 'utf8')).join('\n;\n');
 const SCRIPT = new vm.Script(CODE, { filename: 'arena151-game.js' });
 const rooms = new Map();
+const mono = () => performance.now();                       // monotonic: the system clock may jump, this never does
+const stamp = () => Math.round(performance.timeOrigin + performance.now());   // steady time stamp for the phones' smoothing
 const HANG_MS = 400;                                          // no match's code may run longer than this in one go
 // Every match runs inside one time-limited call per tick: if any match's code ever gets stuck (even an endless
 // loop), V8 stops it after HANG_MS, that match is ended cleanly, and every other match keeps running.
@@ -43,7 +45,7 @@ const post = (code, S, obj) => outbox.push([code, S, typeof obj === 'string' ? o
 const note = (kind, data) => parentPort.postMessage({ ev: kind, ...data });
 const errSeen = new Map();
 function logErr(room, kind, e) {
-  const k = room.code + kind, now = Date.now(); if (now - (errSeen.get(k) || 0) < 10000) return; errSeen.set(k, now);
+  const k = room.code + kind, now = mono(); if (now - (errSeen.get(k) || 0) < 10000) return; errSeen.set(k, now);
   note('log', { text: `room ${room.code}: ${kind} error — ${(e && e.stack) || e}` });
 }
 
@@ -82,7 +84,7 @@ function start(m) {
   runIntro(room, room.introToken).catch(e => logErr(room, 'intro', e));
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function waitFor(room, tok, test, timeout) { const t0 = Date.now(); while (!test() && Date.now() - t0 < timeout && live(room, tok)) await sleep(40); }
+async function waitFor(room, tok, test, timeout) { const t0 = mono(); while (!test() && mono() - t0 < timeout && live(room, tok)) await sleep(40); }
 const live = (room, tok) => rooms.get(room.code) === room && !room.closed && !room.broken && room.introToken === tok;
 async function runIntro(room, tok) {
   await waitFor(room, tok, () => room.ready.A && room.ready.B, READY_TIMEOUT);
@@ -110,8 +112,12 @@ function tick(room, now, dt) {
     if (st.waiting.includes(S)) { room.pickSince[S] = room.pickSince[S] || now; if (!room.hold && now - room.pickSince[S] > PICK_TIMEOUT) { try { ctx.__autoPick(S); } catch (e) { logErr(room, 'auto pick', e); } room.pickSince[S] = 0; } }
     else room.pickSince[S] = 0;
   }
+  if (room.lastSnapAt && now - room.lastSnapAt > 1000 && room.snapAt < SNAP_EVERY) {         // self-check: never silent for long
+    if (now - (room.healLogged || 0) > 30000) { room.healLogged = now; note('log', { text: `room ${room.code}: no update for ${Math.round((now - room.lastSnapAt) / 100) / 10}s (timer ${Math.round(room.snapAt)}) — sending a full update now` }); }
+    room.snapAt = SNAP_EVERY; room.needKey.A = room.needKey.B = true;
+  }
   if ((room.snapAt += dt) >= SNAP_EVERY) {
-    room.snapAt = 0;
+    room.snapAt = 0; room.lastSnapAt = now;
     const key = (room.keyAt += SNAP_EVERY) >= KEYFRAME_EVERY; if (key) room.keyAt = 0;
     try { snapshot(room, now, key); } catch (e) { if (/timed out/i.test(e && e.message)) throw e; logErr(room, 'snapshot', e); }
   }
@@ -136,7 +142,7 @@ function snapshot(room, now, key) {
     const tm = { A: {}, B: {} };
     for (const T of ['A', 'B']) view.teams[T].forEach((mon, i) => { if (mon && (full || i === view.sides[T].active)) tm[T][i] = mon; });
     const { teams, ...rest } = view;
-    post(room.code, S, { t: 'snap', s: { ...rest, tm, key: full, seq: room.seq, sw: Date.now() }, ev: pend.splice(0, pend.length) });
+    post(room.code, S, { t: 'snap', s: { ...rest, tm, key: full, seq: room.seq, sw: stamp() }, ev: pend.splice(0, pend.length) });
   }
 }
 function sumHp(room, S) { try { return room.ctx.__teamHp(S); } catch (e) { return 0; } }
@@ -152,7 +158,7 @@ function mirrorView(s) {
 /* ---------- commands from the main thread ---------- */
 parentPort.on('message', m => {
   if (m.cmd === 'start') return start(m);
-  if (TEST && m.cmd === 'dbgFreeze') { const t = Date.now(); while (Date.now() - t < (m.ms || 10000)) { } return; }   // test: block this whole worker
+  if (TEST && m.cmd === 'dbgFreeze') { const t = mono(); while (mono() - t < (m.ms || 10000)) { } return; }   // test: block this whole worker
   const room = rooms.get(m.code); if (!room) return;
   if (m.cmd === 'close') { room.closed = true; rooms.delete(m.code); return; }
   if (!room.ctx || room.broken) return;
@@ -162,11 +168,11 @@ parentPort.on('message', m => {
       case 'ready': room.ready[m.S] = true; break;
       case 'cue': if (room.cues[m.srv]) room.cues[m.srv][m.S] = true; break;
       case 'input': { const msg = { ...m.msg }; if (m.S === 'B' && msg.t === 'in') msg.x = -(+msg.x || 0); room.ctx.__input(m.S, msg); break; }
-      case 'hold': room.hold = m.side ? { side: m.side, until: m.until } : null; break;
+      case 'hold': room.hold = m.side ? { side: m.side, until: mono() + (m.left || 0) } : null; break;
       case 'resync': room.needKey[m.S] = true; room.pend[m.S] = []; break;     // next snapshot to this phone is complete
       case 'forfeit': if (!room.over) room.ctx.__forfeit(m.loser); break;
-      case 'dbgThrow': if (TEST) room.throwUntil = Date.now() + (m.ms || 3000); break;
-      case 'dbgMute': if (TEST) { room.muteSide = m.S; room.muteUntil = Date.now() + (m.ms || 10000); } break;
+      case 'dbgThrow': if (TEST) room.throwUntil = mono() + (m.ms || 3000); break;
+      case 'dbgMute': if (TEST) { room.muteSide = m.S; room.muteUntil = mono() + (m.ms || 10000); } break;
       case 'dbgWin': if (TEST && !room.over) room.ctx.__forfeit(swapSide(m.S)); break;
       case 'dbgHang': if (TEST) room.hangNow = true; break;
     }
@@ -174,9 +180,9 @@ parentPort.on('message', m => {
 });
 
 /* ---------- the loop ---------- */
-let last = Date.now(), tickMs = [], lastStats = Date.now(), lastBeat = 0;
+let last = mono(), tickMs = [], lastStats = mono(), lastBeat = 0;
 setInterval(() => {
-  const now = Date.now(), dt = Math.min(100, now - last); last = now;
+  const now = mono(), dt = Math.max(0, Math.min(100, now - last)); last = now;
   const t0 = performance.now();
   const list = []; for (const room of rooms.values()) if (room.ctx && !room.closed && !room.broken) list.push(room);
   DRIVER.list = list.map(room => () => { try { tick(room, now, dt); } catch (e) { if (/timed out/i.test(e && e.message)) throw e; logErr(room, 'tick', e); } });

@@ -10,7 +10,7 @@ Open **PowerShell** in this `server` folder (in File Explorer: open the folder, 
 docker compose up -d --build
 ```
 
-The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.9",...}`.
+The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"15.0",...}`.
 
 ## 2. Find this PC's address
 
@@ -62,6 +62,10 @@ If a phone stops receiving battle updates while its connection still answers, it
 Every match's battle code runs under a time limit. If a match's code ever runs for more than 0.4 seconds in one go (for example a bug that loops forever), that match is stopped, both players get a normal results screen decided by remaining HP, and every other match carries on untouched; in a tournament the bracket advances as usual. The server log then shows a line starting with `MATCH STOPPED` followed by an incident report (arena, Pokémon, moves in flight and the last inputs). Please send that line so the underlying bug can be fixed.
 
 As a second safety net, if a whole battle worker ever stops responding for 5 seconds while the rest of the server is running, it is replaced automatically and its matches are ended the same way (`has not responded ... replacing it` in the log). Pauses of the whole server (Docker or Windows hiccups) are recognised and don't end any match.
+
+## Clock jumps and sleep
+
+Docker Desktop on Windows sometimes corrects its clock in jumps (especially after the PC sleeps or idles). The server ignores this: all game timing uses a clock that only moves forward, and the log simply notes `system clock jumped ... — ignored`. For the smoothest sessions, set Windows not to sleep while you're hosting.
 
 ## Capacity and performance
 

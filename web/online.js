@@ -104,7 +104,7 @@ function applySnap(s, events) {
     Object.assign(sd, o); sd._tx = tx; sd._ty = ty;
     const buf = NET.interp[S]; const jump = activeChanged || sd.state === 'entering' || (buf.length && Math.hypot(tx - buf[buf.length - 1].x, ty - buf[buf.length - 1].y) > 160);
     if (jump) buf.length = 0;
-    buf.push({ t: s.sw || Date.now(), x: tx, y: ty }); if (buf.length > 40) buf.shift();
+    buf.push({ t: s.sw || performance.now(), x: tx, y: ty }); if (buf.length > 40) buf.shift();
     if (sd.x == null || jump) { sd.x = tx; sd.y = ty; if (S === 'A') NET.hist = []; }
     if (S === 'A' && NET.predicting && !jump) reconcile(tx, ty);
     for (const [i, mon] of Object.entries(s.tm[S] || {})) Object.assign(sd.team[+i], dec(mon));
@@ -134,9 +134,9 @@ function netStep(dt) {
   if (NET.latest) { const snap = NET.latest, ev = NET.evq; NET.latest = null; NET.evq = []; applySnap(snap, ev); }
   const now0 = performance.now(), age = now0 - NET.lastSnap;      // battle updates only: a ping reply is not proof the battle is flowing
   watchConnection(age, now0);
-  if (age > 300) return;                                   // no fresh data: hold still rather than run ahead of the server
+  predictOrInterpolate(dt);                                // your own Pokémon always answers the stick, even between updates
+  if (age > 750) return;                                   // no fresh data for a while: hold the clock rather than run ahead of the server
   G.time += dt; if (G.phase === 'battle') G.elapsed += dt;
-  predictOrInterpolate(dt);
   for (const S of ['A', 'B']) {
     const sd = G.sides[S];
     sd.hit = Math.max(0, sd.hit - dt); sd.hop = Math.max(0, sd.hop - dt / 300); if (sd.state !== 'idle') sd.stateT += dt;
@@ -287,7 +287,7 @@ setInterval(() => { if (NET.ws && NET.ws.readyState === 1) netSend({ t: 'ping', 
 /* ---------- latency hiding: client-side prediction, server reconciliation, entity interpolation ---------- */
 // Server clock vs this phone's clock (plus the fastest one-way delay), from the server time stamped on each update.
 function clockSample(sw) {
-  const now = Date.now(), o = sw - now; NET.offs.push([now, o]);
+  const now = performance.now(), o = sw - now; NET.offs.push([now, o]);   // monotonic: phone clock corrections can't disturb smoothing
   while (NET.offs.length && now - NET.offs[0][0] > 4000) NET.offs.shift();
   let best = -Infinity; for (const [, v] of NET.offs) if (v > best) best = v;             // least-delayed update = best estimate
   NET.clockOff = best;
@@ -308,7 +308,7 @@ function interpAt(buf, t) {
   return { x: b.x + (b.x - a.x) * f, y: b.y + (b.y - a.y) * f };
 }
 function predictOrInterpolate(dt) {
-  const delay = Math.min(300, 75 + (NET.jitter || 0)), renderT = Date.now() + (NET.clockOff || 0) - delay;
+  const delay = Math.min(300, 75 + (NET.jitter || 0)), renderT = performance.now() + (NET.clockOff || 0) - delay;
   const a = G.sides.A, me = act('A');
   // Your Pokémon: moves the instant you steer, using the same movement rules as the server.
   const steering = !NET.noPredict && G.phase === 'battle' && a.manualT > 0 && a.state === 'idle' && me && me.hp > 0 && !isRooted('A');

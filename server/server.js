@@ -31,6 +31,9 @@ const MSG_RATE = 80, MSG_BURST = 160;            // per connection (real play se
 const MAX_BUFFER = 1024 * 1024;      // a phone this far behind gets updates skipped (never disconnected); keyframes heal it
 const SILENT_MS = 20000;             // a battling connection that sends nothing (phones ping every 2 s) for this long is dead
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
+// All timing uses a monotonic clock. The system clock can jump (Docker Desktop / WSL correct it in steps, especially after
+// the PC sleeps); timing anything with it once froze matches for as long as the jump. The system clock is only used for log stamps.
+const mono = () => performance.now();
 const CODE = ['data.js', 'fxdata.js', 'arenas.js', 'sim.js', 'glue.js'].map(f => fs.readFileSync(path.join(__dirname, 'game', f), 'utf8')).join('\n;\n');
 const CHECK = vm.createContext({ console, Math, JSON, Date }); new vm.Script(CODE).runInContext(CHECK);   // validates team names
 const validTeam = t => CHECK.__validTeam(t);
@@ -40,7 +43,7 @@ const swapSide = s => (s === 'A' ? 'B' : s === 'B' ? 'A' : s);
 const pool = [];
 function spawnWorker(id) {
   const w = new Worker(path.join(__dirname, 'battle-worker.js'), { workerData: { id } });
-  w.id = id; w.load = 0; w.stats = {}; w.lastBeat = Date.now();
+  w.id = id; w.load = 0; w.stats = {}; w.lastBeat = mono();
   w.on('message', m => onWorker(w, m));
   w.on('error', e => log(`worker ${id} error`, e));
   w.on('exit', code => {
@@ -66,10 +69,12 @@ function endByHp(room, reason) {
   closeRoom(room, 'ended by HP');
 }
 // Watchdog: a worker that stops reporting (it sends a heartbeat twice a second) is replaced.
-let lastWatch = Date.now();
+let lastWatch = mono(), wallOffset = Date.now() - performance.now();
 setInterval(() => {
-  const now = Date.now(), late = now - lastWatch - 1000; lastWatch = now;
-  // If this check itself ran late, the whole server was paused (Docker/WSL hiccup, PC sleeping): nobody is to blame — start fresh.
+  const now = mono(), late = now - lastWatch - 1000; lastWatch = now;
+  const off = Date.now() - performance.now();
+  if (Math.abs(off - wallOffset) > 1000) { log(`system clock jumped ${off > wallOffset ? 'forward' : 'back'} by ${Math.round(Math.abs(off - wallOffset) / 1000)} s — ignored (game timing does not use the system clock)`); wallOffset = off; }
+  // If this check itself ran late, the whole server really was paused (VM suspended, PC sleeping): nobody is to blame — start fresh.
   if (late > 1500) { for (const w of pool) w.lastBeat = now; log(`server was paused for ${Math.round(late / 1000)} s — not treating workers as stuck`); return; }
   for (const w of pool) if (now - w.lastBeat > 5000 && !w.replacing) {
     w.replacing = true; log(`worker ${w.id} has not responded for ${Math.round((now - w.lastBeat) / 1000)} s — replacing it`);
@@ -82,7 +87,7 @@ const toWorker = (room, msg) => { if (room.worker) room.worker.postMessage({ cod
 function onWorker(w, m) {
   if (m.ev === 'out') { for (const [code, S, str] of m.batch) deliver(code, S, str); return; }
   if (m.ev === 'stats') { w.stats = m; return; }
-  if (m.ev === 'beat') { w.lastBeat = Date.now(); for (const code in m.hp) { const r = rooms.get(code); if (r) r.lastHp = m.hp[code]; } return; }
+  if (m.ev === 'beat') { w.lastBeat = mono(); for (const code in m.hp) { const r = rooms.get(code); if (r) r.lastHp = m.hp[code]; } return; }
   if (m.ev === 'log') { log(m.text); return; }
   const room = rooms.get(m.code); if (!room || room.closed) return;
   if (m.ev === 'started') {
@@ -105,7 +110,7 @@ function deliver(code, S, str) {
   const room = rooms.get(code); if (!room || room.closed) return;
   for (const side of S === '*' ? ['A', 'B'] : [S]) {
     const ws = room.players[side]; if (!ws || ws.readyState !== 1) continue;
-    if (ws.bufferedAmount > MAX_BUFFER) { if (Date.now() - (ws.slowLogged || 0) > 10000) { ws.slowLogged = Date.now(); log(`room ${room.code}: ${side} is slow (${Math.round(ws.bufferedAmount / 1024)} KB waiting) — skipping updates until it catches up`); } continue; }
+    if (ws.bufferedAmount > MAX_BUFFER) { if (mono() - (ws.slowLogged || 0) > 10000) { ws.slowLogged = mono(); log(`room ${room.code}: ${side} is slow (${Math.round(ws.bufferedAmount / 1024)} KB waiting) — skipping updates until it catches up`); } continue; }
     ws.send(str);
   }
 }
@@ -132,7 +137,7 @@ function closeRoom(room, why) {
 // The battle pauses while a player is away; the worker shows the other phone a countdown.
 function syncHold(room) {
   const S = ['A', 'B'].find(k => room.away[k]);
-  toWorker(room, { cmd: 'hold', side: S || null, until: S ? room.away[S] + GRACE : 0 });
+  toWorker(room, { cmd: 'hold', side: S || null, left: S ? Math.max(0, GRACE - (mono() - room.away[S])) : 0 });
 }
 function rebind(room, S, ws) {
   const old = room.players[S]; if (old && old !== ws) { old.room = null; try { old.terminate(); } catch (e) { } }
@@ -140,7 +145,7 @@ function rebind(room, S, ws) {
   toWorker(room, { cmd: 'resync', S });
 }
 setInterval(() => {                         // reconnect grace: forfeit (or close) when time runs out
-  const now = Date.now();
+  const now = mono();
   for (const room of [...rooms.values()]) {
     const expired = ['A', 'B'].filter(S => room.away[S] && now - room.away[S] > GRACE); if (!expired.length || room.closed) continue;
     if (room.away.A && room.away.B) { if (room.tour && !room.over) matchFinished(room, null); closeRoom(room, 'both players gone'); continue; }
@@ -163,18 +168,18 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024, perMessageDeflate: { threshold: 512 } });
 const perIp = new Map();                                 // ip -> { open, recent: [timestamps], badCodes: [timestamps] }
 const ipOf = req => (TRUST_PROXY && (req.headers['cf-connecting-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())) || req.socket.remoteAddress || '?';
-const recentCount = (arr, ms) => { const now = Date.now(); while (arr.length && now - arr[0] > ms) arr.shift(); return arr.length; };
+const recentCount = (arr, ms) => { const now = mono(); while (arr.length && now - arr[0] > ms) arr.shift(); return arr.length; };
 wss.on('connection', (ws, req) => {
   const ip = ipOf(req), rec = perIp.get(ip) || { open: 0, recent: [], badCodes: [] }; perIp.set(ip, rec);
   const limited = !isPrivate(ip);
   if (wss.clients.size > MAX_CONNECTIONS || (limited && (rec.open >= MAX_CONN_PER_IP || recentCount(rec.recent, 60000) >= NEW_CONN_PER_MIN))) { log(`refused a connection from ${ip} (too many)`); ws.close(1013, 'Too many connections'); return; }
-  rec.open++; rec.recent.push(Date.now()); ws.ip = ip; ws.ipRec = rec;
-  ws.room = null; ws.missed = 0; ws.lastMsg = Date.now(); ws.tokens = MSG_BURST; ws.tokenAt = Date.now(); ws.dropped = 0;
+  rec.open++; rec.recent.push(mono()); ws.ip = ip; ws.ipRec = rec;
+  ws.room = null; ws.missed = 0; ws.lastMsg = mono(); ws.tokens = MSG_BURST; ws.tokenAt = mono(); ws.dropped = 0;
   ws.on('pong', () => (ws.missed = 0));
   log('connect', ip);
   ws.on('message', raw => {
-    ws.lastMsg = Date.now();
-    const now = Date.now(); ws.tokens = Math.min(MSG_BURST, ws.tokens + (now - ws.tokenAt) * MSG_RATE / 1000); ws.tokenAt = now;
+    ws.lastMsg = mono();
+    const now = mono(); ws.tokens = Math.min(MSG_BURST, ws.tokens + (now - ws.tokenAt) * MSG_RATE / 1000); ws.tokenAt = now;
     if (ws.tokens < 1) { if (++ws.dropped > 1000) { log(`closing a flooding connection from ${ip}`); ws.terminate(); } return; }
     ws.tokens--;
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
@@ -221,7 +226,7 @@ function handle(ws, m) {
       if (tours.has(jc)) { tourJoin(ws, tours.get(jc), m); break; }
       const r = rooms.get(jc);
       if (!r) {
-        const now = Date.now(); ws.badCodes = ws.badCodes || []; ws.badCodes.push(now); badCodesAll.push(now); if (!isPrivate(ws.ip)) ws.ipRec.badCodes.push(now);
+        const now = mono(); ws.badCodes = ws.badCodes || []; ws.badCodes.push(now); badCodesAll.push(now); if (!isPrivate(ws.ip)) ws.ipRec.badCodes.push(now);
         if (recentCount(ws.badCodes, 60000) > BAD_CODES_PER_MIN || recentCount(ws.ipRec.badCodes, 60000) > BAD_CODES_PER_MIN || recentCount(badCodesAll, 60000) > BAD_CODES_PER_MIN_TOTAL) return send(ws, { t: 'error', msg: 'Too many wrong codes — wait a minute and try again.' });
         return send(ws, { t: 'error', msg: 'No game with that code. Check the code with the host.' });
       }
@@ -273,7 +278,7 @@ function leave(ws, deliberate) {
   const S = sideOf(room, ws); if (!S) return;
   const other = room.players[swapSide(S)]; room.players[S] = null;
   if (!deliberate && room.worker && !room.over) {                 // connection dropped mid-match: hold it for them (both, if both drop)
-    room.away[S] = Date.now(); syncHold(room); send(other, { t: 'oppAway', secs: GRACE / 1000 }); log(`room ${room.code}: ${S} dropped, waiting ${GRACE / 1000}s`); return;
+    room.away[S] = mono(); syncHold(room); send(other, { t: 'oppAway', secs: GRACE / 1000 }); log(`room ${room.code}: ${S} dropped, waiting ${GRACE / 1000}s`); return;
   }
   if (other) {
     if (room.worker && !room.over) toWorker(room, { cmd: 'forfeit', loser: S });
@@ -283,7 +288,7 @@ function leave(ws, deliberate) {
   closeRoom(room, deliberate ? 'player left' : 'player disconnected');
 }
 setInterval(() => {                                               // dead connections: no pong at the socket level, or total silence
-  const now = Date.now();
+  const now = mono();
   for (const ws of wss.clients) {
     const inBattle = ws.room && ws.room.worker && !ws.room.over;    // only battling phones must keep talking (they ping every 2 s)
     if (ws.missed >= 2 || (inBattle && now - ws.lastMsg > SILENT_MS)) { log(`closing a dead connection (${ws.missed >= 2 ? 'no keep-alive answer for 20 s' : 'silent for 20 s'})`); ws.terminate(); continue; }
@@ -313,7 +318,7 @@ function tourHost(ws, m) {
   if (ws.tour) tourLeave(ws); if (ws.room) leave(ws, true);
   const info = cleanInfo(m); if (!info) return send(ws, { t: 'error', msg: 'Pick six valid Pokémon first.' });
   const t = { code: newCode(), max: Math.max(2, Math.min(16, m.max | 0 || 8)), arena: String(m.arena || 'random'), timeLimit: +m.timeLimit || 0,
-    members: [], phase: 'lobby', rounds: [], champion: null, nextId: 1, created: Date.now() };
+    members: [], phase: 'lobby', rounds: [], champion: null, nextId: 1, created: mono() };
   tours.set(t.code, t); const me = addMember(t, ws, info); t.hostId = me.id;
   send(ws, { t: 'tjoined', code: t.code, you: me.id, token: me.token }); tourBroadcast(t);
   log(`tournament ${t.code} created by ${me.name} (max ${t.max})`);
@@ -374,7 +379,7 @@ function startTourMatch(t, r, i) {
   for (const S of ['A', 'B']) if (room.players[S]) room.players[S].room = room;
   ma.match = room; mb.match = room; x.state = 'live';
   startRoom(room);
-  for (const S of ['A', 'B']) if (!room.players[S]) room.away[S] = Date.now();      // offline right now: the usual 20 s to come back
+  for (const S of ['A', 'B']) if (!room.players[S]) room.away[S] = mono();      // offline right now: the usual 20 s to come back
   syncHold(room);
   log(`tournament ${t.code}: round ${r + 1} match ${i + 1} — ${ma.name} vs ${mb.name}`);
   tourBroadcast(t);
@@ -420,6 +425,6 @@ function cleanupTour(t) {
   const anyone = t.members.some(m => m.ws && m.ws.readyState === 1);
   if (!anyone && (t.phase === 'done' || t.phase === 'lobby')) { tours.delete(t.code); log(`tournament ${t.code} closed`); }
 }
-setInterval(() => { const now = Date.now(); for (const t of tours.values()) if (now - t.created > 6 * 3600 * 1000) tours.delete(t.code); }, 600000);
+setInterval(() => { const now = mono(); for (const t of tours.values()) if (now - t.created > 6 * 3600 * 1000) tours.delete(t.code); }, 600000);
 setInterval(() => { for (const [ip, r] of perIp) if (!r.open && !recentCount(r.recent, 60000) && !recentCount(r.badCodes, 60000)) perIp.delete(ip); }, 60000);
 server.listen(PORT, () => log(`Arena 151 server v${VERSION} listening on port ${PORT} with ${WORKERS} battle worker${WORKERS > 1 ? 's' : ''}`));
