@@ -31,3 +31,4 @@ function diagnostics() {
   const ov = $('setOv'); new MutationObserver(() => { if (ov.classList.contains('show')) fill(); }).observe(ov, { attributes: true, attributeFilter: ['class'] });
   fill();
 })();
+window.APP_VERSION_TEXT = 'v' + APP_VERSION;   // shown in the startup error panel

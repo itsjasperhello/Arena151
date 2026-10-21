@@ -494,4 +494,6 @@ function boot() {
   requestAnimationFrame(t => { clock.last = t; frame(t); });
 }
 const fontsReady = document.fonts ? Promise.all([document.fonts.load('40px "Lilita One"'), document.fonts.load('700 16px Rubik')]).then(() => document.fonts.ready) : Promise.resolve();
-Promise.race([fontsReady, new Promise(r => setTimeout(r, 2000))]).then(boot);
+// Boot once the fonts are ready AND every part of the game has loaded (each part is its own script).
+const allScriptsLoaded = document.readyState === 'loading' ? new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true })) : Promise.resolve();
+Promise.all([Promise.race([fontsReady, new Promise(r => setTimeout(r, 2000))]), allScriptsLoaded]).then(boot);
