@@ -10,7 +10,7 @@ Open **PowerShell** in this `server` folder (in File Explorer: open the folder, 
 docker compose up -d --build
 ```
 
-The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.6",...}`.
+The first build takes a minute or two. Check it is running by opening <http://localhost:8151/health> in a browser on this PC. You should see something like `{"ok":true,"game":"Arena 151","version":"14.9",...}`.
 
 ## 2. Find this PC's address
 
@@ -57,6 +57,12 @@ If a phone's connection stalls or drops mid-match, it reconnects to the same mat
 
 If a phone stops receiving battle updates while its connection still answers, it asks the server for a full update over the same connection (no reconnect, and the battle keeps going for the other player). A phone only reconnects when it hears nothing at all for 8 seconds. Each recovery is logged with its reason, so `docker compose logs` shows what happened.
 
+## If a match ever gets stuck
+
+Every match's battle code runs under a time limit. If a match's code ever runs for more than 0.4 seconds in one go (for example a bug that loops forever), that match is stopped, both players get a normal results screen decided by remaining HP, and every other match carries on untouched; in a tournament the bracket advances as usual. The server log then shows a line starting with `MATCH STOPPED` followed by an incident report (arena, Pokémon, moves in flight and the last inputs). Please send that line so the underlying bug can be fixed.
+
+As a second safety net, if a whole battle worker ever stops responding for 5 seconds while the rest of the server is running, it is replaced automatically and its matches are ended the same way (`has not responded ... replacing it` in the log). Pauses of the whole server (Docker or Windows hiccups) are recognised and don't end any match.
+
 ## Capacity and performance
 
 Battles run in a pool of worker threads, one per CPU core by default (up to 8), so a busy match never slows the others. Each battle uses about 4–5 ms of CPU per second. In testing, 100 simultaneous games (200 players) stayed connected with no player ever going a second without an update, even when squeezed onto a single core; at one worker's share of 100 games (13–25 games) a worker uses only 2–4 ms of every 16 ms tick. Each player uses roughly 25–55 KB/s of bandwidth.
@@ -84,6 +90,15 @@ python sync_game.py
 docker compose up -d --build
 ```
 
-## Playing on different networks (optional)
+## Playing away from home
 
-The setup above is for phones on the **same Wi-Fi** as the PC. To play from anywhere, your router has to forward **TCP port 8151** to this PC's IPv4 address, and the other player enters your **public** IP address (search "what is my IP"). Only do this if you're comfortable exposing a port on your home network; turn the forward off when you're not playing. Home internet addresses can change, so check it before each session.
+The game is built for this: your own Pokémon responds to the stick instantly (the phone predicts its movement and the server quietly corrects it), the opponent is drawn smoothly between updates even on a jittery connection, and phones reconnect by themselves when they switch between Wi-Fi and mobile data (you have 30 seconds). Pick one way to reach your PC from outside:
+
+**Option 1 — Tailscale (recommended, private).** Install Tailscale on this PC and on every phone that will play, and sign in to the same account (or share the PC with friends' accounts). Nothing is exposed to the internet. In the app, use the PC's Tailscale address (it starts with `100.`, shown in the Tailscale app) as the server address, e.g. `100.101.102.103`. Check Tailscale's current plan terms for the number of users/devices you need.
+
+**Option 2 — Cloudflare Tunnel (no port forwarding, encrypted).** Run `cloudflared tunnel --url http://localhost:8151` on this PC; it prints an `https://….trycloudflare.com` address. In the app, enter that address exactly as printed (the app turns it into a secure `wss://` connection). Quick tunnels get a new address each time they start; a named tunnel on your own domain keeps one address. Add `TRUST_PROXY=1` in `docker-compose.yml` when using this.
+
+**Option 3 — Router port forwarding.** Forward **TCP port 8151** on your router to this PC's IPv4 address and play using your public IP (search "what is my IP"; a dynamic-DNS name keeps it stable). This exposes the server to the whole internet, so turn the forward off when you're not playing.
+
+Whichever you choose, players only need the server address and the 4-letter game code. The server protects itself automatically: a cap on wrong game codes (no guessing other people's games), message-rate limits per connection, a server-wide connection cap, per-address limits for public internet addresses, and strict checks on everything a phone sends.
+

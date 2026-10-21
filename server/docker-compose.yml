@@ -7,5 +7,7 @@ services:
     restart: unless-stopped
     environment:
       - PORT=8151
-      # Battle worker threads. Leave unset to use one per CPU core (up to 8); raise it on a big machine, e.g. WORKERS=12.
+      # Set this if you run the server behind Cloudflare Tunnel or another proxy (so limits apply per player).
+      # - TRUST_PROXY=1
+      # Battle worker threads. Leave unset to use one per CPU core (up to 8).
       # - WORKERS=8

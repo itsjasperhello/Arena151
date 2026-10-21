@@ -18,7 +18,16 @@ const { WebSocketServer } = require('ws');
 const PORT = +process.env.PORT || 8151;
 const VERSION = fs.readFileSync(path.join(__dirname, 'game', 'VERSION'), 'utf8').trim();
 const WORKERS = Math.max(1, +process.env.WORKERS || Math.min(8, Math.max(1, os.cpus().length - 1)));
-const GRACE = 20000;                 // a dropped player has this long to reconnect before forfeiting
+const GRACE = 30000;                 // a dropped player has this long to reconnect (covers Wi-Fi ↔ mobile data handoffs)
+// Internet exposure: per-address limits and message rate limits. All configurable in docker-compose.yml.
+const TRUST_PROXY = !!process.env.TRUST_PROXY;   // set when behind a tunnel / reverse proxy so limits apply per real player
+const MAX_CONN_PER_IP = +process.env.MAX_CONN_PER_IP || 30, NEW_CONN_PER_MIN = 60, BAD_CODES_PER_MIN = 15;
+const MAX_CONNECTIONS = +process.env.MAX_CONNECTIONS || 1000, BAD_CODES_PER_MIN_TOTAL = 300;
+// Docker Desktop (and tunnels without TRUST_PROXY) make every player appear to come from one internal address, so
+// per-address limits only apply to real public addresses; everyone else is covered by per-connection and server-wide limits.
+const isPrivate = ip => /^(::ffff:)?(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(ip) || ip === '::1' || /^f[cd]/i.test(ip);
+const badCodesAll = [];
+const MSG_RATE = 80, MSG_BURST = 160;            // per connection (real play sends ~20 a second)
 const MAX_BUFFER = 1024 * 1024;      // a phone this far behind gets updates skipped (never disconnected); keyframes heal it
 const SILENT_MS = 20000;             // a battling connection that sends nothing (phones ping every 2 s) for this long is dead
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -31,22 +40,49 @@ const swapSide = s => (s === 'A' ? 'B' : s === 'B' ? 'A' : s);
 const pool = [];
 function spawnWorker(id) {
   const w = new Worker(path.join(__dirname, 'battle-worker.js'), { workerData: { id } });
-  w.id = id; w.load = 0; w.stats = {};
+  w.id = id; w.load = 0; w.stats = {}; w.lastBeat = Date.now();
   w.on('message', m => onWorker(w, m));
   w.on('error', e => log(`worker ${id} error`, e));
   w.on('exit', code => {
     log(`worker ${id} stopped (code ${code}) — restarting it`);
-    for (const room of [...rooms.values()]) if (room.worker === w) { for (const S of ['A', 'B']) send(room.players[S], { t: 'error', msg: 'The server had a problem with this match. Please start a new one.' }); if (room.tour && !room.over) matchFinished(room, null); closeRoom(room, 'worker stopped'); }
-    pool[id] = spawnWorker(id);
+    for (const room of [...rooms.values()]) if (room.worker === w) endByHp(room, 'The server restarted this match\'s battle engine; the match was decided by remaining HP.');
+    if (pool[id] === w) pool[id] = spawnWorker(id);
   });
   return w;
 }
 for (let i = 0; i < WORKERS; i++) pool.push(spawnWorker(i));
 const pickWorker = () => pool.reduce((a, b) => (b.load < a.load ? b : a));
+// A match that cannot continue still gets a proper result: whoever has more HP left wins (a draw if level).
+function endByHp(room, reason) {
+  if (room.closed) return;
+  if (!room.over) {
+    room.over = true;
+    const hp = room.lastHp || { A: 0, B: 0 }, w = hp.A === hp.B ? 'draw' : hp.A > hp.B ? 'A' : 'B';
+    for (const S of ['A', 'B']) send(room.players[S], { t: 'over', winner: w === 'draw' ? 'draw' : (w === S ? 'A' : 'B'), big: 'MATCH ENDED', reason });
+    if (room.tour) matchFinished(room, w);
+    log(`room ${room.code}: ended by HP (${hp.A} vs ${hp.B}) — ${reason}`);
+  }
+  for (const S of ['A', 'B']) { const p = room.players[S]; if (p && p.room === room) p.room = null; }
+  closeRoom(room, 'ended by HP');
+}
+// Watchdog: a worker that stops reporting (it sends a heartbeat twice a second) is replaced.
+let lastWatch = Date.now();
+setInterval(() => {
+  const now = Date.now(), late = now - lastWatch - 1000; lastWatch = now;
+  // If this check itself ran late, the whole server was paused (Docker/WSL hiccup, PC sleeping): nobody is to blame — start fresh.
+  if (late > 1500) { for (const w of pool) w.lastBeat = now; log(`server was paused for ${Math.round(late / 1000)} s — not treating workers as stuck`); return; }
+  for (const w of pool) if (now - w.lastBeat > 5000 && !w.replacing) {
+    w.replacing = true; log(`worker ${w.id} has not responded for ${Math.round((now - w.lastBeat) / 1000)} s — replacing it`);
+    pool[w.id] = spawnWorker(w.id);
+    for (const room of [...rooms.values()]) if (room.worker === w) endByHp(room, 'The battle engine for this match stopped responding; the match was decided by remaining HP.');
+    w.terminate().catch(() => {});
+  }
+}, 1000);
 const toWorker = (room, msg) => { if (room.worker) room.worker.postMessage({ code: room.code, ...msg }); };
 function onWorker(w, m) {
   if (m.ev === 'out') { for (const [code, S, str] of m.batch) deliver(code, S, str); return; }
   if (m.ev === 'stats') { w.stats = m; return; }
+  if (m.ev === 'beat') { w.lastBeat = Date.now(); for (const code in m.hp) { const r = rooms.get(code); if (r) r.lastHp = m.hp[code]; } return; }
   if (m.ev === 'log') { log(m.text); return; }
   const room = rooms.get(m.code); if (!room || room.closed) return;
   if (m.ev === 'started') {
@@ -125,22 +161,47 @@ const server = http.createServer((req, res) => {
   } else { res.writeHead(404); res.end(); }
 });
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024, perMessageDeflate: { threshold: 512 } });
+const perIp = new Map();                                 // ip -> { open, recent: [timestamps], badCodes: [timestamps] }
+const ipOf = req => (TRUST_PROXY && (req.headers['cf-connecting-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())) || req.socket.remoteAddress || '?';
+const recentCount = (arr, ms) => { const now = Date.now(); while (arr.length && now - arr[0] > ms) arr.shift(); return arr.length; };
 wss.on('connection', (ws, req) => {
-  ws.room = null; ws.missed = 0; ws.lastMsg = Date.now(); ws.on('pong', () => (ws.missed = 0));
-  log('connect', req.socket.remoteAddress);
+  const ip = ipOf(req), rec = perIp.get(ip) || { open: 0, recent: [], badCodes: [] }; perIp.set(ip, rec);
+  const limited = !isPrivate(ip);
+  if (wss.clients.size > MAX_CONNECTIONS || (limited && (rec.open >= MAX_CONN_PER_IP || recentCount(rec.recent, 60000) >= NEW_CONN_PER_MIN))) { log(`refused a connection from ${ip} (too many)`); ws.close(1013, 'Too many connections'); return; }
+  rec.open++; rec.recent.push(Date.now()); ws.ip = ip; ws.ipRec = rec;
+  ws.room = null; ws.missed = 0; ws.lastMsg = Date.now(); ws.tokens = MSG_BURST; ws.tokenAt = Date.now(); ws.dropped = 0;
+  ws.on('pong', () => (ws.missed = 0));
+  log('connect', ip);
   ws.on('message', raw => {
     ws.lastMsg = Date.now();
+    const now = Date.now(); ws.tokens = Math.min(MSG_BURST, ws.tokens + (now - ws.tokenAt) * MSG_RATE / 1000); ws.tokenAt = now;
+    if (ws.tokens < 1) { if (++ws.dropped > 1000) { log(`closing a flooding connection from ${ip}`); ws.terminate(); } return; }
+    ws.tokens--;
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
-    try { handle(ws, m); } catch (e) { log('message error', e); }
+    if (!m || typeof m !== 'object' || typeof m.t !== 'string') return;
+    try { handle(ws, clean(m)); } catch (e) { log('message error', e); }
   });
-  ws.on('close', () => { leave(ws, false); tourDisconnect(ws); });
+  ws.on('close', () => { rec.open = Math.max(0, rec.open - 1); leave(ws, false); tourDisconnect(ws); });
 });
+const int = (v, lo, hi) => { v = Math.trunc(+v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : lo; };
+const num = (v, lo, hi) => { v = +v; return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : 0; };
+const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+function clean(m) {                                  // only well-formed fields reach the game
+  const o = { t: str(m.t, 12) };
+  if ('code' in m) o.code = str(m.code, 12); if ('token' in m) o.token = str(m.token, 64); if ('v' in m) o.v = str(m.v, 12);
+  if ('name' in m) o.name = str(m.name, 24); if ('trainer' in m) o.trainer = str(m.trainer, 24); if ('trainerFile' in m) o.trainerFile = str(m.trainerFile, 40).replace(/[^A-Za-z0-9_ .-]/g, '');
+  if (Array.isArray(m.team)) o.team = m.team.slice(0, 6).map(x => str(x, 24));
+  if ('arena' in m) o.arena = str(m.arena, 16); if ('timeLimit' in m) o.timeLimit = int(m.timeLimit, 0, 3600); if ('max' in m) o.max = int(m.max, 2, 16);
+  if ('i' in m) o.i = int(m.i, 0, 5); if ('q' in m) o.q = int(m.q, 0, 2147483647); if ('s' in m) o.s = m.s === 'B' ? 'B' : 'A'; if ('x' in m) o.x = num(m.x, -1, 1); if ('y' in m) o.y = num(m.y, -1, 1);
+  if (m.off) o.off = true; if ('c' in m) o.c = num(m.c, -1e15, 1e15); if ('ms' in m) o.ms = int(m.ms, 0, 60000); if ('why' in m) o.why = str(m.why, 80);
+  return o;
+}
 function handle(ws, m) {
   const room = ws.room;
   switch (m.t) {
     case 'hello':
-      if (m.v !== VERSION) send(ws, { t: 'error', msg: `Version mismatch: your app is v${m.v}, the server is v${VERSION}. Update both to the same version.` });
-      else send(ws, { t: 'hi', v: VERSION });
+      if (m.v !== VERSION) return send(ws, { t: 'error', msg: `Version mismatch: your app is v${m.v}, the server is v${VERSION}. Update both to the same version.` });
+      send(ws, { t: 'hi', v: VERSION });
       break;
     case 'thost': tourHost(ws, m); break;
     case 'tstart': tourStart(ws); break;
@@ -159,7 +220,11 @@ function handle(ws, m) {
       const jc = String(m.code || '').toUpperCase().trim();
       if (tours.has(jc)) { tourJoin(ws, tours.get(jc), m); break; }
       const r = rooms.get(jc);
-      if (!r) return send(ws, { t: 'error', msg: 'No game with that code. Check the code with the host.' });
+      if (!r) {
+        const now = Date.now(); ws.badCodes = ws.badCodes || []; ws.badCodes.push(now); badCodesAll.push(now); if (!isPrivate(ws.ip)) ws.ipRec.badCodes.push(now);
+        if (recentCount(ws.badCodes, 60000) > BAD_CODES_PER_MIN || recentCount(ws.ipRec.badCodes, 60000) > BAD_CODES_PER_MIN || recentCount(badCodesAll, 60000) > BAD_CODES_PER_MIN_TOTAL) return send(ws, { t: 'error', msg: 'Too many wrong codes — wait a minute and try again.' });
+        return send(ws, { t: 'error', msg: 'No game with that code. Check the code with the host.' });
+      }
       if (r.players.B || r.tour) return send(ws, { t: 'error', msg: 'That game is already full.' });
       const info = cleanInfo(m); if (!info) return send(ws, { t: 'error', msg: 'Pick six valid Pokémon first.' });
       r.players.B = ws; r.info.B = info; ws.room = r; send(ws, { t: 'joined', code: r.code });
@@ -192,7 +257,8 @@ function handle(ws, m) {
       log(`room ${r.code}: ${S} reconnected (${m.why || 'connection lost'})`);
       break;
     }
-    case 'dbgMute': case 'dbgThrow': case 'dbgWin':
+    case 'dbgFreeze': if (process.env.ARENA_TEST && room && room.worker) room.worker.postMessage({ cmd: 'dbgFreeze', ms: +m.ms || 10000 }); break;
+    case 'dbgMute': case 'dbgThrow': case 'dbgWin': case 'dbgHang':
       if (process.env.ARENA_TEST && room && room.worker) toWorker(room, { cmd: m.t, S: sideOf(room, ws), ms: +m.ms || 0 });
       break;
   }
@@ -355,4 +421,5 @@ function cleanupTour(t) {
   if (!anyone && (t.phase === 'done' || t.phase === 'lobby')) { tours.delete(t.code); log(`tournament ${t.code} closed`); }
 }
 setInterval(() => { const now = Date.now(); for (const t of tours.values()) if (now - t.created > 6 * 3600 * 1000) tours.delete(t.code); }, 600000);
+setInterval(() => { for (const [ip, r] of perIp) if (!r.open && !recentCount(r.recent, 60000) && !recentCount(r.badCodes, 60000)) perIp.delete(ip); }, 60000);
 server.listen(PORT, () => log(`Arena 151 server v${VERSION} listening on port ${PORT} with ${WORKERS} battle worker${WORKERS > 1 ? 's' : ''}`));

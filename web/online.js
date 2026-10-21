@@ -6,7 +6,7 @@
    so motion stays smooth. You always play Red, on the left.
    ===================================================================== */
 const NET = { ws: null, active: false, mode: 'local', url: '', status: '', code: null, over: false, pickShown: false, steerOn: false, lastSteer: 0, prevTrsel: null,
-  latest: null, evq: [], lastRx: 0, lastSnap: 0, token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
+  latest: null, evq: [], lastRx: 0, lastSnap: 0, predicting: false, hist: [], corr: { x: 0, y: 0 }, interp: { A: [], B: [] }, clockOff: null, offs: [], token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
 try { NET.url = localStorage.getItem('arena151.server') || ''; NET.mode = localStorage.getItem('arena151.mode') === 'online' ? 'online' : 'local'; } catch (e) { }
 const netSend = msg => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(msg)); };
 function serverUrl(input) {
@@ -67,7 +67,7 @@ function onNetMessage(m) {
   }
 }
 async function beginOnline(m) {
-  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.lastRx = NET.lastSnap = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
+  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.predicting = false; NET.hist = []; NET.interp = { A: [], B: [] }; NET.offs = []; NET.clockOff = null; NET.lastRx = NET.lastSnap = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
   if (!NET.prevTrsel) NET.prevTrsel = { ...TRSEL };
   NET.active = true; NET.over = false; NET.pickShown = false; NET.steerOn = false;
   hideStart();
@@ -95,12 +95,18 @@ function mergeWorld(arr, incoming) {
 }
 function applySnap(s, events) {
   const wasPhase = G.phase; NET.lastHold = s.hold || null;
+  if (s.sw) clockSample(s.sw);
   if (G.phase !== 'over') G.phase = s.ph; G.time = s.time; G.elapsed = s.el; G.overtime = s.ot; G.lastDmgT = s.lastDmgT;
   for (const S of ['A', 'B']) {
     const sd = G.sides[S], o = dec(s.sides[S]), tx = o.x, ty = o.y; delete o.x; delete o.y;
+    if (S === 'A') { delete o.manual; delete o.manualT; if (NET.predicting) { delete o.vx; delete o.vy; } }   // this phone owns its own steering and, while predicting, its velocity: the server's copy is a round trip old
     const activeChanged = o.active !== sd.active;
     Object.assign(sd, o); sd._tx = tx; sd._ty = ty;
-    if (activeChanged || sd.x == null || Math.hypot(tx - sd.x, ty - sd.y) > 140 || sd.state === 'entering') { sd.x = tx; sd.y = ty; }
+    const buf = NET.interp[S]; const jump = activeChanged || sd.state === 'entering' || (buf.length && Math.hypot(tx - buf[buf.length - 1].x, ty - buf[buf.length - 1].y) > 160);
+    if (jump) buf.length = 0;
+    buf.push({ t: s.sw || Date.now(), x: tx, y: ty }); if (buf.length > 40) buf.shift();
+    if (sd.x == null || jump) { sd.x = tx; sd.y = ty; if (S === 'A') NET.hist = []; }
+    if (S === 'A' && NET.predicting && !jump) reconcile(tx, ty);
     for (const [i, mon] of Object.entries(s.tm[S] || {})) Object.assign(sd.team[+i], dec(mon));
   }
   mergeWorld(G.shots, s.shots); mergeWorld(G.beams, s.beams); mergeWorld(G.marks, s.marks); mergeWorld(G.waves, s.waves);
@@ -130,9 +136,9 @@ function netStep(dt) {
   watchConnection(age, now0);
   if (age > 300) return;                                   // no fresh data: hold still rather than run ahead of the server
   G.time += dt; if (G.phase === 'battle') G.elapsed += dt;
-  const k = 1 - Math.exp(-dt / 55);
+  predictOrInterpolate(dt);
   for (const S of ['A', 'B']) {
-    const sd = G.sides[S]; if (sd._tx != null) { sd.x += (sd._tx - sd.x) * k; sd.y += (sd._ty - sd.y) * k; }
+    const sd = G.sides[S];
     sd.hit = Math.max(0, sd.hit - dt); sd.hop = Math.max(0, sd.hop - dt / 300); if (sd.state !== 'idle') sd.stateT += dt;
     if (sd.cast) sd.cast.t += dt;
     const m = sd.team[sd.active]; if (m && G.phase === 'battle') for (let i = 0; i < m.cd.length; i++) m.cd[i] = Math.max(0, m.cd[i] - dt);
@@ -194,10 +200,12 @@ const _showStart = showStart; showStart = () => { if (NET.active) leaveOnline();
 #startOv .st-online .big.alt{background:#fff;color:#141a33}
 #startOv #olCodeShow{font-family:var(--display);font-size:44px;letter-spacing:8px;color:#ffd84a;text-align:center;min-height:0}
 #startOv #olCodeShow:empty{display:none}
+#startOv .st-online>*{flex-shrink:0}#startOv #olCodeShow{padding:2px 0 4px}
 #startOv #olStatus{font:600 12px var(--ui);color:#a9b6ff;min-height:16px}
 #startOv #olStatus[data-kind=err]{color:#ff8a8a}#startOv #olStatus[data-kind=ok]{color:#8affb0}
 @media (max-height:560px){#startOv .st-online{padding:8px 10px;gap:5px;border-radius:16px}#startOv .st-online h3{font-size:17px}#startOv .st-online p{display:none}
- #startOv .st-online input{padding:5px 8px;font-size:12px}#startOv .st-online .big{padding:6px 10px;font-size:12px}#startOv #olCodeShow{font-size:26px;letter-spacing:5px}#startOv #olStatus{font-size:10px}}`;
+ #startOv .st-online input{padding:5px 8px;font-size:12px}#startOv .st-online .big{padding:6px 10px;font-size:12px}#startOv #olCodeShow{position:absolute;top:7px;right:14px;font-size:22px;letter-spacing:4px;line-height:1;padding:0}#startOv #olStatus{font-size:10px;line-height:1.25}
+ #startOv .st-online{justify-content:flex-start;overflow-y:auto}}`;
   document.head.appendChild(st);
   const head = document.querySelector('#startOv .st-head');
   const mode = document.createElement('div'); mode.className = 'st-mode'; mode.setAttribute('role', 'group'); mode.setAttribute('aria-label', 'Battle type');
@@ -261,7 +269,7 @@ function watchConnection(age, now) {
 // Reconnect to the same match with this player's token (the server holds the battle for 20 seconds).
 function startReconnect() {
   if (NET.reconnecting || NET.over) return;
-  NET.reconnecting = performance.now() + 20000; netBanner('Reconnecting…');
+  NET.reconnecting = performance.now() + 30000; netBanner('Reconnecting…');
   const attempt = () => {
     if (!NET.reconnecting || NET.over) return;
     if (performance.now() > NET.reconnecting) { NET.reconnecting = 0; netBanner(''); endOnline('B', 'DISCONNECTED', 'Lost the connection to the server.'); return; }
@@ -275,3 +283,65 @@ function startReconnect() {
   attempt();
 }
 setInterval(() => { if (NET.ws && NET.ws.readyState === 1) netSend({ t: 'ping', c: performance.now() }); }, 2000);   // in battle, lobby or bracket
+
+/* ---------- latency hiding: client-side prediction, server reconciliation, entity interpolation ---------- */
+// Server clock vs this phone's clock (plus the fastest one-way delay), from the server time stamped on each update.
+function clockSample(sw) {
+  const now = Date.now(), o = sw - now; NET.offs.push([now, o]);
+  while (NET.offs.length && now - NET.offs[0][0] > 4000) NET.offs.shift();
+  let best = -Infinity; for (const [, v] of NET.offs) if (v > best) best = v;             // least-delayed update = best estimate
+  NET.clockOff = best;
+  const spread = NET.offs.map(([, v]) => best - v).sort((a, b) => a - b);
+  NET.jitter = spread[Math.floor(spread.length * .9)] || 0;
+}
+// Draw others slightly in the past, between two real updates: smooth even when updates arrive unevenly or one is lost.
+function interpAt(buf, t) {
+  if (!buf.length) return null;
+  if (t <= buf[0].t) return buf[0];
+  for (let i = buf.length - 1; i > 0; i--) {
+    const a = buf[i - 1], b = buf[i];
+    if (t >= a.t && t <= b.t) { const f = (t - a.t) / Math.max(1, b.t - a.t); return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }; }
+  }
+  const b = buf[buf.length - 1], a = buf[buf.length - 2];
+  if (!a) return b;
+  const over = Math.min(120, t - b.t), f = over / Math.max(1, b.t - a.t);                 // briefly continue the last motion
+  return { x: b.x + (b.x - a.x) * f, y: b.y + (b.y - a.y) * f };
+}
+function predictOrInterpolate(dt) {
+  const delay = Math.min(300, 75 + (NET.jitter || 0)), renderT = Date.now() + (NET.clockOff || 0) - delay;
+  const a = G.sides.A, me = act('A');
+  // Your Pokémon: moves the instant you steer, using the same movement rules as the server.
+  const steering = !NET.noPredict && G.phase === 'battle' && a.manualT > 0 && a.state === 'idle' && me && me.hp > 0 && !isRooted('A');
+  if (steering) {
+    if (!NET.predicting) { NET.predicting = true; NET.hist = []; NET.corr = { x: 0, y: 0 }; }
+    const keepT = a.manualT; try { move('A', dt, false); } catch (e) { } a.manualT = keepT;
+    const kc = 1 - Math.exp(-dt / 100), cx = NET.corr.x * kc, cy = NET.corr.y * kc;           // fold server corrections in gently
+    a.x += cx; a.y += cy; NET.corr.x -= cx; NET.corr.y -= cy;
+    for (const h of NET.hist) { h.x += cx; h.y += cy; }
+    [a.x, a.y] = clampWalk(a.x, a.y);
+    const now = performance.now(); NET.hist.push({ t: now, x: a.x, y: a.y });
+    while (NET.hist.length && now - NET.hist[0].t > 1500) NET.hist.shift();
+  } else {
+    if (NET.predicting) { NET.predicting = false; NET.hist = []; }
+    const p = interpAt(NET.interp.A, renderT); if (p) { const k = 1 - Math.exp(-dt / 60); a.x += (p.x - a.x) * k; a.y += (p.y - a.y) * k; }
+  }
+  const b = G.sides.B, p = interpAt(NET.interp.B, renderT);
+  if (p) { b.x = p.x; b.y = p.y; }
+}
+// The server's position is where you were about one round trip ago: compare against that moment and correct the difference.
+function reconcile(tx, ty) {
+  const rtt = NET.rtt != null ? NET.rtt : 100, at = performance.now() - rtt - 25;
+  let h = null; for (const e of NET.hist) { if (e.t <= at) h = e; else break; }
+  if (!h) return;
+  const ex = tx - h.x, ey = ty - h.y;
+  if (Math.hypot(ex, ey) > 150) { const a = G.sides.A; a.x = tx; a.y = ty; NET.hist = []; NET.corr = { x: 0, y: 0 }; return; }   // knocked back / teleported
+  NET.corr = { x: ex, y: ey };
+}
+// A phone that changes network (Wi-Fi <-> mobile data) or comes back to the foreground checks its connection right away.
+function quickCheck() {
+  if (!NET.active || NET.over || NET.reconnecting || !NET.ws) return;
+  if (performance.now() - NET.lastRx > 2500) { const dead = NET.ws; NET.ws = null; dead.onclose = dead.onmessage = null; try { dead.close(); } catch (e) { } NET.reconnectWhy = 'network changed'; startReconnect(); }
+  else netSend({ t: 'ping', c: performance.now() });
+}
+window.addEventListener('online', () => setTimeout(quickCheck, 300));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(quickCheck, 300); });

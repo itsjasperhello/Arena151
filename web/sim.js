@@ -351,7 +351,7 @@ function updateSide(S, dt) {
     if (controlledByAI(S)) { sd.aiT -= dt; if (sd.aiT <= 0) { sd.aiT = 180 + Math.random() * 300; aiThink(S); } }
     else if (sd.queued != null) { if (tryCast(S, sd.queued) || (sd.queuedT -= dt) <= 0) sd.queued = null; }
   }
-  move(S, dt, blocked || (sd.cast && sd.cast.phase !== 'after' && !['projectile', 'drain', 'hex', 'powder', 'burst', 'stars', 'leaves', 'wind', 'multi', 'bolt', 'sky', 'psy'].includes(sd.cast.mv.anim)));
+  move(S, dt, isRooted(S));
 }
 function statusTick(S, m, dt) {
   if (m.status === 'slp') { m.stT -= dt; if (m.stT <= 0) { m.status = ''; VFX.text(S, 'WOKE UP', '#bfffd0'); logLine(`${m.name} woke up!`); G.hudDirty = true; } }
@@ -367,6 +367,12 @@ function statusTick(S, m, dt) {
   }
   if (m.conf > 0) { m.conf -= dt; if (m.conf <= 0) { m.conf = 0; VFX.text(S, 'SNAPPED OUT', '#bfffd0'); logLine(`${m.name} snapped out of its confusion!`); G.hudDirty = true; } }
   if (m.item === 'Leftovers' && m.hp < m.max) { m.lefT += dt; if (m.lefT >= 3000) { m.lefT = 0; const h = Math.min(m.max - m.hp, Math.floor(m.max / 32)); m.hp += h; VFX.heal(S, h, true); G.hudDirty = true; } }
+}
+// Moves that can be used on the move; every other attack roots its user until it lands. Shared with online prediction.
+const FREE_CAST_ANIMS = new Set(['projectile', 'drain', 'hex', 'powder', 'burst', 'stars', 'leaves', 'wind', 'multi', 'bolt', 'sky', 'psy']);
+function isRooted(S) {
+  const sd = side(S), m = act(S); if (!m) return true;
+  return sd.stun > 0 || m.status === 'slp' || m.status === 'frz' || !!(sd.cast && sd.cast.phase !== 'after' && !FREE_CAST_ANIMS.has(sd.cast.mv.anim));
 }
 function move(S, dt, rooted) {
   const sd = side(S), m = act(S), foe = side(other(S)), k = dt / 1000;
