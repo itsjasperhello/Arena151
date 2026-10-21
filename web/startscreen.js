@@ -254,3 +254,28 @@ window.addEventListener('keydown', e => {
   if ($('stPick').classList.contains('show')) { if (e.key === 'Escape') closeMonPicker(); return; }
   if (START.open && e.key === 'Enter' && document.activeElement && document.activeElement.tagName !== 'SELECT' && document.activeElement.tagName !== 'BUTTON') $('stGo').click();
 }, true);
+
+/* ---------- always fit the window (like the app): scale the whole start screen down when the window is too small ---------- */
+function fitStart() {
+  const ov = $('startOv'), w = ov && ov.querySelector('.st-wrap'); if (!w || !ov.classList.contains('show')) return;
+  w.style.transform = ''; w.style.minHeight = '0px';                        // measure the content's natural size
+  const need = w.scrollHeight, needW = w.scrollWidth, H = ov.clientHeight, W = ov.clientWidth;
+  const s = Math.min(1, H / need, W / Math.max(needW, 1));
+  if (s < 0.995) { w.style.transformOrigin = 'top center'; w.style.transform = `scale(${s.toFixed(4)})`; ov.style.overflow = 'hidden'; }
+  else { w.style.minHeight = ''; ov.style.overflow = ''; }
+}
+let fitQueued = false;
+const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitStart(); }); };
+window.addEventListener('resize', queueFit);
+(function watchStart() {
+  const w = document.querySelector('#startOv .st-wrap');
+  if (w && window.ResizeObserver) new ResizeObserver(queueFit).observe(w);
+  const ov = $('startOv'); if (ov) new MutationObserver(queueFit).observe(ov, { attributes: true, attributeFilter: ['class'], subtree: true, childList: true });
+  setTimeout(queueFit, 0);
+})();
+// Safety net: whenever the game is on its title state, the start screen is showing (it is the main menu).
+setInterval(() => {
+  if (typeof G === 'undefined' || !G || G.phase !== 'title' || START.open) return;
+  if (typeof NET !== 'undefined' && (NET.active || NET.tour)) return;
+  showStart();
+}, 1500);
