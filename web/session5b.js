@@ -55,7 +55,7 @@ function toggleFullscreen() {
   try { if (!document.fullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen).call(el); else (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { }
 }
 (function fsButton() {
-  if (window.AndroidApp || !(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) return;
+  if ((window.AndroidApp && !window.DesktopApp) || !(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) return;
   const ctr = document.querySelector('.ctrls'); if (!ctr) return;
   const b = document.createElement('button'); b.className = 'btn ghost'; b.id = 'bFull'; b.type = 'button'; b.textContent = 'Fullscreen'; b.onclick = toggleFullscreen; ctr.appendChild(b);
 })();

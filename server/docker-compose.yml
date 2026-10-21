@@ -7,7 +7,20 @@ services:
     restart: unless-stopped
     environment:
       - PORT=8151
-      # Set this if you run the server behind Cloudflare Tunnel or another proxy (so limits apply per player).
-      # - TRUST_PROXY=1
+      # The web service below passes each player's real address on, so per-address limits apply to real players.
+      - TRUST_PROXY=1
       # Battle worker threads. Leave unset to use one per CPU core (up to 8).
       # - WORKERS=8
+
+  # The desktop game in a browser, on port 8253: http://<this PC>:8253 (online play goes through the same port).
+  web:
+    image: nginx:1.27-alpine
+    container_name: arena151-web
+    ports:
+      - "8253:80"
+    volumes:
+      - ../app/src/main/assets:/usr/share/nginx/html:ro
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - arena151
+    restart: unless-stopped

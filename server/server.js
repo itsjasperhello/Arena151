@@ -167,7 +167,7 @@ const server = http.createServer((req, res) => {
 });
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024, perMessageDeflate: { threshold: 512 } });
 const perIp = new Map();                                 // ip -> { open, recent: [timestamps], badCodes: [timestamps] }
-const ipOf = req => (TRUST_PROXY && (req.headers['cf-connecting-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())) || req.socket.remoteAddress || '?';
+const ipOf = req => (TRUST_PROXY && (req.headers['x-real-ip'] || req.headers['cf-connecting-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())) || req.socket.remoteAddress || '?';   // X-Real-IP comes from the bundled web service
 const recentCount = (arr, ms) => { const now = mono(); while (arr.length && now - arr[0] > ms) arr.shift(); return arr.length; };
 wss.on('connection', (ws, req) => {
   const ip = ipOf(req), rec = perIp.get(ip) || { open: 0, recent: [], badCodes: [] }; perIp.set(ip, rec);

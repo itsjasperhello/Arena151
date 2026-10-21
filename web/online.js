@@ -13,7 +13,7 @@ function serverUrl(input) {
   let s = String(input || '').trim(); if (!s) return '';
   if (/^https?:\/\//i.test(s)) s = s.replace(/^http/i, 'ws');
   if (!/^wss?:\/\//i.test(s)) s = 'ws://' + s;
-  try { const u = new URL(s); if (!u.port && u.protocol === 'ws:') u.port = '8151'; return u.toString().replace(/\/$/, ''); } catch (e) { return ''; }
+  try { const u = new URL(s); if (!u.port && u.protocol === 'ws:' && (u.pathname === '/' || u.pathname === '')) u.port = '8151'; return u.toString().replace(/\/$/, ''); } catch (e) { return ''; }   // an address with a path (e.g. /ws on port 8253) keeps its own port
 }
 function netStatus(text, kind) { NET.status = text; const el = $('olStatus'); if (el) { el.textContent = text; el.dataset.kind = kind || ''; } }
 
@@ -218,6 +218,8 @@ const _showStart = showStart; showStart = () => { if (NET.active) leaveOnline();
     <div id="olCodeShow" aria-live="polite"></div><div id="olStatus" aria-live="polite"></div>`;
   blue.appendChild(panel);
   $('olServer').value = NET.url; $('olHost').onclick = hostGame; $('olJoin').onclick = joinGame;
+  // On the hosted desktop page, the game server is reached through the same address and port as the page (/ws).
+  if (!$('olServer').value && window.DesktopApp) $('olServer').value = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
   $('olCode').onkeydown = e => { if (e.key === 'Enter') joinGame(); };
   for (const b of mode.children) b.onclick = () => { NET.mode = b.dataset.m; try { localStorage.setItem('arena151.mode', NET.mode); } catch (e) { } if (NET.mode === 'local' && NET.code) leaveOnline(); syncOnlineUi(); };
   syncOnlineUi();

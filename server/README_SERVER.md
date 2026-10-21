@@ -51,6 +51,14 @@ When the host taps **START TOURNAMENT**, the server draws a random single-elimin
 * A dropped connection gets the usual 20 seconds to reconnect, straight back into the tournament and their live match.
 * If a match ends exactly tied on HP, a coin flip decides who advances (a bracket needs a winner).
 
+## Desktop browser version (port 8253)
+
+`docker compose up -d --build` also starts a small web server (container `arena151-web`) that serves the game itself on **port 8253**: open `http://<this PC's address>:8253` in any desktop browser. It plays exactly like the Android app — same start screen, controls (mouse on the on-screen joystick and buttons, or the keyboard), your trainers, sprites, music and cries — because it serves the Android project's `app/src/main/assets` folder directly. Whenever you update the app (new sprites, music, cries or a new game version), the browser version updates with it; just refresh the page.
+
+**Online play goes through the same port.** On the browser version the online server address fills itself in as `ws://<address>:8253/ws` — friends playing remotely only need port 8253 forwarded to this PC (the Android and iPhone apps can use that same address too, or `<this PC>:8151` on your home network). If you put HTTPS in front of it, the page uses `wss://…/ws` automatically.
+
+Saving a game export downloads a file. Fullscreen: the **Fullscreen** button or the F key.
+
 ## Connection drops
 
 If a phone's connection stalls or drops mid-match, it reconnects to the same match by itself. While it's gone, the battle is paused and the other phone shows *"Opponent's connection dropped — waiting 20s"*; if it isn't back within 20 seconds, the other player wins. Each phone shows its ping under the timer during online battles (green is good; yellow or red means a weak Wi-Fi signal).
@@ -80,6 +88,7 @@ To use more cores, set `WORKERS` in `docker-compose.yml` (for example `WORKERS=1
 | Start / update after changes | `docker compose up -d --build` |
 | Watch the server log | `docker compose logs -f` |
 | Check load per worker | open <http://localhost:8151/health> |
+| Play in a browser | open <http://localhost:8253> |
 | Stop | `docker compose down` |
 | Restart | `docker compose restart` |
 

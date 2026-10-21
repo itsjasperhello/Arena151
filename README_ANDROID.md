@@ -62,6 +62,9 @@ Put each Pokémon's cry in `app/src/main/assets/cry/` as `<sprite name>.mp3` (fo
 ## Online battles
 The `server` folder holds the online battle server (Docker). See `server/README_SERVER.md`.
 
+## iPhone
+The `ios` folder builds the same game as an iPhone app on GitHub (workflow *Build iOS app (IPA)*). See `ios/README_IOS.md`.
+
 ## Updating the game
 The game code lives in `web/` (the same source as the desktop build). After changing it, run:
 
