@@ -40,7 +40,8 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
             "Cache-Control": "no-cache"
         ]
         if let rangeHeader = task.request.value(forHTTPHeaderField: "Range"),
-           let (start, end) = BundleSchemeHandler.byteRange(rangeHeader, length: data.count) {
+           let range = BundleSchemeHandler.byteRange(rangeHeader, length: data.count) {
+            let start = range.start, end = range.end
             body = data.subdata(in: start..<(end + 1))
             status = 206
             headers["Content-Range"] = "bytes \(start)-\(end)/\(data.count)"
@@ -58,12 +59,12 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     /// Parses "bytes=START-END", "bytes=START-" and "bytes=-SUFFIX".
-    static func byteRange(_ header: String, length: Int) -> (Int, Int)? {
+    static func byteRange(_ header: String, length: Int) -> (start: Int, end: Int)? {
         guard length > 0, header.hasPrefix("bytes=") else { return nil }
         let spec = header.dropFirst("bytes=".count).split(separator: ",").first.map(String.init) ?? ""
         let parts = spec.split(separator: "-", omittingEmptySubsequences: false).map(String.init)
         guard parts.count == 2 else { return nil }
-        var start: Int
+        let start: Int
         var end: Int
         if parts[0].isEmpty {
             guard let suffix = Int(parts[1]), suffix > 0 else { return nil }
@@ -76,7 +77,7 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         }
         end = min(end, length - 1)
         guard start >= 0, start <= end else { return nil }
-        return (start, end)
+        return (start: start, end: end)
     }
 
     static func mimeType(for ext: String) -> String {

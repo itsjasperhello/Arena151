@@ -17,6 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select the newest stable Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -viE 'beta|rc' | sort -V | tail -n 1)
+          echo "Using $XC"
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos || true
+          {
+            echo "### Build machine"; echo '```'; xcodebuild -version; xcodebuild -showsdks | grep -i iphoneos; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Rebuild game from source
         run: |
           python3 web/build.py
@@ -36,30 +47,41 @@ jobs:
         working-directory: ios
         run: xcodegen generate
 
+      # Builds the app target directly for iPhone hardware, unsigned. No device/simulator destination is needed.
       - name: Build (unsigned)
         working-directory: ios
         run: |
-          set -o pipefail
+          set +e
           xcodebuild \
             -project Arena151.xcodeproj \
-            -scheme Arena151 \
+            -target Arena151 \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath build \
+            SYMROOT="$PWD/build" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            build | tail -n 60
+            build > build.log 2>&1
+          STATUS=$?
+          tail -n 40 build.log
+          if [ $STATUS -ne 0 ]; then
+            # Put the real errors where they can be read without logging in: the run summary and annotations.
+            ERRS=$(grep -E "error:|error -|fatal error|\*\* BUILD FAILED" build.log | sed 's/^[[:space:]]*//' | sort -u | head -n 25)
+            [ -z "$ERRS" ] && ERRS=$(tail -n 25 build.log)
+            { echo "### iOS build failed (xcodebuild exit $STATUS)"; echo '```'; echo "$ERRS"; echo '```'; echo "#### Last lines"; echo '```'; tail -n 60 build.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            echo "$ERRS" | head -n 10 | while IFS= read -r line; do echo "::error title=iOS build::${line:0:900}"; done
+            exit $STATUS
+          fi
 
       - name: Package the IPA
         working-directory: ios
         run: |
-          APP=build/Build/Products/Release-iphoneos/Arena151.app
-          test -d "$APP" || { echo "Build did not produce $APP"; exit 1; }
-          test -f "$APP/www/index.html" || { echo "The game was not bundled"; exit 1; }
+          APP=build/Release-iphoneos/Arena151.app
+          test -d "$APP" || { echo "::error title=iOS build::Build did not produce $APP"; ls -R build | head -n 50; exit 1; }
+          test -f "$APP/www/index.html" || { echo "::error title=iOS build::The game was not bundled into the app"; exit 1; }
           mkdir -p Payload && cp -R "$APP" Payload/
           zip -qry Arena151-unsigned.ipa Payload
           ls -lh Arena151-unsigned.ipa
+          echo "### Built Arena151-unsigned.ipa ($(du -h Arena151-unsigned.ipa | cut -f1)) — download it under Artifacts" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the IPA
         uses: actions/upload-artifact@v4
@@ -67,3 +89,11 @@ jobs:
           name: Arena151-ipa-${{ github.sha }}
           path: ios/Arena151-unsigned.ipa
           if-no-files-found: error
+
+      - name: Upload the build log (only if the build failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-log-${{ github.sha }}
+          path: ios/build.log
+          if-no-files-found: ignore
