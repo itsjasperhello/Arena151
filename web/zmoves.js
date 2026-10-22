@@ -211,7 +211,7 @@ function zFrame(now) {
 
 /* ---------- VFX hooks the simulation calls (also replayed in online battles) ---------- */
 VFX.zStart = (S, monName, zName, zType) => { zStart(S, monName, zName, zType); VFX.shake(3, 600); zSmashStart(S, monName, zType); };
-VFX.zImpact = (S, zType) => { const fs = other(S), sd = side(fs); try { screenFlash('#ffffff', .7); VFX.shake(22, 800); burstAt(sd.x, sd.y - 30, zTypeCol(zType), 70, 620, 4); burstAt(sd.x, sd.y - 30, '#ffffff', 40, 420, 3); } catch (e) { } };
+VFX.zImpact = (S, zType) => { const fs = other(S), sd = side(fs); try { VFX.shake(22, 800); burstAt(sd.x, sd.y - 30, zTypeCol(zType), 70, 620, 4); burstAt(sd.x, sd.y - 30, '#ffffff', 40, 420, 3); } catch (e) { } };
 VFX.dodge = (S, dx, dy) => {
   const sd = side(S); try { for (let i = 1; i <= 4; i++) burstAt(sd.x - dx * i * 14, sd.y - 20 - dy * i * 8, 'rgba(160,220,255,.9)', 3, 80, 1); } catch (e) { }
   if (S === 'A' && typeof haptic === 'function') haptic(15);
@@ -248,104 +248,152 @@ function doDodge() {
   return dodge('A', sd.vx, sd.vy);
 }
 
-/* ---------- the final smash: a huge in-arena attack unique to the Pokémon ----------
-   The pattern follows how the Pokémon actually fights (the animation of its main attack); its own giant
-   sprite looms over the arena; its type colours and a seed from its name vary counts, angles, spin and timing. */
+/* ---------- Z-Move attacks: real moves, launched from the attacker and landing on the target ----------
+   Every Pokémon has its own recipe (in Pokédex order), written from what that Pokémon actually does:
+     path head trail impact count size   [; a second phase]
+   paths   line arc spiral zig wave fan rain ground orbit boom beam nova
+   heads   orb bolt shard leaf flame bubble star fist blade rock feather note petal ghost crescent ring drill needle egg bone flake seed wing horn sludge sand heart eye
+   trails  spark smoke ribbon after glitter ember drop dust
+   impacts blast pillar vortex shatter bloom crater dome starburst quake geyser implode cross
+   Drawn with the game's own pixel helpers, at 3–10× the size of regular moves. Nothing is laid over the stage. */
+const Z_RECIPES = ["fan seed ribbon bloom 7 1", "wave leaf ribbon bloom 9 1.1", "orbit petal glitter bloom 14 1.3;beam leaf ribbon geyser 1 1.2", "arc flame ember blast 5 1", "spiral flame ember pillar 6 1.1", "orbit flame ember blast 10 1.2;beam flame ember pillar 1 1.5", "wave bubble drop geyser 8 1", "spiral bubble drop vortex 9 1.1", "fan orb drop geyser 2 1.6;beam bubble drop vortex 1 1.4", "line needle ribbon cross 9 .8", "boom shard dust shatter 5 1", "orbit wing glitter implode 10 1;nova sand glitter implode 1 1", "line needle spark cross 12 .8", "arc needle dust shatter 7 1", "zig needle after cross 10 1.1;line drill after pillar 2 1.3", "arc feather after vortex 8 1", "spiral feather after vortex 10 1.1", "fan wing after vortex 6 1.3;line feather after starburst 12 1", "zig fist after starburst 6 1", "line crescent after cross 6 1.2", "zig feather after cross 9 .9", "line drill after pillar 3 1.4", "wave sludge smoke dome 8 1", "spiral sludge smoke implode 10 1.2;rain sludge drop dome 12 1", "zig bolt spark pillar 8 1.3;beam bolt spark pillar 1 1.4", "wave bolt spark starburst 10 1.3;orbit orb spark pillar 6 1.4", "ground sand dust crater 6 1", "fan blade dust cross 8 1.2;ground needle dust quake 10 1", "line horn sludge dome 6 1", "arc horn sludge dome 8 1.1", "ground rock dust quake 8 1.3;rain sludge drop dome 10 1.1", "zig horn sludge cross 6 1", "spiral horn sludge cross 8 1.1", "ground horn dust quake 9 1.3;line drill sludge pillar 2 1.5", "rain star glitter bloom 10 1", "orbit star glitter implode 12 1.2;nova heart glitter bloom 1 1.2", "fan flame ember blast 6 1", "orbit flame ember vortex 9 1.3;fan flame ember pillar 9 1.2", "wave note glitter dome 9 1", "nova note glitter dome 1 1.4;spiral heart glitter bloom 8 1.1", "zig wing after cross 8 .9", "spiral wing smoke implode 10 1.1;line sludge smoke blast 3 1.3", "rain leaf ribbon bloom 9 .9", "arc sludge smoke bloom 8 1.1", "rain petal glitter bloom 16 1.1;nova petal smoke dome 1 1.3", "ground seed dust bloom 8 1", "fan seed smoke dome 10 1.1;ground leaf dust crater 8 1", "wave eye glitter implode 6 1", "orbit wing glitter dome 10 1.2;rain sand glitter dome 14 .9", "ground rock dust quake 6 1", "ground rock dust quake 12 1.2;line drill dust crater 3 1.3", "fan ring glitter starburst 10 .9", "zig blade after cross 6 1.2", "wave eye glitter vortex 6 1.1", "spiral bubble drop vortex 10 1.2;nova eye glitter implode 1 1.2", "zig fist after starburst 8 1", "fan fist after starburst 12 1.2;line fist after blast 3 1.5", "arc flame ember blast 6 1.1", "line flame after pillar 3 1.5;spiral flame ember blast 10 1.2", "wave bubble drop vortex 7 .9", "spiral ring drop vortex 9 1.1", "fan fist drop geyser 8 1.2;line fist drop starburst 2 1.6", "nova eye glitter implode 1 1", "orbit eye glitter implode 8 1.1", "orbit eye glitter implode 14 1.2;beam ring glitter implode 1 1.3", "line fist dust starburst 6 1", "zig fist dust starburst 9 1.1", "fan fist dust starburst 16 1.2;line fist after crater 4 1.6", "wave leaf ribbon cross 6 1", "arc sludge drop dome 7 1.1", "spiral leaf ribbon vortex 12 1.2;arc sludge drop geyser 6 1.3", "wave needle drop geyser 8 1", "fan needle drop geyser 12 1.2;wave sludge drop vortex 8 1.2", "arc rock dust crater 6 1.1", "rain rock dust crater 10 1.2", "arc rock dust crater 4 1.8;ground rock dust quake 12 1.2", "line flame ember blast 5 1.1", "line horn after pillar 3 1.4;ground flame ember blast 10 1.1", "nova eye drop implode 1 1.1", "spiral eye drop implode 8 1.2;wave bubble drop geyser 8 1.1", "zig bolt spark starburst 7 1", "orbit bolt spark starburst 9 1.2;beam ring spark pillar 1 1.2", "boom blade after cross 4 1.3", "zig feather after starburst 8 1.1", "fan feather after starburst 12 1.1;line drill after cross 3 1.3", "wave flake drop shatter 8 1", "spiral flake drop shatter 12 1.2;beam flake drop shatter 1 1.2", "ground sludge drop dome 7 1.2", "rain sludge drop dome 14 1.2;nova sludge smoke dome 1 1.3", "line shard drop shatter 6 1", "fan shard drop shatter 16 1.1;spiral needle glitter shatter 10 1.1", "wave ghost smoke implode 6 1", "orbit ghost smoke implode 9 1.1", "spiral ghost smoke implode 12 1.2;nova orb smoke implode 1 1.5", "ground rock dust quake 10 1.4;arc rock dust crater 5 1.4", "wave ring glitter implode 7 1.1", "orbit ring glitter vortex 10 1.2;nova eye smoke implode 1 1.3", "fan bubble drop cross 8 1", "line crescent drop cross 3 1.6;fan bubble drop geyser 10 1.1", "arc orb spark blast 4 1.2", "nova orb spark blast 1 1.8;zig bolt spark starburst 10 1.1", "arc egg glitter bloom 6 1.1", "rain egg glitter bloom 12 1.2;fan seed ribbon geyser 10 1.1", "boom bone dust crater 2 1.4", "boom bone dust crater 4 1.5;ground rock dust quake 8 1.1", "arc fist after starburst 4 1.5;line fist after crater 2 1.6", "zig fist after starburst 14 1.1;line fist spark blast 2 1.5", "wave ring smoke dome 8 1.1", "arc sludge smoke dome 6 1.3", "nova sludge smoke blast 1 1.6;orbit sludge smoke dome 10 1.1", "line horn dust crater 3 1.4", "line drill dust crater 4 1.6;ground rock dust quake 10 1.2", "arc egg glitter blast 6 1.2", "wave leaf ribbon vortex 12 1.1", "line fist dust crater 6 1.4;ground rock dust quake 6 1.1", "spiral bubble drop geyser 7 1", "beam bubble drop vortex 1 1.3;spiral orb drop geyser 8 1.1", "line horn drop geyser 4 1.2", "spiral horn drop vortex 6 1.3", "boom star glitter starburst 4 1.2", "orbit star glitter starburst 10 1.3;beam ring glitter implode 1 1.2", "nova ring glitter dome 1 1.5;fan eye glitter implode 8 1.1", "zig blade after cross 10 1.2;fan blade after cross 8 1.3", "wave heart glitter shatter 8 1.1;rain flake glitter shatter 12 1.1", "zig bolt spark pillar 10 1.2;line fist spark starburst 3 1.4", "spiral flame ember pillar 9 1.3;line fist ember blast 3 1.4", "line horn dust cross 2 1.7;zig blade after cross 6 1.2", "ground horn dust quake 8 1.3;line horn after crater 3 1.5", "arc bubble drop geyser 3 .9", "spiral orb drop vortex 12 1.4;beam bubble drop geyser 1 1.6", "wave flake drop shatter 12 1.2;beam flake glitter shatter 1 1.4", "boom ring glitter blast 6 1.1", "orbit star glitter blast 8 1.1;fan orb glitter starburst 8 1.1", "wave bubble drop vortex 12 1.3;beam bubble glitter geyser 1 1.3", "zig needle spark pillar 14 1.1;beam bolt spark starburst 1 1.3", "spiral flame ember blast 12 1.2;nova flame ember pillar 1 1.4", "zig ring spark cross 8 1.1;beam ring glitter starburst 1 1.2", "spiral shard drop shatter 7 1.1", "spiral drill drop shatter 6 1.3;rain rock drop crater 10 1.1", "line blade dust cross 5 1.1", "zig blade drop cross 10 1.3;fan crescent drop cross 6 1.3", "rain rock dust crater 12 1.3;line wing after starburst 3 1.4", "arc orb dust crater 1 2.4;ground rock dust quake 8 1.2", "rain flake glitter shatter 16 1.2;beam flake glitter shatter 1 1.5", "rain bolt spark pillar 14 1.3;beam bolt spark starburst 1 1.5", "rain flame ember blast 14 1.3;beam flame ember pillar 1 1.6", "wave ring after vortex 6 1", "spiral orb after vortex 10 1.2;wave bolt spark pillar 6 1.1", "orbit orb after vortex 12 1.3;line fist after crater 2 1.7", "orbit eye glitter implode 16 1.4;beam orb glitter implode 1 1.7", "nova star glitter bloom 1 1.6;orbit orb glitter starburst 12 1.3"];
 const ZS = [];
-const ZS_START = 1500, ZS_HIT = 2200, ZS_END = 2800;          // ms after the Z-Move begins: world part, impact, end
-const STYLE_OF = { beam: 'beam', bolt: 'beam', wave: 'beam', projectile: 'barrage', stars: 'barrage', leaves: 'barrage', powder: 'barrage', splash: 'barrage', burst: 'barrage', multi: 'barrage',
-  contact: 'rush', dash: 'rush', slash: 'slash', quake: 'quake', dig: 'quake', hex: 'cosmic', psy: 'cosmic', aura: 'cosmic', drain: 'cosmic', heal: 'cosmic', wind: 'storm', sky: 'barrage' };
+const ZS_START = 1500, ZS_HIT = 2200, ZS_END = 2800;          // ms after the Z-Move begins: launch, impact, end
 const hashStr = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
-function zStyle(m) {
-  const atk = m.moves.map(n => MOVES[n]).filter(mv => mv && mv.cat !== 'X' && (mv.pow || 0) > 0).sort((a, b) => b.pow - a.pow);
-  const pick = atk.find(mv => mv.type === m.types[0]) || atk[0];
-  if (m.types.includes('Flying') && !(pick && STYLE_OF[pick.anim] === 'beam')) return 'storm';   // flyers whip up storms
-  if (pick && pick.anim === 'sky') return 'barrage';                                               // rock-throwers rain boulders
-  return STYLE_OF[pick && pick.anim] || 'beam';
+const dexIndex = name => DEX.findIndex(d => d.name === name);
+function zRecipe(name) {
+  const r = Z_RECIPES[dexIndex(name)] || 'line orb spark blast 6 1';
+  return r.split(';').map(ph => { const [path, head, trail, impact, n, size] = ph.trim().split(/\s+/); return { path, head, trail, impact, n: +n, size: +size }; });
 }
-function silhouette(img, col) { if (!img) return null; const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); return c; }
+function spriteAccent(img) {
+  try { const x = img.getContext('2d').getImageData(0, 0, img.width, img.height).data; let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < x.length; i += 16) if (x[i + 3] > 200 && x[i] + x[i + 1] + x[i + 2] > 120 && x[i] + x[i + 1] + x[i + 2] < 700) { r += x[i]; g += x[i + 1]; b += x[i + 2]; n++; }
+    if (n) return '#' + [r, g, b].map(v => Math.round(v / n).toString(16).padStart(2, '0')).join(''); } catch (e) { }
+  return null;
+}
 function zSmashStart(S, mon, type) {
   if (!G) return; const m = act(S), seed = hashStr(mon), col = zTypeCol(type), img = zSprite(mon);
-  let r = seed; const rnd2 = () => ((r = Math.imul(r ^ (r >>> 15), 2246822519) >>> 0) % 10000) / 10000;   // seeded: the same Pokémon always looks the same
-  ZS.push({ S, mon, type, t0: clock.t, style: zStyle(m), seed, rnd: rnd2, col, light: zMix(col, '#ffffff', .55), dark: zMix(col, '#000000', .45), img, sil: silhouette(img, col), P: [], hit: false,
-    n: 3 + (seed % 4), spin: seed & 1 ? 1 : -1, ang: (seed % 360) * Math.PI / 180 });
+  const second = m.types[1] && m.types[1] !== type ? zTypeCol(m.types[1]) : (zTypeCol(m.types[0]) !== col ? zTypeCol(m.types[0]) : null);
+  const acc = (img && spriteAccent(img)) || second || zMix(col, '#ffffff', .3);
+  ZS.push({ S, mon, t0: clock.t, phases: zRecipe(mon), seed, col, acc, light: zMix(col, '#ffffff', .55), dark: zMix(col, '#000000', .45), spin: seed & 1 ? 1 : -1, landed: {} });
 }
-function giant(z, x, y, h, a) { if (!z.img) return; const w = h * z.img.width / z.img.height; bctx.save(); bctx.imageSmoothingEnabled = false;
-  bctx.globalAlpha = a * .5; bctx.drawImage(z.sil, Math.round(x - w / 2 - 2), Math.round(y - h), Math.round(w + 4), Math.round(h + 4));
-  bctx.globalAlpha = a; bctx.drawImage(z.img, Math.round(x - w / 2), Math.round(y - h), Math.round(w), Math.round(h)); bctx.restore(); }
+function zPath(z, ph, k, q, A, F, U, H) {
+  const dx = F.x - A.x, dy = F.y - A.y, L = Math.hypot(dx, dy) || 1, px2 = -dy / L, py2 = dx / L, n = ph.n, c = (k - (n - 1) / 2), sv = ((z.seed >> (k % 16)) & 7) / 7;
+  const lin = (o = 0) => ({ x: A.x + dx * q + px2 * o, y: A.y + dy * q + py2 * o });
+  switch (ph.path) {
+    case 'arc': { const p = lin(c * 6 * U); p.y -= Math.sin(q * Math.PI) * H * (.32 + sv * .18); return p; }
+    case 'spiral': { const a = q * Math.PI * 6 * z.spin + k * 2 * Math.PI / n, R = (1 - q) * 46 * U; const p = lin(Math.sin(a) * R); p.y += Math.cos(a) * R * .5; return p; }
+    case 'zig': { const seg = 5, f = q * seg, tri = (Math.abs((f % 2) - 1) * 2 - 1); return lin(tri * (1 - q * .7) * (40 + sv * 20) * U + c * 4 * U); }
+    case 'wave': return lin(Math.sin(q * Math.PI * 4 + k * 1.3) * (34 + sv * 18) * U * (1 - q * .5));
+    case 'fan': { const t = q, cx = A.x + dx * .45 + px2 * c * 34 * U * (1 + sv * .5), cy = A.y + dy * .45 + py2 * c * 34 * U - 20 * U * Math.abs(c); return { x: (1 - t) * (1 - t) * A.x + 2 * (1 - t) * t * cx + t * t * F.x, y: (1 - t) * (1 - t) * A.y + 2 * (1 - t) * t * cy + t * t * F.y }; }
+    case 'rain': { const sx = F.x + c * 30 * U + (sv - .5) * 60 * U, sy = F.y - H * .95; return { x: sx + (F.x + c * 8 * U - sx) * q, y: sy + (F.y - sy) * q }; }
+    case 'ground': { const p = lin(c * 10 * U); p.y += 22 * U - Math.abs(Math.sin(q * Math.PI * 5 + k)) * 14 * U; return p; }
+    case 'orbit': { if (q < .45) { const a = q / .45 * Math.PI * 2 * z.spin + k * 2 * Math.PI / n, R = 52 * U; return { x: A.x + Math.cos(a) * R, y: A.y - 10 * U + Math.sin(a) * R * .55 }; }
+      const a0 = Math.PI * 2 * z.spin + k * 2 * Math.PI / n, ox = A.x + Math.cos(a0) * 52 * U, oy = A.y - 10 * U + Math.sin(a0) * 52 * U * .55, t = (q - .45) / .55; return { x: ox + (F.x - ox) * t, y: oy + (F.y - oy) * t }; }
+    case 'boom': { const t = q, side2 = (k % 2 ? 1 : -1) * z.spin, cx = A.x + dx * .5 + px2 * side2 * H * .7, cy = A.y + dy * .5 + py2 * side2 * H * .7; return { x: (1 - t) * (1 - t) * A.x + 2 * (1 - t) * t * cx + t * t * F.x, y: (1 - t) * (1 - t) * A.y + 2 * (1 - t) * t * cy + t * t * F.y }; }
+    default: return lin(c * 9 * U);
+  }
+}
+function zHead(z, h, x, y, r, a, t, al = 1) {
+  const C = z.col, L = z.light, W = '#ffffff', D = z.dark, X = z.acc, ca = Math.cos(a), sa = Math.sin(a);
+  switch (h) {
+    case 'bolt': { let px3 = x - ca * r * 3, py3 = y - sa * r * 3; for (let s = 1; s <= 5; s++) { const nx = x - ca * r * 3 * (1 - s / 5) + (Math.random() - .5) * r, ny = y - sa * r * 3 * (1 - s / 5) + (Math.random() - .5) * r; aLine(px3, py3, nx, ny, C, al, Math.max(2, r * .5)); aLine(px3, py3, nx, ny, W, al, Math.max(1, r * .22)); px3 = nx; py3 = ny; } aDisc(x, y, r * .7, W, al); break; }
+    case 'flame': for (let s = 0; s < 5; s++) { const f = s / 5, j = Math.sin(t * 30 + s) * r * .3; aDisc(x - ca * r * 1.6 * f + j * sa, y - sa * r * 1.6 * f - r * f * .6, r * (1 - f * .6), [W, '#ffe066', '#ffb02e', '#ff5a1f', X][s], al * (1 - f * .3)); } break;
+    case 'bubble': aRing(x, y, r, r, L, al, Math.max(2, r * .18)); aDisc(x - r * .35, y - r * .35, r * .25, W, al); aDisc(x, y, r * .8, C, al * .25); break;
+    case 'leaf': case 'petal': { const c2 = h === 'petal' ? X : C; for (let s = -2; s <= 2; s++) aDisc(x + ca * s * r * .35, y + sa * s * r * .35, r * (1 - Math.abs(s) * .3) * .7, c2, al); aLine(x - ca * r, y - sa * r, x + ca * r, y + sa * r, L, al, 2); break; }
+    case 'seed': aDisc(x, y, r * .8, '#8a5a2a', al); aDisc(x - r * .2, y - r * .25, r * .3, '#e8c48a', al); aRing(x, y, r * 1.2, r * 1.2, C, al * .6, 2); break;
+    case 'shard': case 'flake': { const n2 = h === 'flake' ? 6 : 4; for (let s = 0; s < n2; s++) { const b = a + s * Math.PI * 2 / n2 + t * (h === 'flake' ? 3 : 0); aLine(x, y, x + Math.cos(b) * r * 1.4, y + Math.sin(b) * r * 1.4, s % 2 ? L : W, al, Math.max(2, r * .35)); } aDisc(x, y, r * .45, C, al); break; }
+    case 'star': for (let s = 0; s < 5; s++) { const b = -Math.PI / 2 + s * Math.PI * 2 / 5 + t * 4 * z.spin; aLine(x, y, x + Math.cos(b) * r * 1.5, y + Math.sin(b) * r * 1.5, s % 2 ? '#ffe066' : X, al, Math.max(2, r * .45)); } aDisc(x, y, r * .55, W, al); break;
+    case 'fist': aDisc(x, y, r, X, al); for (let s = -1; s <= 1; s++) aDisc(x + ca * r * .7 - sa * s * r * .45, y + sa * r * .7 + ca * s * r * .45, r * .32, L, al); aRing(x, y, r * 1.5, r * 1.5, W, al * .7, 2); break;
+    case 'blade': case 'crescent': { const span = h === 'crescent' ? 1.6 : 1.1; for (let s = -6; s <= 6; s++) { const b = a + Math.PI / 2 + s / 6 * span; aDisc(x + Math.cos(b) * r * 1.5, y + Math.sin(b) * r * 1.5, Math.max(1.5, r * .32 * (1 - Math.abs(s) / 8)), s % 2 ? W : L, al); } break; }
+    case 'rock': aDisc(x, y, r, '#8a7650', al); aDisc(x - r * .3, y - r * .3, r * .45, '#c8b080', al); aDisc(x + r * .35, y + r * .2, r * .25, '#5a4a30', al); break;
+    case 'feather': case 'wing': { const len = h === 'wing' ? 2.2 : 1.5; aLine(x - ca * r * len, y - sa * r * len, x + ca * r, y + sa * r, W, al, 2); for (let s = 0; s < 6; s++) { const f = s / 6, bx2 = x - ca * r * len * f, by2 = y - sa * r * len * f; aLine(bx2, by2, bx2 - Math.cos(a - .9) * r * .9, by2 - Math.sin(a - .9) * r * .9, X, al, 2); aLine(bx2, by2, bx2 - Math.cos(a + .9) * r * .9, by2 - Math.sin(a + .9) * r * .9, L, al, 2); } break; }
+    case 'note': aDisc(x, y, r * .6, X, al); aLine(x + r * .5, y, x + r * .5, y - r * 1.6, X, al, Math.max(2, r * .2)); aLine(x + r * .5, y - r * 1.6, x + r * 1.1, y - r * 1.2, X, al, Math.max(2, r * .2)); break;
+    case 'heart': aDisc(x - r * .35, y - r * .2, r * .45, '#ff7ad9', al); aDisc(x + r * .35, y - r * .2, r * .45, '#ff7ad9', al); aDisc(x, y + r * .25, r * .42, '#ff7ad9', al); aDisc(x - r * .3, y - r * .3, r * .15, W, al); break;
+    case 'eye': aDisc(x, y, r, W, al * .9); aDisc(x, y, r * .55, C, al); aDisc(x, y, r * .25, D, al); aRing(x, y, r * 1.4, r * .8, L, al * .7, 2); break;
+    case 'ghost': aDisc(x, y, r, '#5a2d8f', al * .9); for (let s = 0; s < 4; s++) aDisc(x - ca * r * (1 + s * .5), y - sa * r * (1 + s * .5) + Math.sin(t * 20 + s) * r * .3, r * (.7 - s * .14), '#3a1f5a', al * .7); aDisc(x - r * .3, y - r * .15, r * .18, '#ff3a6a', al); aDisc(x + r * .3, y - r * .15, r * .18, '#ff3a6a', al); break;
+    case 'ring': aRing(x, y, r * 1.3, r * 1.3, C, al, Math.max(2, r * .25)); aRing(x, y, r * .8, r * .8, X, al, Math.max(2, r * .18)); break;
+    case 'drill': for (let s = 0; s < 8; s++) { const f = s / 8, w2 = r * (1 - f), b = t * 40 + s; aLine(x - ca * r * 2 * (1 - f) + sa * Math.sin(b) * w2, y - sa * r * 2 * (1 - f) - ca * Math.sin(b) * w2, x - ca * r * 2 * (1 - f) - sa * Math.sin(b) * w2, y - sa * r * 2 * (1 - f) + ca * Math.sin(b) * w2, s % 2 ? L : '#dfe6f0', al, 2); } break;
+    case 'horn': for (let s = 0; s < 6; s++) { const f = s / 6; aDisc(x - ca * r * 1.8 * f, y - sa * r * 1.8 * f, r * (.25 + f * .7), s % 2 ? X : W, al); } break;
+    case 'needle': aLine(x - ca * r * 2.6, y - sa * r * 2.6, x + ca * r * .4, y + sa * r * .4, L, al, Math.max(2, r * .25)); aDisc(x + ca * r * .4, y + sa * r * .4, Math.max(1.5, r * .2), W, al); break;
+    case 'bone': aLine(x - ca * r * 1.4, y - sa * r * 1.4, x + ca * r * 1.4, y + sa * r * 1.4, '#efe6d0', al, Math.max(3, r * .4)); for (const sg of [-1, 1]) { aDisc(x + ca * r * 1.4 * sg - sa * r * .35, y + sa * r * 1.4 * sg + ca * r * .35, r * .35, '#efe6d0', al); aDisc(x + ca * r * 1.4 * sg + sa * r * .35, y + sa * r * 1.4 * sg - ca * r * .35, r * .35, '#efe6d0', al); } break;
+    case 'egg': aDisc(x, y, r, '#fff3d6', al); aDisc(x - r * .3, y - r * .2, r * .2, X, al); aDisc(x + r * .3, y + r * .3, r * .16, X, al); break;
+    case 'sludge': aDisc(x, y, r, '#8c3fc0', al); aDisc(x - r * .3, y - r * .3, r * .3, '#e3a6ff', al); for (let s = 0; s < 3; s++) aDisc(x - ca * r * (1.2 + s * .5), y - sa * r * (1.2 + s * .5) + r * .2 * s, r * (.4 - s * .1), '#6a2d8f', al); break;
+    case 'sand': for (let s = 0; s < 9; s++) { const b = s * 2.4 + t * 5; aRect(x + Math.cos(b) * r * (.4 + (s % 3) * .3), y + Math.sin(b) * r * (.4 + (s % 3) * .3), Math.max(2, r * .25), Math.max(2, r * .25), s % 2 ? '#e8c890' : X, al); } break;
+    default: aDisc(x, y, r * 1.25, C, al * .55); aDisc(x, y, r, X, al); aDisc(x, y, r * .62, L, al); aDisc(x, y, r * .3, W, al);
+  }
+}
+function zTrail(z, tr, x, y, r, f, al) {
+  const a = al * (1 - f);
+  switch (tr) {
+    case 'spark': if (Math.random() < .7) aRect(x + (Math.random() - .5) * r * 2, y + (Math.random() - .5) * r * 2, 3, 3, Math.random() < .5 ? '#ffffff' : z.light, a); break;
+    case 'smoke': aDisc(x, y - f * r, r * (.5 + f * .9), '#3a3550', a * .45); break;
+    case 'ember': aRect(x + (Math.random() - .5) * r, y + (Math.random() - .5) * r - f * r, 3, 3, f < .4 ? '#ffe066' : '#ff5a1f', a); break;
+    case 'drop': aDisc(x, y + f * r * .5, r * .22 * (1 - f) + 1, '#bfe6ff', a); break;
+    case 'dust': aDisc(x, y + r * .4, r * (.4 + f * .6), '#a08a6a', a * .4); break;
+    case 'glitter': if (Math.random() < .6) { const sx = x + (Math.random() - .5) * r * 2, sy = y + (Math.random() - .5) * r * 2; aLine(sx - 3, sy, sx + 3, sy, '#ffffff', a); aLine(sx, sy - 3, sx, sy + 3, z.acc, a); } break;
+    case 'ribbon': aDisc(x, y, r * .35 * (1 - f) + 1, z.acc, a * .8); break;
+    case 'after': aDisc(x, y, r * .8 * (1 - f * .5), z.col, a * .3); break;
+  }
+}
+function zImpactFx(z, kind, x, y, q, U, H, scale) {
+  const C = z.col, L = z.light, W = '#ffffff', X = z.acc, a = 1 - q, s = scale;
+  switch (kind) {
+    case 'pillar': { const w = 34 * U * s * (1 - q * .4), top = y - H * 1.1 * Math.min(1, q * 4); aRect(x - w, top, w * 2, y - top + 10 * U, C, a * .8); aRect(x - w * .5, top, w, y - top + 10 * U, L, a * .9); aRect(x - w * .2, top, w * .4, y - top + 10 * U, W, a); break; }
+    case 'vortex': for (let r2 = 0; r2 < 6; r2++) { const R = (120 * (1 - q) + 20) * U * s * (1 - r2 * .12); aRing(x, y, R, R * .55, r2 % 2 ? C : X, a, Math.max(2, 4 * U)); } aDisc(x, y, 20 * U * s * (1 - q), W, a); break;
+    case 'shatter': for (let k = 0; k < 18; k++) { const b = k / 18 * Math.PI * 2 + z.seed % 7, d = q * 200 * U * s; aLine(x + Math.cos(b) * d * .5, y + Math.sin(b) * d * .35, x + Math.cos(b) * d, y + Math.sin(b) * d * .6, k % 2 ? L : W, a, Math.max(2, 6 * U)); } aDisc(x, y, 40 * U * s * (1 - q), L, a); break;
+    case 'bloom': for (let k = 0; k < 10; k++) { const b = k / 10 * Math.PI * 2 + q * 2, d = (20 + q * 150) * U * s; aDisc(x + Math.cos(b) * d, y + Math.sin(b) * d * .6, 22 * U * s * (1 - q * .5), k % 2 ? X : '#ff9ad9', a); } aDisc(x, y, 30 * U * s * (1 - q * .5), '#ffe066', a); break;
+    case 'crater': aRing(x, y + 16 * U, (40 + q * 180) * U * s, (40 + q * 180) * U * s * .35, '#5a4a30', a, Math.max(3, 8 * U)); for (let k = 0; k < 14; k++) { const b = Math.PI + k / 13 * Math.PI, d = q * 160 * U * s; aDisc(x + Math.cos(b) * d, y + Math.sin(b) * d * .9 + q * q * 120 * U, 8 * U * s, '#a08a6a', a); } break;
+    case 'dome': aDisc(x, y, (30 + q * 150) * U * s, C, a * .35); aRing(x, y, (30 + q * 150) * U * s, (30 + q * 150) * U * s * .8, L, a, Math.max(3, 5 * U)); break;
+    case 'starburst': for (let k = 0; k < 16; k++) { const b = k / 16 * Math.PI * 2, d = (40 + q * 260) * U * s; aLine(x, y, x + Math.cos(b) * d, y + Math.sin(b) * d * .6, k % 2 ? C : W, a, Math.max(3, 7 * U * (1 - q))); } break;
+    case 'quake': for (let k = 0; k < 8; k++) { let cx = x, cy = y + 16 * U; const b = k / 8 * Math.PI * 2; for (let sg = 0; sg < 14 * Math.min(1, q * 3); sg++) { const nx = cx + Math.cos(b) * 20 * U * s + (Math.random() - .5) * 8 * U, ny = cy + Math.sin(b) * 9 * U * s; aLine(cx, cy, nx, ny, '#2a1a0a', a, Math.max(3, 6 * U)); aLine(cx, cy, nx, ny, L, a * .6, 2); cx = nx; cy = ny; } } break;
+    case 'geyser': for (let k = 0; k < 40; k++) { const f = k / 40, h = H * Math.min(1, q * 3) * f; aDisc(x + Math.sin(k * 1.7 + q * 20) * 26 * U * s * f, y - h, (16 - f * 8) * U * s, f > .8 ? W : (k % 2 ? L : C), a); } break;
+    case 'implode': for (let r2 = 0; r2 < 5; r2++) { const R = (220 * (1 - q) + 10) * U * s * (1 - r2 * .15); aRing(x, y, R, R * .6, r2 % 2 ? C : X, a, Math.max(2, 5 * U)); } if (q > .6) aDisc(x, y, 60 * U * s * (q - .6) * 2.5, W, a); break;
+    case 'cross': { const Lx = (60 + q * 180) * U * s; for (const sg of [1, -1]) { aLine(x - Lx, y - sg * Lx * .7, x + Lx, y + sg * Lx * .7, C, a, Math.max(4, 22 * U * (1 - q * .5))); aLine(x - Lx, y - sg * Lx * .7, x + Lx, y + sg * Lx * .7, W, a, Math.max(2, 8 * U)); } break; }
+    default: aDisc(x, y, (80 * (1 - q) + 20) * U * s, L, a); aDisc(x, y, (40 * (1 - q) + 10) * U * s, W, a); for (let r2 = 0; r2 < 3; r2++) aRing(x, y, (40 + q * 240 + r2 * 26) * U * s, (40 + q * 240 + r2 * 26) * U * s * .6, r2 % 2 ? C : X, a, Math.max(3, 5 * U));
+  }
+}
 function drawZSmash() {
   if (!G || !ZS.length) return;
-  const W = Math.round(DW / cam.pz), H = Math.round(DH / cam.pz), U = H / 280;     // the visible part of the arena, in effect pixels
+  const H = Math.round(DH / cam.pz), U = H / 280;
   for (let i = ZS.length - 1; i >= 0; i--) {
     const z = ZS[i], T = clock.t - z.t0 - ZS_START;
     if (clock.t < z.t0 || T > ZS_END) { ZS.splice(i, 1); continue; }
     if (T < 0) continue;
-    const A = side(z.S), F = side(other(z.S)), ax = bx(A.x), ay = by(A.y - 20), fx = bx(F.x), fy = by(F.y - 20), dir = Math.sign(fx - ax) || 1;
-    const out = T > ZS_HIT ? 1 - (T - ZS_HIT) / (ZS_END - ZS_HIT) : 1, t = T / 1000;
-    // the arena goes dark, tinted by the type, and the attacker's giant form towers over the battlefield
-    aRect(0, 0, W, H, '#03040b', .62 * Math.min(1, T / 250) * out); aRect(0, 0, W, H, z.col, .1 * out);
-    giant(z, ax - dir * W * .1, ay + H * .3, H * .78 + Math.sin(t * 3) * 6 * U, Math.min(1, T / 400) * .8 * out);
-    for (let a = 0; a < 3; a++) { const r = (26 + a * 14) * U + Math.sin(t * 8 + a) * 4; aRing(ax, ay, r, r * .6, z.light, .6 * out, 3); }
-    const go = Math.max(0, (T - 600) / (ZS_HIT - 600));
-    if (T > 600 && T < ZS_HIT + 200) STYLES[z.style](z, { ax, ay, fx, fy, dir, W, H, U, go, t });
-    if (T >= ZS_HIT) { const q = (T - ZS_HIT) / (ZS_END - ZS_HIT); aDisc(fx, fy, (90 * (1 - q) + 14) * U, '#ffffff', .9 * (1 - q)); aDisc(fx, fy, (60 * (1 - q) + 8) * U, z.light, .9 * (1 - q));
-      for (let rr = 0; rr < 4; rr++) { const R = (50 + q * 320 + rr * 30) * U; aRing(fx, fy, R, R * .6, rr % 2 ? z.col : '#ffffff', (1 - q) * .95, Math.round(4 * U)); } }
+    const As = side(z.S), Fs = side(other(z.S)), A = { x: bx(As.x), y: by(As.y - 26) }, F = { x: bx(Fs.x), y: by(Fs.y - 24) }, t = T / 1000;
+    if (T < 700) { const k = T / 700; for (let r2 = 0; r2 < 4; r2++) { const R = (70 * (1 - k) + 18 + r2 * 10) * U; aRing(A.x, A.y, R, R * .6, r2 % 2 ? z.col : z.acc, .75, Math.max(2, 3 * U)); } aDisc(A.x, A.y, (8 + k * 22) * U, z.light, .55); }
+    const np = z.phases.length;
+    z.phases.forEach((ph, pi) => {
+      const s0 = 400 + pi * (ZS_HIT - 400) / np * .7, s1 = s0 + (ZS_HIT - 400) * (np === 1 ? 1 : .62), pg = (T - s0) / (s1 - s0);
+      if (pg < 0 || pg > 1.05) return;
+      const r = 10 * U * ph.size * 1.6;
+      if (ph.path === 'beam') {
+        const tip = Math.min(1, pg * 1.8), ex = A.x + (F.x - A.x) * tip, ey = A.y + (F.y - A.y) * tip, th = Math.min(r * .8, 30 * U) * (1 + Math.sin(t * 40) * .08), fade = pg > .85 ? Math.max(0, (1.05 - pg) / .2) : 1;
+        aLine(A.x, A.y, ex, ey, z.col, .7 * fade, th * 2); aLine(A.x, A.y, ex, ey, z.light, .9 * fade, th * 1.1); aLine(A.x, A.y, ex, ey, '#ffffff', fade, th * .45);
+        for (let k = 0; k < 7; k++) { const f = ((t * 2.4 + k / 7) % 1) * tip; zHead(z, ph.head, A.x + (F.x - A.x) * f, A.y + (F.y - A.y) * f, r * .8, Math.atan2(F.y - A.y, F.x - A.x), t, fade); }
+        aDisc(A.x, A.y, th * .9, z.light, fade); aDisc(A.x, A.y, th * .45, '#ffffff', fade);
+        return;
+      }
+      if (ph.path === 'nova') {
+        const D = Math.hypot(F.x - A.x, F.y - A.y) + 40 * U, R = Math.min(1, pg * 1.2) * D, fade = pg > .85 ? Math.max(0, (1.05 - pg) / .2) : 1;
+        aRing(A.x, A.y, R, R * .6, z.col, .8 * fade, Math.max(4, r * .8)); aRing(A.x, A.y, R * .92, R * .55, z.acc, .7 * fade, Math.max(2, r * .4));
+        for (let k = 0; k < 12; k++) { const b = k / 12 * Math.PI * 2 + t * z.spin; zHead(z, ph.head, A.x + Math.cos(b) * R, A.y + Math.sin(b) * R * .6, r * .7, b, t, fade); }
+        return;
+      }
+      for (let k = 0; k < ph.n; k++) {
+        const q = (pg - k / Math.max(1, ph.n) * .45) / .55; if (q < 0) continue;
+        if (q >= 1) { const key = pi + ':' + k; if (!z.landed[key]) z.landed[key] = T; const lq = (T - z.landed[key]) / 260; if (lq < 1) zImpactFx(z, 'blast', F.x + (k - ph.n / 2) * 3 * U, F.y, lq, U, H, .25 * ph.size); continue; }
+        const p = zPath(z, ph, k, q, A, F, U, H), p2 = zPath(z, ph, k, Math.max(0, q - .02), A, F, U, H), ang = Math.atan2(p.y - p2.y, p.x - p2.x);
+        for (let j = 7; j >= 1; j--) { const pj = zPath(z, ph, k, Math.max(0, q - j * .03), A, F, U, H); zTrail(z, ph.trail, pj.x, pj.y, r, j / 8, .9); }
+        zHead(z, ph.head, p.x, p.y, r, ang, t, 1);
+      }
+    });
+    if (T >= ZS_HIT) { const q = (T - ZS_HIT) / (ZS_END - ZS_HIT), last = z.phases[z.phases.length - 1]; zImpactFx(z, last.impact, F.x, F.y, q, U, H, 1.2); if (z.phases.length > 1 && z.phases[0].impact !== last.impact) zImpactFx(z, z.phases[0].impact, F.x, F.y, Math.min(1, q * 1.3), U, H, .8); }
   }
   bctx.globalAlpha = 1;
 }
-const STYLES = {
-  beam(z, o) {                                                      // a colossal beam, a third of the screen tall, sweeping to the edge
-    const { ax, ay, fy, dir, W, U, go, t } = o, orb = Math.min(1, go * 3), ox = ax + dir * 26 * U;
-    aDisc(ox, ay, (12 + orb * 40) * U, z.col, .9); aDisc(ox, ay, (8 + orb * 26) * U, z.light, 1); aDisc(ox, ay, (4 + orb * 13) * U, '#ffffff', 1);
-    if (go > .3) { const len = Math.min(1, (go - .3) / .7 * 1.6), ex = dir > 0 ? ox + (W + 80 - ox) * len : ox - (ox + 80) * len, th = (46 + Math.sin(t * 30) * 5) * U;
-      const x0 = Math.min(ox, ex), x1 = Math.max(ox, ex), yc = ay + (fy - ay) * .5, st = Math.max(2, Math.round(2 * U));
-      for (let x = x0; x < x1; x += st) { const wob = Math.sin(x * .05 + t * 40) * 5 * U; aRect(x, yc - th - wob, st, (th + wob) * 2, z.col, .78); aRect(x, yc - th * .55, st, th * 1.1, z.light, .92); aRect(x, yc - th * .22, st, th * .44, '#ffffff', 1); }
-      for (let r = 0; r < z.n + 3; r++) { const span = x1 - x0 + 1, px2 = x0 + (((t * 420 * z.spin + r * 90 * U) % span) + span) % span; aRing(px2, yc, 14 * U, th + 14 * U, '#ffffff', .65, Math.round(3 * U)); } }
-  },
-  barrage(z, o) {                                                   // a rain of huge projectiles across the whole arena, then one enormous shot
-    const { ax, ay, fx, fy, W, H, U, go } = o, n = 22 + (z.seed % 15);
-    if (!z.P.length) for (let i = 0; i < n; i++) z.P.push({ d: z.rnd() * .7, x: z.rnd(), y: .12 + z.rnd() * .76, r: 9 + z.rnd() * 13, from: z.rnd() < .55 ? 'sky' : 'me' });
-    for (const p of z.P) { const q = (go - p.d) / .18, tx = p.x * W, ty = p.y * H, r = p.r * U; if (q < 0) continue;
-      if (q < 1) { const sx = p.from === 'sky' ? tx - 120 * U : ax, sy = p.from === 'sky' ? -30 * U : ay, x = sx + (tx - sx) * q, y = sy + (ty - sy) * q; aLine(x, y, x - (tx - sx) * .15, y - (ty - sy) * .15, z.light, .7, Math.round(r * .6)); aDisc(x, y, r, z.col, .95); aDisc(x, y, r * .5, '#ffffff', 1); }
-      else if (q < 2) { const e = q - 1; aDisc(tx, ty, r * 2.4 * (1 - e), z.light, .85 * (1 - e)); aRing(tx, ty, r * 3.2 * e + 6, (r * 3.2 * e + 6) * .6, z.col, 1 - e, Math.round(3 * U)); } }
-    if (go > .72) { const q = (go - .72) / .28, x = ax + (fx - ax) * q, y = ay + (fy - ay) * q - Math.sin(q * Math.PI) * 90 * U; aDisc(x, y, 62 * U, z.col, .95); aDisc(x, y, 42 * U, z.light, 1); aDisc(x, y, 20 * U, '#ffffff', 1); }
-  },
-  rush(z, o) {                                                      // a giant afterimage of the Pokémon charges across the screen again and again
-    const { fx, fy, W, H, U, go } = o, passes = 2 + (z.seed % 3), seg = 1 / passes, i = Math.min(passes - 1, Math.floor(go / seg)), q = (go - i * seg) / seg, ltr = (i + (z.seed & 1)) % 2 === 0, sg = ltr ? 1 : -1;
-    const x = ltr ? -W * .25 + W * 1.5 * q : W * 1.25 - W * 1.5 * q, y = fy + (i % 2 ? -18 : 14) * U;
-    for (let l = 0; l < 16; l++) { const yy = y - H * .32 + l * H * .04; aLine(x - sg * W * .6, yy, x - sg * W * .05, yy, z.light, .45, Math.round(2 * U)); }
-    for (let s2 = 0; s2 < 6; s2++) giant(z, x - sg * s2 * 46 * U, y + H * .2, H * .5, .62 - s2 * .09);
-    if (Math.abs(x - fx) < 60 * U) { aDisc(fx, fy, 50 * U, '#ffffff', .9); for (let a = 0; a < 10; a++) { const an = a * Math.PI / 5; aLine(fx, fy, fx + Math.cos(an) * 120 * U, fy + Math.sin(an) * 80 * U, z.col, .95, Math.round(5 * U)); } }
-  },
-  slash(z, o) {                                                     // slashes that span the screen carve the arena, then a giant X
-    const { fx, fy, W, H, U, go } = o, n = 5 + (z.seed % 4);
-    for (let i = 0; i < n; i++) { const d = i / (n + 1) * .85, q = (go - d) / .16; if (q < 0) continue; const an = z.ang + i * 2.1 * z.spin, cx = fx + Math.cos(i * 1.7) * W * .12, cy = fy + Math.sin(i * 2.3) * H * .14, L = Math.min(1, q) * W * .7;
-      const dx = Math.cos(an) * L, dy = Math.sin(an) * L * .55, fade = q > 1 ? Math.max(0, 1 - (q - 1) * .5) : 1;
-      aLine(cx - dx, cy - dy, cx + dx, cy + dy, z.col, .85 * fade, Math.round(16 * U)); aLine(cx - dx, cy - dy, cx + dx, cy + dy, z.light, .9 * fade, Math.round(8 * U)); aLine(cx - dx, cy - dy, cx + dx, cy + dy, '#ffffff', fade, Math.round(3 * U)); }
-    if (go > .78) { const q = (go - .78) / .22, L = q * H * .55; for (const sg of [1, -1]) { aLine(fx - L, fy - sg * L * .7, fx + L, fy + sg * L * .7, z.col, .9, Math.round(20 * U)); aLine(fx - L, fy - sg * L * .7, fx + L, fy + sg * L * .7, '#ffffff', 1, Math.round(8 * U)); } }
-  },
-  quake(z, o) {                                                     // fissures split the whole floor, geysers erupt toward the target
-    const { ax, ay, fx, fy, W, H, U, go } = o, cols = 7 + (z.seed % 4), rows = 3;
-    for (let f = 0; f < 9; f++) { const an = f / 9 * Math.PI * 2 + z.ang; let x = ax, y = ay + 24 * U; const L = go * 34; for (let sgm = 0; sgm < L; sgm++) { const nx = x + Math.cos(an + Math.sin(sgm * 1.3 + f) * .4) * 18 * U, ny = y + Math.sin(an) * 10 * U; aLine(x, y, nx, ny, '#1a0f08', .95, Math.round(6 * U)); aLine(x, y, nx, ny, z.light, .7, Math.round(2 * U)); x = nx; y = ny; } }
-    for (let c = 0; c < cols; c++) for (let r2 = 0; r2 < rows; r2++) { const gx = (c + .5) / cols * W, gy = H * (.32 + r2 * .22), d = Math.hypot(gx - ax, gy - ay) / W, q = (go - d * .6) / .25; if (q < 0 || q > 1.4) continue;
-      const h = Math.sin(Math.min(1, q) * Math.PI) * H * .36, w = 16 * U; aRect(gx - w, gy - h, w * 2, h, z.col, .88); aRect(gx - w * .45, gy - h, w * .9, h, z.light, .95); aDisc(gx, gy - h, w * 1.2, '#ffffff', .85); }
-    if (go > .78) { const q = (go - .78) / .22, h = q * H * 1.1, w = 46 * U; aRect(fx - w, fy + 20 * U - h, w * 2, h, z.col, .92); aRect(fx - w * .45, fy + 20 * U - h, w * .9, h, '#ffffff', .95); }
-  },
-  cosmic(z, o) {                                                    // rings wider than the screen and orbiting orbs collapse onto the target
-    const { fx, fy, W, U, go, t } = o, orbs = 10 + (z.seed % 8), R = (1 - go) * W * .75 + 26 * U;
-    for (let rr = 0; rr < 5; rr++) aRing(fx, fy, R * (1 - rr * .15), R * (1 - rr * .15) * .55, rr % 2 ? z.col : z.light, .8, Math.round(5 * U));
-    for (let i = 0; i < orbs; i++) { const an = i / orbs * Math.PI * 2 + t * 4 * z.spin, rr = R * (.6 + (i % 3) * .15), r = (11 + (i % 3) * 5) * U; aDisc(fx + Math.cos(an) * rr, fy + Math.sin(an) * rr * .55, r, i % 2 ? z.col : z.light, .95); aDisc(fx + Math.cos(an) * rr, fy + Math.sin(an) * rr * .55, r * .35, '#ffffff', 1); }
-    aDisc(fx, fy, (10 + go * 54) * U, z.dark, .85); aDisc(fx, fy, (5 + go * 32) * U, z.light, .95); aDisc(fx, fy, (2 + go * 14) * U, '#ffffff', 1);
-  },
-  storm(z, o) {                                                     // towering tornadoes sweep the field and converge on the target
-    const { fx, fy, W, H, U, go, t } = o, n = 3 + (z.seed % 3);
-    for (let l = 0; l < 22; l++) { const y = (l * H / 22 + t * 500) % H; aLine(0, y, W, y + 26 * U * z.spin, z.light, .22, Math.round(2 * U)); }
-    for (let i = 0; i < n; i++) { const start = (i + .5) / n * W, x = start + (fx - start) * go, base = fy + 40 * U, segs = 26;
-      for (let l = 0; l < segs; l++) { const y = base - l * H * .75 / segs, wdt = (10 + l * 3.4) * U, sw = Math.sin(t * 12 * z.spin + l * .6 + i) * wdt; aRect(x + sw - 6 * U, y, 12 * U, 7 * U, l % 3 ? z.light : '#ffffff', .85); aRect(x - sw - 4 * U, y, 8 * U, 5 * U, z.col, .75); } }
-  }
-};
+window.zRecipe = zRecipe;
 const _drawWorldFx = drawWorldFx;
 drawWorldFx = function () { _drawWorldFx.apply(this, arguments); try { drawZSmash(); } catch (e) { } };
-window.zSmashStyle = m => zStyle(m);
 window.doDodge = doDodge;
 })();

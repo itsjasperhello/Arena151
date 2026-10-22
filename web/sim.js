@@ -119,7 +119,8 @@ function applyHit(S, mv, u, opts = {}) {
   const fs = other(S); if (!present(fs)) return false;
   const t = act(fs), ts = side(fs);
   if (G.phase !== 'battle') return false;
-  const eff = mv.e.fix ? (typeEff(mv.type, t.types) === 0 ? 0 : 1) : typeEff(mv.type, t.types);
+  let eff = mv.e.fix ? (typeEff(mv.type, t.types) === 0 ? 0 : 1) : typeEff(mv.type, t.types);
+  if (opts.z && eff === 0) eff = .5;                                   // a Z-Move always hits: immunity counts as a resisted hit
   if (eff === 0) { VFX.text(fs, 'NO EFFECT', '#c9d3ee'); logLine(`It doesn't affect ${t.name}...`); return true; }
   const crit = !mv.e.fix && Math.random() < (mv.e.hc ? 1 / 8 : 1 / 24);
   let dmg = mv.e.fix ? mv.e.fix * HP_MULT : calcDamage(u, t, mv, crit, eff);
