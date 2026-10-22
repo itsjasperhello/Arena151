@@ -495,11 +495,11 @@ function zMoveOf(m) {
   return { name: Z_BY_TYPE[type] || 'Breakneck Blitz', type };
 }
 const Z_ANIM = 4300, Z_HIT = 3700;      // cinematic (≈1.6 s), then the in-arena final smash; the hit lands at its climax
-function canZ(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && !sd.zUsed && sd.zCharge >= 100 && sd.state === 'idle' && !sd.cast && sd.stun <= 0 && m.hp > 0 && present(other(S)); }
+function canZ(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && !m.zUsed && sd.zCharge >= 100 && sd.state === 'idle' && !sd.cast && sd.stun <= 0 && m.hp > 0 && present(other(S)); }
 function zMove(S) {
   if (!canZ(S)) return false;
   const sd = side(S), m = act(S), fs = other(S), z = zMoveOf(m);
-  sd.zUsed = true; sd.zCharge = 0; sd.zInfo = z; sd.zHit = false; sd.state = 'zmove'; sd.stateT = 0;
+  m.zUsed = true; sd.zCharge = 0; sd.zInfo = z; sd.zHit = false; sd.state = 'zmove'; sd.stateT = 0;   // each Pokémon gets one Z-Move per battle
   cancelCast(fs); side(fs).stun = Math.max(side(fs).stun, Z_ANIM); side(fs).vx = side(fs).vy = 0;
   logLine(`${m.name} unleashed its full-force Z-Move: ${z.name}!`, 't'); VFX.zStart(S, m.name, z.name, z.type); G.hudDirty = true; return true;
 }
@@ -509,7 +509,7 @@ function zMoveTick(S, dt) {
     sd.zHit = true; const u = act(S), z = sd.zInfo;
     const mv = { name: z.name, type: z.type, pow: 220, cat: u.stats.atk >= u.stats.spa ? 'P' : 'S', e: {}, anim: 'beam' };
     const fsd = side(other(S)); fsd.dodgeT = 0; fsd.dig = false;          // a Z-Move always hits
-    sd.state = 'idle'; applyHit(S, mv, u, { z: true, floor: .32, cap: .6 }); if (sd.state === 'idle') sd.state = 'zmove';
+    sd.state = 'idle'; applyHit(S, mv, u, { z: true, floor: .25, cap: .5 }); if (sd.state === 'idle') sd.state = 'zmove';
     VFX.zImpact(S, z.type);
   }
   if (sd.stateT >= Z_ANIM) { sd.state = 'idle'; sd.stateT = 0; sd.zInfo = null; }
