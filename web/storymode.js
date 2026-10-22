@@ -37,17 +37,43 @@ const GYMS = [
   { n: 8, leader: 'Giovanni', file: 'Giovanni', city: 'Viridian City', type: 'Ground', badge: 'Earth Badge', arena: 'grotto', x: 235, y: 365,
     team: ['Dugtrio', 'Sandslash', 'Nidoqueen', 'Rhyhorn', 'Nidoking', 'Rhydon'],
     hello: 'So, you\u2019ve come this far. Let me show you what real power looks like.',
-    win: 'As expected. You are not ready.', lose: 'Impressive\u2026 The Earth Badge is yours. Go \u2014 become a legend.' }
+    win: 'As expected. You are not ready.', lose: 'Impressive\u2026 The Earth Badge is yours. Go \u2014 become a legend.' },
+  { n: 9, leader: 'Lance', file: 'Lance', city: 'Indigo Plateau', type: 'Dragon', badge: 'Elite Four Badge', title: 'Elite Four', arena: 'skyfort', x: 150, y: 150,
+    team: ['Seadra', 'Dragonair', 'Gyarados', 'Charizard', 'Aerodactyl', 'Dragonite'],
+    hello: 'Dragons are mystical creatures \u2014 majestic and nearly unbeatable. I am the last of the Elite Four. Show me your resolve!',
+    win: 'Your journey ends here. Dragons do not yield.', lose: 'You have tamed my dragons. The Champion is waiting \u2014 and you know him well.' },
+  { n: 10, leader: 'Gary', file: 'Gary', city: 'Indigo Plateau', type: 'Rival', typeLabel: 'Rival Match', badge: 'Champion Badge', title: 'Rival Match', arena: 'cyber', x: 175, y: 92,
+    team: null,                                            // chosen from your team: see garyTeam()
+    hello: 'Hey! I was hoping you\u2019d show up. I\u2019m the Champion now \u2014 and I picked my team just to beat yours!',
+    win: 'Ha! Told you I\u2019m the greatest trainer in the world!', lose: 'What?! I can\u2019t believe it\u2026 You\u2019re the new Champion. I\u2019ll be back, rival.' }
 ];
+const BADGE_FILES = ['boulder', 'cascade', 'thunder', 'rainbow', 'soul', 'marsh', 'volcano', 'earth', 'elite', 'champion'];
+const badgeUrl = g => 'story/badges/' + BADGE_FILES[g.n - 1] + '.png';
+const TOTAL = GYMS.length;                                   // 8 gyms + the Elite Four + the Champion
+/* Gary's Champion team: Pidgeot, Alakazam and Rhydon always, plus three that counter your starter.
+   Your starter is the starter-line Pokémon in your team at the highest evolution stage; a tie goes to whichever comes first. */
+const GARY_TEAMS = [
+  { line: ['Bulbasaur', 'Ivysaur', 'Venusaur'], counter: 'Charizard', team: [['Pidgeot', 61], ['Alakazam', 59], ['Rhydon', 61], ['Exeggutor', 61], ['Gyarados', 63], ['Charizard', 65]] },
+  { line: ['Charmander', 'Charmeleon', 'Charizard'], counter: 'Blastoise', team: [['Pidgeot', 61], ['Alakazam', 59], ['Rhydon', 61], ['Arcanine', 61], ['Exeggutor', 63], ['Blastoise', 65]] },
+  { line: ['Squirtle', 'Wartortle', 'Blastoise'], counter: 'Venusaur', team: [['Pidgeot', 61], ['Alakazam', 59], ['Rhydon', 61], ['Gyarados', 61], ['Arcanine', 63], ['Venusaur', 65]] }
+];
+function garyPick(playerTeam) {
+  let best = null;
+  (playerTeam || []).forEach(name => { for (const G of GARY_TEAMS) { const stage = G.line.indexOf(name); if (stage >= 0 && (!best || stage > best.stage)) best = { G, stage, name }; } });
+  return best ? { ...best.G, because: best.name } : { ...GARY_TEAMS[0], because: null };   // no starter in your team: Gary brings his Charizard lineup
+}
+const teamOf = g => (g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[0]) : g.team);
+const levelsOf = g => (g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[1]) : g.levels);
+const stageName = g => (g.title ? g.title.toUpperCase() : `GYM ${g.n} OF 8`);
 const HOME = { city: 'Pallet Town', x: 230, y: 505 };
-const orderColor = n => `hsl(${Math.round(120 - (n - 1) * 120 / 7)} 82% 52%)`;     // green (1st) → red (8th)
-const typeCol = t => (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[t]) || '#8890b0';
+const orderColor = n => `hsl(${Math.round(120 - (n - 1) * 120 / 9)} 82% 52%)`;     // green (1st) → red (10th)
+const typeCol = t => (t === 'Rival' ? '#5b7cff' : (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[t]) || '#8890b0');
 const hasPortrait = g => TRAINERS.includes(g.file);
 const portraitUrl = file => spriteUrl(file + '_trainer.png');
 
 const STORY_KEY = 'arena151.story';
 const STORY = { save: null, battle: null, prevTrsel: null, walking: false, open: false };
-function loadStory() { try { STORY.save = JSON.parse(localStorage.getItem(STORY_KEY)) || null; } catch (e) { STORY.save = null; } return STORY.save; }
+function loadStory() { try { STORY.save = JSON.parse(localStorage.getItem(STORY_KEY)) || null; } catch (e) { STORY.save = null; } if (STORY.save && STORY.save.badges < GYMS.length) STORY.save.finishedAt = null; return STORY.save; }
 function saveStory() { try { localStorage.setItem(STORY_KEY, JSON.stringify(STORY.save)); } catch (e) { } }
 loadStory();
 
@@ -67,6 +93,21 @@ loadStory();
 #storyOv .sy-main{display:grid;grid-template-columns:1fr 300px;gap:10px;min-height:0}
 #storyOv .sy-map{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.08);background:#0b3a66;min-height:0}
 #storyOv .sy-map svg{position:absolute;inset:0;width:100%;height:100%}
+#storyOv .sy-prog{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:10px;padding:6px 12px 6px 10px;border-radius:14px;background:rgba(8,12,34,.78);backdrop-filter:blur(3px);box-shadow:0 4px 14px rgba(0,0,0,.4);max-width:calc(100% - 16px)}
+#storyOv .sy-prog .lbl2{font:900 12px var(--ui);letter-spacing:.12em;color:#ffd84a;white-space:nowrap}
+#storyOv .sy-prog .segs{display:flex;gap:4px}
+#storyOv .sy-prog .seg{position:relative;width:34px;display:flex;flex-direction:column;align-items:center;gap:3px}
+#storyOv .sy-prog .seg img{width:24px;height:24px;filter:grayscale(1) brightness(.6);opacity:.6;transition:filter .5s,opacity .5s,transform .5s}
+#storyOv .sy-prog .seg.on img{filter:none;opacity:1}
+#storyOv .sy-prog .seg.pop img{animation:syBadgePop .9s cubic-bezier(.2,1.6,.4,1)}
+@keyframes syBadgePop{0%{transform:scale(.2) rotate(-90deg)}60%{transform:scale(1.6) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+#storyOv .sy-prog .bar{width:100%;height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+#storyOv .sy-prog .bar i{display:block;height:100%;width:calc(var(--f,0)*100%);background:var(--c);border-radius:99px;transition:width .6s}
+#storyOv .sy-prog .seg.walking .bar i{transition:none}
+#storyOv .sy-travel{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:2;display:none;padding:7px 14px;border-radius:12px;background:rgba(8,12,34,.82);font:800 13px var(--ui);color:#fff;white-space:nowrap;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis}
+#storyOv .sy-travel.show{display:block}
+#storyOv .sy-travel b{color:var(--c)}
+@media (max-width:820px),(max-height:560px){#storyOv .sy-prog{gap:6px;padding:4px 8px}#storyOv .sy-prog .lbl2{display:none}#storyOv .sy-prog .seg{width:24px}#storyOv .sy-prog .seg img{width:18px;height:18px}#storyOv .sy-travel{font-size:11px}}
 #storyOv .sy-side{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto}
 #storyOv .sy-card{border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:10px}
 #storyOv .sy-card h4{margin:0 0 6px;font:800 11px var(--ui);letter-spacing:.18em;text-transform:uppercase;color:#a9b6ff}
@@ -77,7 +118,7 @@ loadStory();
 #storyOv .sy-team{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:6px}
 #storyOv .sy-team .m{height:42px;border-radius:10px;background:rgba(8,12,32,.55);display:flex;align-items:center;justify-content:center;overflow:hidden}
 #storyOv .sy-team .m img,#storyOv .sy-team .m canvas{max-height:38px;max-width:100%;image-rendering:pixelated}
-#storyOv .sy-case{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#storyOv .sy-case{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
 #storyOv .sy-case .slot{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 12px var(--ui);color:#5f6895;border:2px dashed rgba(255,255,255,.18)}
 #storyOv .sy-case .slot svg{width:100%;height:100%}
 #storyOv .sy-next .city{font-family:var(--display);font-size:20px}
@@ -150,6 +191,18 @@ loadStory();
 #startOv .st-storyp h3{margin:0;font-family:var(--display);font-size:26px;color:#ffd84a}
 #startOv .st-storyp p{margin:0;font:13px var(--ui);color:#d9deff}
 #startOv .st-storyp .badges{display:flex;gap:4px;flex-wrap:wrap}
+#startOv .st-storyp{justify-content:space-between}
+#startOv .st-storyp .bubs{flex:1;display:grid;grid-template-columns:repeat(4,1fr);align-content:space-evenly;gap:10px 12px;min-height:0;padding:4px}
+#startOv .st-storyp .bub{position:relative;border-radius:50%;aspect-ratio:1;max-height:100%;margin:auto;width:100%;border:4px solid var(--c);background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--c) 45%,#0b1230),#0b1230 72%);filter:grayscale(.6) brightness(.8);transition:filter .3s,transform .2s}
+#startOv .st-storyp .bub.on{filter:none;box-shadow:0 0 0 2px #ffd84a,0 0 14px #ffd84a88}
+#startOv .st-storyp .bub.next{filter:none;animation:stBubPulse 1.4s ease-in-out infinite alternate}
+@keyframes stBubPulse{to{box-shadow:0 0 0 3px var(--c),0 0 18px var(--c)}}
+#startOv .st-storyp .bub .face{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:flex;justify-content:center}
+#startOv .st-storyp .bub .face img{width:118%;margin-top:4%;image-rendering:pixelated;align-self:flex-start}
+#startOv .st-storyp .bub .face b{margin:auto;font-family:var(--display);font-size:clamp(16px,3vw,34px)}
+#startOv .st-storyp .bub .num{position:absolute;left:-2px;top:-2px;width:22%;aspect-ratio:1;border-radius:50%;background:var(--c);color:#111;font:900 clamp(9px,1.2vw,13px) var(--ui);display:flex;align-items:center;justify-content:center;border:2px solid #0b1230}
+#startOv .st-storyp .bub .bdg{position:absolute;right:-4%;bottom:-4%;width:38%;height:38%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+#startOv .st-storyp .bub:not(.on) .bdg{filter:grayscale(1) brightness(.8) drop-shadow(0 2px 2px rgba(0,0,0,.6));opacity:.7}
 #startOv .st-storyp .badges{gap:6px}
 #startOv .st-storyp .badges span{width:38px;height:38px;border-radius:50%;border:3px solid var(--c);overflow:hidden;display:flex;align-items:flex-start;justify-content:center;background:#0b1230;filter:grayscale(.85) brightness(.75)}
 #startOv .st-storyp .badges span img{width:120%;margin-top:-4%;image-rendering:pixelated}
@@ -181,7 +234,7 @@ function legPath(a, b, bend) {
   const cx = mx - dy / L * bend, cy = my + dx / L * bend;
   return `M${a.x},${a.y} Q${cx.toFixed(1)},${cy.toFixed(1)} ${b.x},${b.y}`;
 }
-const BENDS = [40, -50, 60, -45, 55, -60, 70, -40];
+const BENDS = [40, -50, 60, -45, 55, -60, 70, -40, 35, -20];
 function medallionSvg(g, r, opts = {}) {
   const id = 'clip' + g.n + (opts.idSuffix || ''), oc = orderColor(g.n);
   const face = hasPortrait(g)
@@ -250,10 +303,14 @@ function drawMap() {
 const KANTO = {
   img: 'story/kanto_map.webp', w: 1920, h: 1358,
   home: { x: 460, y: 855, city: 'Pallet Town' },
-  gyms: {"1": [480, 280], "2": [1240, 245], "3": [1230, 750], "4": [915, 470], "5": [960, 1050], "6": [1240, 475], "7": [455, 1245], "8": [475, 615]},
-  legs: [[[460, 855], [455, 780], [470, 690], [475, 615], [490, 560], [505, 500], [505, 440], [505, 380], [500, 320], [480, 280]], [[480, 280], [545, 285], [640, 275], [740, 265], [800, 235], [870, 215], [960, 215], [1060, 215], [1160, 215], [1240, 245]], [[1240, 245], [1240, 320], [1240, 400], [1240, 475], [1240, 560], [1238, 640], [1230, 750]], [[1230, 750], [1238, 640], [1240, 560], [1240, 490], [1140, 480], [1080, 495], [1030, 495], [915, 470]], [[915, 470], [810, 470], [720, 460], [685, 470], [683, 600], [683, 750], [683, 900], [690, 1000], [760, 1025], [850, 1030], [960, 1050]], [[960, 1050], [1080, 1035], [1250, 1030], [1395, 1025], [1395, 955], [1550, 950], [1715, 945], [1720, 850], [1715, 720], [1712, 600], [1705, 520], [1610, 480], [1470, 468], [1350, 475], [1240, 475]], [[1240, 475], [1140, 480], [1080, 495], [1030, 495], [915, 470], [810, 470], [720, 460], [685, 470], [683, 600], [683, 750], [683, 900], [690, 1000], [760, 1025], [850, 1030], [960, 1050], [965, 1120], [962, 1200], [950, 1265], [850, 1268], [740, 1262], [620, 1252], [520, 1245], [455, 1245]], [[455, 1245], [450, 1180], [445, 1080], [445, 980], [455, 910], [460, 855], [455, 780], [470, 690], [475, 615]]]
+  gyms: {"1": [480, 280], "2": [1240, 245], "3": [1230, 750], "4": [915, 470], "5": [960, 1050], "6": [1240, 475], "7": [455, 1245], "8": [475, 615], "9": [240, 190], "10": [240, 62]},
+  legs: [[[460, 855], [455, 780], [470, 690], [475, 615], [490, 560], [505, 500], [505, 440], [505, 380], [500, 320], [480, 280]], [[480, 280], [545, 285], [640, 275], [740, 265], [800, 235], [870, 215], [960, 215], [1060, 215], [1160, 215], [1240, 245]], [[1240, 245], [1240, 320], [1240, 400], [1240, 475], [1240, 560], [1238, 640], [1230, 750]], [[1230, 750], [1238, 640], [1240, 560], [1240, 490], [1140, 480], [1080, 495], [1030, 495], [915, 470]], [[915, 470], [810, 470], [720, 460], [685, 470], [683, 600], [683, 750], [683, 900], [690, 1000], [760, 1025], [850, 1030], [960, 1050]], [[960, 1050], [1080, 1035], [1250, 1030], [1395, 1025], [1395, 955], [1550, 950], [1715, 945], [1720, 850], [1715, 720], [1712, 600], [1705, 520], [1610, 480], [1470, 468], [1350, 475], [1240, 475]], [[1240, 475], [1140, 480], [1080, 495], [1030, 495], [915, 470], [810, 470], [720, 460], [685, 470], [683, 600], [683, 750], [683, 900], [690, 1000], [760, 1025], [850, 1030], [960, 1050], [965, 1120], [962, 1200], [950, 1265], [850, 1268], [740, 1262], [620, 1252], [520, 1245], [455, 1245]], [[455, 1245], [450, 1180], [445, 1080], [445, 980], [455, 910], [460, 855], [455, 780], [470, 690], [475, 615]], [[475, 615], [420, 625], [330, 628], [248, 620], [240, 560], [238, 450], [238, 340], [240, 240], [240, 190]], [[240, 190], [240, 130], [240, 62]]]
 };
 STORY.kanto = true;                                          // switched off automatically if the image is missing
+const ROUTE_NAMES = ['Route 1 \u2192 Viridian City \u2192 Route 2 \u00B7 Viridian Forest', 'Route 3 \u2192 Mt. Moon \u2192 Route 4', 'Route 5 \u2192 Underground Path \u2192 Route 6',
+  'Route 6 \u2192 Saffron City \u2192 Route 7', 'Route 16 \u2192 Cycling Road \u2192 Route 18', 'Routes 15 \u00B7 14 \u00B7 13 \u2192 Route 12 \u2192 Lavender Town \u2192 Route 8',
+  'Route 7 \u2192 Celadon \u2192 Cycling Road \u2192 Fuchsia \u2192 Sea Routes 19 & 20', 'Sea Route 21 \u2192 Pallet Town \u2192 Route 1', 'Route 22 \u2192 Route 23 \u2192 Victory Road',
+  'Indigo Plateau \u00B7 the Champion\u2019s room'];
 (function preloadKanto() { const im = new Image(); im.onload = () => { STORY.kanto = true; }; im.onerror = () => { STORY.kanto = false; if (STORY.open) renderStory(); }; im.src = KANTO.img; })();
 const nodeAt = i => {                                         // 0 = Pallet Town, 1..8 = gyms
   if (STORY.kanto) { if (i === 0) return KANTO.home; const [x, y] = KANTO.gyms[i]; return { x, y }; }
@@ -272,7 +329,8 @@ function drawKanto() {
     return `<g class="gym ${state}" data-g="${i}" transform="translate(${x},${y})" tabindex="0" role="button" aria-label="Gym ${g.n}: ${g.leader}, ${g.city}${state === 'done' ? ', badge earned' : state === 'locked' ? ', locked' : ', next challenge'}">
       ${state === 'next' ? `<circle class="pulse" r="${r + 9}" fill="none" stroke="${orderColor(g.n)}" stroke-width="6"/>` : ''}
       ${medallionSvg(g, r, { done: state === 'done', idSuffix: 'k' })}
-      <text class="lbl" y="${r + 30}" text-anchor="middle" font-size="24" fill="#fff" style="stroke-width:6px">${g.city}</text>
+      <image href="${badgeUrl(g)}" x="${r * .35}" y="${r * .3}" width="${r * 1.05}" height="${r * 1.05}" style="${state === 'done' ? '' : 'filter:grayscale(1) brightness(.85);opacity:.75'}"/>
+      <text class="lbl" y="${r + 30}" text-anchor="middle" font-size="24" fill="#fff" style="stroke-width:6px">${g.n > 8 ? g.leader + ' \u00B7 ' + (g.title || '') : g.city}</text>
       <text class="lbl" y="${r + 52}" text-anchor="middle" font-size="18" fill="${orderColor(g.n)}" style="stroke-width:5px">${g.badge}</text></g>`;
   }).join('');
   const h = KANTO.home;
@@ -293,12 +351,13 @@ function drawKanto() {
     <div class="sy-top"><div class="sy-title">THE BADGE JOURNEY</div><div class="sy-sub" id="sySub"></div>
       <button class="sy-btn go" id="syGo" type="button">Next gym ▶</button><button class="sy-btn" id="syMenu" type="button">Menu</button></div>
     <div class="sy-main">
-      <div class="sy-map" id="syMap"></div>
+      <div class="sy-map"><div id="syMap" style="position:absolute;inset:0"></div>
+        <div class="sy-prog" id="syProg" aria-label="Badge progress"></div><div class="sy-travel" id="syTravel" aria-live="polite"></div></div>
       <div class="sy-side">
         <div class="sy-card"><h4>Trainer</h4><div class="sy-me" id="syMe"></div><div class="sy-team" id="syTeam"></div></div>
         <div class="sy-card"><h4>Badge case <span id="syCount"></span></h4><div class="sy-case" id="syCase"></div></div>
         <div class="sy-card sy-next" id="syNext"></div>
-        <div class="sy-legend"><span>1st</span><i></i><span>8th</span></div>
+        <div class="sy-legend"><span>1st</span><i></i><span>10th</span></div>
       </div>
     </div></div>
     <div class="sy-modal" id="syModal"></div>
@@ -306,7 +365,7 @@ function drawKanto() {
     <div class="sy-hof" id="syHof"></div>`;
   document.body.appendChild(ov);
   $('syMenu').onclick = () => closeStory(true);
-  $('syGo').onclick = () => { const sv = STORY.save; if (sv && sv.badges < 8) openGymCard(sv.badges); };
+  $('syGo').onclick = () => { const sv = STORY.save; if (sv && sv.badges < TOTAL) openGymCard(sv.badges); };
   ov.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('syModal').classList.contains('show')) closeModal(); else closeStory(true); } });
 })();
 function gymPic(g, big) {
@@ -315,17 +374,17 @@ function gymPic(g, big) {
 function renderStory() {
   const sv = STORY.save; if (!sv) return;
   $('syMap').innerHTML = STORY.kanto ? drawKanto() : drawMap();
-  $('sySub').textContent = sv.badges >= 8 ? 'All 8 badges earned — you are a champion!' : `Next stop: ${GYMS[sv.badges].city} · Gym ${sv.badges + 1} of 8`;
-  $('syGo').style.display = sv.badges >= 8 ? 'none' : '';
+  $('sySub').textContent = sv.badges >= TOTAL ? `All ${TOTAL} badges earned \u2014 you are the Champion!` : `Next: ${GYMS[sv.badges].leader} \u00B7 ${GYMS[sv.badges].city} \u00B7 ${sv.badges + 1} of ${TOTAL}`;
+  $('syGo').style.display = sv.badges >= TOTAL ? 'none' : '';
   $('syMe').innerHTML = `<img src="${portraitUrl(sv.trainer)}" alt=""><div><b>${escapeHtml(trainerTitle(sv.trainer))}</b><small>${sv.wins} wins · ${sv.losses} losses</small></div>`;
   const team = $('syTeam'); team.innerHTML = '';
   for (const n of sv.team) { const d = document.createElement('div'); d.className = 'm'; d.title = n; try { d.appendChild(monPic(n)); } catch (e) { d.textContent = n.slice(0, 3); } team.appendChild(d); }
-  $('syCount').textContent = `${sv.badges}/8`;
+  $('syCount').textContent = `${sv.badges}/${TOTAL}`;
   $('syCase').innerHTML = GYMS.map((g, i) => i < sv.badges
-    ? `<div class="slot" style="border:0" title="${g.badge} — ${g.leader}"><svg viewBox="-34 -34 68 68">${medallionSvg(g, 26, { idSuffix: 'case' })}</svg></div>`
-    : `<div class="slot" style="border-color:${orderColor(g.n)}66">${g.n}</div>`).join('');
-  const nx = sv.badges < 8 ? GYMS[sv.badges] : null;
-  $('syNext').innerHTML = nx ? `<h4>Next challenge</h4><div class="city" style="color:${orderColor(nx.n)}">${nx.city}</div><div class="who">${nx.leader} · ${nx.type} type · difficulty ${nx.n}/8</div><button class="sy-btn go" type="button" id="syNextGo" style="width:100%">Challenge ${nx.leader}</button>`
+    ? `<div class="slot" style="border:0" title="${g.badge} — ${g.leader}"><img src="${badgeUrl(g)}" alt="${g.badge}" style="width:92%;height:92%;object-fit:contain"></div>`
+    : `<div class="slot" style="border-color:${orderColor(g.n)}66" title="${g.badge}"><img src="${badgeUrl(g)}" alt="" style="width:62%;opacity:.28;filter:grayscale(1)"></div>`).join('');
+  const nx = sv.badges < TOTAL ? GYMS[sv.badges] : null;
+  $('syNext').innerHTML = nx ? `<h4>Next challenge</h4><div class="city" style="color:${orderColor(nx.n)}">${nx.city}</div><div class="who">${nx.leader} · ${nx.typeLabel || nx.type + ' type'} · AI level ${nx.n}</div><button class="sy-btn go" type="button" id="syNextGo" style="width:100%">Challenge ${nx.leader}</button>`
     : `<h4>Journey complete</h4><div class="city" style="color:#ffd84a">Champion!</div><div class="who">Every gym leader has fallen to your team.</div><button class="sy-btn go" type="button" id="syHofBtn" style="width:100%">Hall of Fame</button>`;
   if ($('syNextGo')) $('syNextGo').onclick = () => openGymCard(sv.badges);
   if ($('syHofBtn')) $('syHofBtn').onclick = showHallOfFame;
@@ -334,7 +393,13 @@ function renderStory() {
     el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   }
   placeAvatar(nodeAt(sv.badges));
+  renderProgress();
 }
+function renderProgress(popIndex) {
+  const sv = STORY.save, el = $('syProg'); if (!el || !sv) return;
+  el.innerHTML = `<span class="lbl2">BADGES ${sv.badges}/${TOTAL}</span><div class="segs">${GYMS.map((g, i) => `<div class="seg ${i < sv.badges ? 'on' : ''} ${i === popIndex ? 'pop' : ''}" id="sySeg${i}" title="${g.badge} \u2014 ${g.leader}" style="--c:${orderColor(g.n)}"><img src="${badgeUrl(g)}" alt="${g.badge}"><div class="bar"><i style="--f:${i < sv.badges ? 1 : 0}"></i></div></div>`).join('')}</div>`;
+}
+function setWalkProgress(i, f) { const seg = $('sySeg' + i); if (!seg) return; seg.classList.add('walking'); seg.querySelector('.bar i').style.setProperty('--f', f.toFixed(3)); }
 function avatarSvg() { const sv = STORY.save, k = STORY.kanto ? 1.7 : 1; return `<g transform="scale(${k})"><ellipse cy="2" rx="14" ry="5" fill="rgba(0,0,0,.4)"/><image href="${portraitUrl(sv.trainer)}" x="-18" y="-52" width="36" height="54" preserveAspectRatio="xMidYMax meet" style="image-rendering:pixelated"/></g>`; }
 const AVATAR_OFF = () => (STORY.kanto ? 58 : 30);
 function placeAvatar(n) { const a = $('syAvatar'); if (!a) return; a.innerHTML = avatarSvg(); a.setAttribute('transform', `translate(${n.x - AVATAR_OFF()},${n.y + 6})`); }
@@ -342,11 +407,13 @@ function placeAvatar(n) { const a = $('syAvatar'); if (!a) return; a.innerHTML =
 function walkLeg(i) {
   return new Promise(res => {
     const path = $('leg' + i), a = $('syAvatar'); if (!path || !a) return res();
+    const tr = $('syTravel'), g = GYMS[i]; if (tr) { tr.style.setProperty('--c', orderColor(g.n)); tr.innerHTML = `Travelling to <b>${g.n > 8 ? g.leader : g.city}</b> \u00B7 ${STORY.kanto ? ROUTE_NAMES[i] : 'on the road'}`; tr.classList.add('show'); }
     const L = path.getTotalLength(), dur = STORY.kanto ? Math.min(7500, 1200 + L * 2.8) : Math.min(3200, 900 + L * 4.5), t0 = performance.now(), off = AVATAR_OFF(); STORY.walking = true;
     const step = now => {
       const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, p = path.getPointAtLength(L * e), hop = Math.abs(Math.sin(now / 90)) * 3;
       a.setAttribute('transform', `translate(${p.x - (k > .9 ? off * (k - .9) * 10 : 0)},${p.y + 6 - hop * (STORY.kanto ? 1.7 : 1)})`);
-      if (k < 1) requestAnimationFrame(step); else { STORY.walking = false; res(); }
+      setWalkProgress(i, e);
+      if (k < 1) requestAnimationFrame(step); else { STORY.walking = false; if (tr) tr.classList.remove('show'); res(); }
     };
     requestAnimationFrame(step);
   });
@@ -355,15 +422,16 @@ function walkLeg(i) {
 /* ---------- gym card ---------- */
 function openGymCard(i) {
   const sv = STORY.save, g = GYMS[i], state = i < sv.badges ? 'done' : i === sv.badges ? 'next' : 'locked', m = $('syModal');
-  const lvl = Array.from({ length: 8 }, (_, k) => `<i class="${k < g.n ? 'on' : ''}"></i>`).join('');
+  const lvl = Array.from({ length: TOTAL }, (_, k) => `<i class="${k < g.n ? 'on' : ''}"></i>`).join('');
   m.innerHTML = `<div class="sy-gc" style="--oc:${orderColor(g.n)};--tc:${typeCol(g.type)}">
-    <div class="pf"><div class="num">${g.n}</div>${gymPic(g, true)}</div>
-    <div><div style="font:800 12px var(--ui);letter-spacing:.16em;color:${orderColor(g.n)}">GYM ${g.n} OF 8 · ${g.city.toUpperCase()}</div>
+    <div class="pf"><div class="num">${g.n}</div>${gymPic(g, true)}<img src="${badgeUrl(g)}" alt="${g.badge} at stake" title="${g.badge} at stake" style="position:absolute;right:6px;bottom:6px;width:48px;height:48px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))${state === 'done' ? '' : ';opacity:.95'}"></div>
+    <div><div style="font:800 12px var(--ui);letter-spacing:.16em;color:${orderColor(g.n)}">${stageName(g)} · ${g.city.toUpperCase()}</div>
       <h3>${g.leader}</h3>
-      <div class="meta"><span class="chip" style="background:${typeCol(g.type)};color:#111">${g.type}</span><span class="chip">${g.badge}</span><span class="chip">${state === 'done' ? '✔ Badge earned' : state === 'locked' ? '🔒 Locked' : 'Next challenge'}</span></div>
+      <div class="meta"><span class="chip" style="background:${typeCol(g.type)};color:#111">${g.typeLabel || g.type}</span><span class="chip" style="display:inline-flex;align-items:center;gap:5px"><img src="${badgeUrl(g)}" alt="" style="width:18px;height:18px">${g.badge}</span><span class="chip">${state === 'done' ? '✔ Badge earned' : state === 'locked' ? '🔒 Locked' : 'Next challenge'}</span></div>
       <div class="lv">DIFFICULTY ${lvl} <span style="margin-left:6px">AI level ${g.n}</span></div>
       <div class="quote" id="syQuote"></div>
-      <div class="foes">${g.team.map((n, k) => `<div class="m"><div class="p" data-mon="${escapeHtml(n)}"></div>${escapeHtml(n)}${g.levels ? ` <span style="color:#ffd84a">Lv${g.levels[k]}</span>` : ''}</div>`).join('')}</div>
+      <div class="foes">${teamOf(g).map((n, k) => `<div class="m"><div class="p" data-mon="${escapeHtml(n)}"></div>${escapeHtml(n)}${levelsOf(g) ? ` <span style="color:#ffd84a">Lv${levelsOf(g)[k]}</span>` : ''}</div>`).join('')}</div>
+      ${g.n === 10 ? `<div style="font:700 12px var(--ui);color:#a9b6ff">${(p => p.because ? `Your ${p.because} decides it: Gary brings ${p.counter} to counter you.` : `No starter Pok\u00E9mon in your team, so Gary brings his ${p.counter} lineup.`)(garyPick(STORY.save.team))}</div>` : ''}
       <div class="acts">${state === 'locked' ? `<button class="sy-btn" type="button" disabled>Earn the ${GYMS[i - 1].badge} first</button>` : `<button class="sy-btn go" type="button" id="syFight">${state === 'done' ? 'Rematch for fun' : 'Challenge!'}</button>`}<button class="sy-btn" type="button" id="syBack">Back to map</button></div>
     </div></div>`;
   for (const el of m.querySelectorAll('[data-mon]')) { try { el.appendChild(monPic(el.dataset.mon)); } catch (e) { } }
@@ -386,7 +454,7 @@ function startGymBattle(i) {
   watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
   $('stageSel').value = g.arena; $('timeLimit').value = '0';
   $('storyOv').classList.remove('show'); STORY.open = false;
-  startBattle(sv.team.slice(), g.team.slice(), g.arena);
+  startBattle(sv.team.slice(), teamOf(g).slice(), g.arena);
   STORY.battle.G = G;
 }
 // After a gym battle: badge ceremony on a win, a rematch offer on a loss.
@@ -405,22 +473,22 @@ function storyResult(won) {
   showOverlay('ovResults', false);
   if (won) sv.wins++; else sv.losses++;
   const firstTime = won && b.gym === sv.badges;
-  if (firstTime) { sv.badges = b.gym + 1; if (sv.badges === 8) sv.finishedAt = Date.now(); }
+  if (firstTime) { sv.badges = b.gym + 1; if (sv.badges === TOTAL) sv.finishedAt = Date.now(); }
   saveStory();
   openStoryScreen();
   const m = $('syModal');
   if (won) {
     m.innerHTML = `<div class="sy-cer" style="--oc:${orderColor(g.n)}">
-      <svg class="medal" viewBox="-40 -40 80 80">${medallionSvg(g, 30, { done: true, idSuffix: 'cer' })}</svg>
+      <img class="medal" src="${badgeUrl(g)}" alt="${g.badge}" style="object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.55)) drop-shadow(0 0 22px ${orderColor(g.n)})">
       <h2>${firstTime ? `${g.badge} earned!` : 'Rematch won!'}</h2>
       <p>${g.leader}: \u201C${g.lose}\u201D</p>
-      <button class="sy-btn go" type="button" id="syOn">${sv.badges >= 8 && firstTime ? 'Enter the Hall of Fame' : firstTime ? `On to ${GYMS[b.gym + 1].city} \u25B6` : 'Back to map'}</button></div>`;
+      <button class="sy-btn go" type="button" id="syOn">${sv.badges >= TOTAL && firstTime ? 'Enter the Hall of Fame' : firstTime ? `On to ${GYMS[b.gym + 1].city} \u25B6` : 'Back to map'}</button></div>`;
     m.classList.add('show'); confetti(orderColor(g.n));
     $('syOn').focus();
     $('syOn').onclick = async () => {
       closeModal();
-      if (firstTime && sv.badges >= 8) return showHallOfFame();
-      if (firstTime) { renderStoryWithAvatarAt(b.gym); await walkLeg(b.gym + 1); renderStory(); openGymCard(sv.badges); }
+      if (firstTime && sv.badges >= TOTAL) return showHallOfFame();
+      if (firstTime) { renderStoryWithAvatarAt(b.gym); renderProgress(b.gym); await new Promise(r => setTimeout(r, 900)); await walkLeg(b.gym + 1); renderStory(); openGymCard(sv.badges); }
     };
   } else {
     m.innerHTML = `<div class="sy-cer"><svg class="medal" viewBox="-40 -40 80 80" style="filter:grayscale(.6)">${medallionSvg(g, 30, { idSuffix: 'lose' })}</svg>
@@ -450,7 +518,7 @@ function confetti(color) {
 /* ---------- Hall of Fame ---------- */
 function showHallOfFame() {
   const sv = STORY.save, h = $('syHof'), mins = sv.finishedAt && sv.startedAt ? Math.round((sv.finishedAt - sv.startedAt) / 60000) : null;
-  const ring = GYMS.map((g, i) => { const a = -Math.PI / 2 + i * Math.PI * 2 / 8, x = Math.cos(a) * 160, y = Math.sin(a) * 160; return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">${medallionSvg(g, 34, { done: true, idSuffix: 'hof' })}</g>`; }).join('');
+  const ring = GYMS.map((g, i) => { const a = -Math.PI / 2 + i * Math.PI * 2 / TOTAL, x = Math.cos(a) * 168, y = Math.sin(a) * 168; return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">${medallionSvg(g, 30, { done: true, idSuffix: 'hof' })}</g>`; }).join('');
   h.innerHTML = `<h2>HALL OF FAME</h2>
     <div class="ring"><svg viewBox="-210 -210 420 420">${ring}<image href="${portraitUrl(sv.trainer)}" x="-55" y="-95" width="110" height="160" preserveAspectRatio="xMidYMax meet" style="image-rendering:pixelated"/><text y="92" text-anchor="middle" class="lbl" font-size="24" fill="#ffd84a">${escapeHtml(trainerTitle(sv.trainer))}</text></svg></div>
     <div class="sy-team" id="syHofTeam" style="width:min(460px,90vw)"></div>
@@ -473,7 +541,7 @@ function beginJourney(fresh) {
     saveStory();
   }
   openStoryScreen();
-  if (STORY.save.badges < 8) setTimeout(() => openGymCard(STORY.save.badges), fresh ? 700 : 250);
+  if (STORY.save.badges < TOTAL) setTimeout(() => openGymCard(STORY.save.badges), fresh ? 700 : 250);
 }
 function closeStory(toMenu) {
   STORY.battle = null; closeModal(); $('storyOv').classList.remove('show'); STORY.open = false;
@@ -501,16 +569,16 @@ showStart = function () {
   renderStoryPanel();
 })();
 function renderStoryPanel() {
-  const p = $('stStoryP'); if (!p) return; const sv = loadStory();
-  const dots = GYMS.map((g, i) => `<span style="--c:${orderColor(g.n)}" class="${sv && i < sv.badges ? 'on' : ''}" title="Gym ${g.n}: ${g.leader} — ${g.badge}">${hasPortrait(g) ? `<img src="${portraitUrl(g.file)}" alt="">` : `<b>${g.leader[0]}</b>`}</span>`).join('');
-  p.innerHTML = `<h3>Story mode</h3><p>Choose your trainer and six Pokémon on the left, then travel the region and defeat all 8 gym leaders \u2014 each one tougher than the last.</p>
-    <div class="badges">${dots}</div>
-    <div class="row">${sv && sv.badges < 8 ? `<button class="big" type="button" id="stStoryCont">Continue journey (${sv.badges}/8)</button>` : ''}
+  const p = $('stStoryP'); if (!p) return; const sv = loadStory(), got = sv ? sv.badges : 0;
+  const bubbles = GYMS.map((g, i) => `<div class="bub ${i < got ? 'on' : ''} ${i === got ? 'next' : ''}" style="--c:${orderColor(g.n)}" title="${g.n}. ${g.leader} \u2014 ${g.badge}${i < got ? ' (earned)' : ''}">
+      <div class="face">${hasPortrait(g) ? `<img src="${portraitUrl(g.file)}" alt="">` : `<b>${g.leader[0]}</b>`}</div><span class="num">${g.n}</span><img class="bdg" src="${badgeUrl(g)}" alt=""></div>`).join('');
+  p.innerHTML = `<div class="bubs">${bubbles}</div>
+    <div class="row">${sv && got < TOTAL ? `<button class="big" type="button" id="stStoryCont">Continue (${got}/${TOTAL})</button>` : ''}
       <button class="big ${sv ? 'alt' : ''}" type="button" id="stStoryNew">${sv ? 'New journey' : 'Begin journey'}</button>
-      ${sv && sv.badges >= 8 ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}</div>`;
+      ${sv && got >= TOTAL ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}</div>`;
   if ($('stStoryCont')) $('stStoryCont').onclick = () => beginJourney(false);
   if ($('stStoryHof')) $('stStoryHof').onclick = () => { openStoryScreen(); showHallOfFame(); };
-  $('stStoryNew').onclick = () => { if (sv && sv.badges > 0 && sv.badges < 8 && !confirm('Start a new journey? Your current badges will be reset.')) return; beginJourney(true); };
+  $('stStoryNew').onclick = () => { if (sv && got > 0 && got < TOTAL && !confirm('Start a new journey? Your current badges will be reset.')) return; beginJourney(true); };
 }
 // the mode switch knows about STORY too
 const _storySyncOnline = syncOnlineUi;

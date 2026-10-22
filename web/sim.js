@@ -10,7 +10,7 @@ const PINCH = { Fire: 'Blaze', Water: 'Torrent', Grass: 'Overgrow', Bug: 'Swarm'
 const TOUCH = 52;                              // body radius for contact and collisions
 
 function cooldownOf(mv) {
-  if (mv.cat === 'X') return (mv.e.heal || mv.e.rest) ? 9000 : 6500;
+  if (mv.cat === 'X') return (mv.e.heal || mv.e.rest) ? 16000 : 6500;
   if (mv.pri > 0) return 1500;
   return Math.round(1300 + mv.pow * 22 + (mv.e.rch ? 1500 : 0));
 }
@@ -31,7 +31,7 @@ function newSide(key, picks) {
   return { key, team: picks.map(makeBattleMon), active: 0, x: ENTRY[key].x, y: ENTRY[key].y, vx: 0, vy: 0, face: key === 'A' ? 1 : -1,
     state: 'out', stateT: 0, cast: null, stun: 0, stunKind: '', gcd: 0, switchCd: 0, aiT: 500, strafe: 1, strafeT: 0,
     manual: { x: 0, y: 0 }, manualT: 0, queued: null, queuedT: 0, pendingSwitch: null, kbx: 0, kby: 0, hit: 0, hop: 0, dig: false,
-    throwT: -9999, pillT: 0, pill: '', walk: 0, prefDist: 260, megaUsed: false, plotUsed: false, sinceIn: 0 };
+    throwT: -9999, pillT: 0, pill: '', walk: 0, prefDist: 260, megaUsed: false, plotUsed: false, sinceIn: 0, dodgeT: 0, dodgeCd: 0, zCharge: 0, zUsed: false, zInfo: null, zHit: false };
 }
 function newBattle(picksA, picksB, opts = {}) {
   return {
@@ -48,7 +48,7 @@ const stageMult = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
 const accMult = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
 const effSpe = m => m.stats.spe * stageMult(m.stages.spe) * (m.status === 'par' ? .5 : 1);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const present = s => { const sd = side(s); return sd.state === 'idle' && !sd.dig && act(s).hp > 0; };
+const present = s => { const sd = side(s); return sd.state === 'idle' && !sd.dig && !(sd.dodgeT > 0) && act(s).hp > 0; };
 const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s === 'B');   // online battles mark both sides human
 // AI difficulty 1–10 per side (G.aiLevel). Level 6 is the classic AI exactly; nothing set = classic.
 // aiK(S, atLevel1, atLevel6, atLevel10) blends a setting between those three points.
@@ -123,8 +123,11 @@ function applyHit(S, mv, u, opts = {}) {
   const crit = !mv.e.fix && Math.random() < (mv.e.hc ? 1 / 8 : 1 / 24);
   let dmg = mv.e.fix ? mv.e.fix * HP_MULT : calcDamage(u, t, mv, crit, eff);
   if (opts.scale) dmg = Math.max(1, Math.round(dmg * opts.scale));
+  if (opts.floor) dmg = Math.max(dmg, Math.round(t.max * opts.floor * (eff < 1 ? .5 : 1)));
+  if (opts.cap) dmg = Math.min(dmg, Math.round(t.max * opts.cap));
   if (dmg >= t.hp && t.hp > t.max * .25 && !ts.plotUsed && Math.random() < .12) { ts.plotUsed = true; dmg = t.hp - 1; VFX.plotArmor(fs); logLine(`${t.name} hung on with 1 HP!`, 't'); }
   dmg = Math.min(dmg, t.hp); t.hp -= dmg;
+  if (!opts.z) { const us = side(S); us.zCharge = Math.min(100, (us.zCharge || 0) + dmg / t.max * 85); ts.zCharge = Math.min(100, (ts.zCharge || 0) + dmg / t.max * 45); }
   if (opts.combo) VFX.combo(fs, opts.combo);
   if (crit || eff > 1 || t.hp <= 0) VFX.crowd(t.hp <= 0 ? 2 : 1);
   const st = G.stats[S]; st.dmg += dmg; u.dmg += dmg; if (crit) st.crits++;
@@ -258,8 +261,8 @@ function updateCast(S, dt) {
       if (c.phase === 'go') {
         const e = mv.e;
         if (e.none) { VFX.text(S, 'NOTHING HAPPENED', '#e6ecff'); logLine('But nothing happened!'); }
-        else if (e.heal) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = Math.min(m.max - m.hp, Math.ceil(m.max * e.heal)); m.hp += h; VFX.heal(S, h); logLine(`${m.name} restored ${h} HP.`); } }
-        else if (e.rest) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = m.max - m.hp; m.hp = m.max; m.status = 'slp'; m.stT = 4200; VFX.heal(S, h); VFX.status(S, 'slp'); logLine(`${m.name} slept and became healthy!`); } }
+        else if (e.heal) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = Math.min(m.max - m.hp, Math.ceil(m.max * Math.min(e.heal, .25) * Math.pow(.7, m.healUses || 0))); m.healUses = (m.healUses || 0) + 1; m.hp += h; VFX.heal(S, h); logLine(`${m.name} restored ${h} HP.`); } }
+        else if (e.rest) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = Math.min(m.max - m.hp, Math.ceil(m.max * .5 * Math.pow(.7, m.healUses || 0))); m.healUses = (m.healUses || 0) + 1; m.hp += h; m.status = 'slp'; m.stT = 4200; VFX.heal(S, h); VFX.status(S, 'slp'); logLine(`${m.name} slept and became healthy!`); } }
         else if (e.self) { VFX.aura(S, MOVE_FX[mv.type].col); stageChange(S, e.self); }
         G.hudDirty = true; c.phase = 'after'; c.t = 0; return;
       }
@@ -336,7 +339,8 @@ function updateSide(S, dt) {
   sd.hop = Math.max(0, sd.hop - dt / 300);
   switch (sd.state) {
     case 'entering': sd.stateT += dt; if (sd.stateT >= 760) { sd.state = 'idle'; sd.stateT = 0; } return;
-    case 'mega': sd.stateT += dt; if (sd.stateT >= 1500) finishMega(S); return;
+    case 'mega': sd.stateT += dt; if (sd.stateT >= 1500) { sd.state = 'idle'; sd.stateT = 0; } return;
+    case 'zmove': zMoveTick(S, dt); return;
     case 'leaving': sd.stateT += dt; if (sd.stateT >= 360) completeSwitch(S); return;
     case 'fainting': sd.stateT += dt; if (sd.stateT >= 1100) { sd.state = 'out'; afterFaint(S); } return;
     case 'out': case 'wait': return;
@@ -347,7 +351,9 @@ function updateSide(S, dt) {
   const rate = clamp(.85 + effSpe(m) / 320, .85, 1.35);
   for (let i = 0; i < m.cd.length; i++) m.cd[i] = Math.max(0, m.cd[i] - dt * rate);
   sd.gcd -= dt; sd.switchCd -= dt; sd.sinceIn += dt;
-  if (controlledByAI(S) && canMega(S) && (m.hp < m.max * .7 || sd.sinceIn > 5000) && Math.random() < dt / aiK(S, 14000, 1500, 800)) { megaEvolve(S); return; }
+  if (sd.dodgeT > 0) sd.dodgeT -= dt; if (sd.dodgeCd > 0) sd.dodgeCd -= dt;
+  if (G.phase === 'battle' && !sd.zUsed) sd.zCharge = Math.min(100, (sd.zCharge || 0) + dt / 600);
+  if (controlledByAI(S) && canMega(S) && act(other(S)).hp > act(other(S)).max * .3 && Math.random() < dt / aiK(S, 14000, 1500, 800)) { megaEvolve(S); return; }
   if (sd.stun > 0) { sd.stun -= dt; if (sd.stun <= 0 && sd.stunKind === 'recharge') m.vol.recharge = false; }
   statusTick(S, m, dt);
   if (m.hp <= 0) return;
@@ -393,7 +399,9 @@ function move(S, dt, rooted) {
       sd.strafeT -= dt; if (sd.strafeT <= 0) { sd.strafe = Math.random() < .5 ? -1 : 1; sd.strafeT = 900 + Math.random() * 1800; }
       dx += -uy * sd.strafe * .7; dy += ux * sd.strafe * .7;
       const react = (.45 + effSpe(m) / 400) * aiK(S, .1, 1, 1.6);
-      for (const p of G.shots) if (p.owner !== S) { const rx = sd.x - p.x, ry = sd.y - 30 - p.y, dd = Math.hypot(rx, ry); if (dd < 190 && (p.vx * rx + p.vy * ry) > 0) { const s2 = (p.vx * ry - p.vy * rx) > 0 ? 1 : -1; dx += (-p.vy / p.speed) * s2 * 2.2 * react; dy += (p.vx / p.speed) * s2 * 2.2 * react; } }
+      for (const p of G.shots) if (p.owner !== S) { const rx = sd.x - p.x, ry = sd.y - 30 - p.y, dd = Math.hypot(rx, ry);
+        if (controlledByAI(S) && dd < 120 && (p.vx * rx + p.vy * ry) > 0 && Math.random() < aiK(S, 0, .04, .3) && dodge(S, -p.vy, p.vx)) break;   /* stronger AIs dodge shots */
+        if (dd < 190 && (p.vx * rx + p.vy * ry) > 0) { const s2 = (p.vx * ry - p.vy * rx) > 0 ? 1 : -1; dx += (-p.vy / p.speed) * s2 * 2.2 * react; dy += (p.vx / p.speed) * s2 * 2.2 * react; } }
       for (const mk of G.marks) if (mk.owner !== S) { const rx = sd.x - mk.x, ry = sd.y - mk.y, dd = Math.hypot(rx, ry); if (dd < mk.r + 30) { dx += rx / (dd || 1) * 2 * react; dy += ry / (dd || 1) * 2 * react; } }
       const cx = (BOUND.x0 + BOUND.x1) / 2, cy = (BOUND.y0 + BOUND.y1) / 2;
       for (const [ex, ey] of [[60, 0], [-60, 0], [0, 50], [0, -50]]) if (!inWalk(sd.x + ex, sd.y + ey)) { dx -= ex / 60 * .9; dy -= ey / 50 * .9; }
@@ -470,17 +478,53 @@ function bestSwitchFor(S) {
 
 /* ---------- Mega Evolution (once per side per battle) ---------- */
 const displayName = m => (m.mega ? 'MEGA ' : '') + m.name.toUpperCase();
-function canMega(S) { const sd = side(S), m = act(S); return G && G.phase === 'battle' && !sd.megaUsed && !m.mega && MEGA_ABLE.has(m.name) && sd.state === 'idle' && !sd.cast && sd.stun <= 0 && m.hp > 0; }
-function megaEvolve(S) {
-  if (!canMega(S)) return false;
-  const sd = side(S), m = act(S); sd.megaUsed = true; sd.state = 'mega'; sd.stateT = 0;
-  logLine(`${m.name} is reacting to the Mega Stone!`, 't'); VFX.megaStart(S); return true;
+/* ---------- Z-Moves: once per side per battle, when the Z gauge is full ----------
+   Each Pokémon's Z-Move is the official one for the type of its strongest attacking move; the Gen 1 Pokémon with
+   exclusive Z-Moves use theirs. The opponent is frozen for the cinematic, then takes 25–60% of its max HP
+   (type matchups still apply). */
+const Z_EXCLUSIVE = { Pikachu: ['Catastropika', 'Electric'], Raichu: ['Stoked Sparksurfer', 'Electric'], Eevee: ['Extreme Evoboost', 'Normal'], Snorlax: ['Pulverizing Pancake', 'Normal'], Mew: ['Genesis Supernova', 'Psychic'] };
+const Z_BY_TYPE = { Normal: 'Breakneck Blitz', Fire: 'Inferno Overdrive', Water: 'Hydro Vortex', Grass: 'Bloom Doom', Electric: 'Gigavolt Havoc', Ice: 'Subzero Slammer', Fighting: 'All-Out Pummeling', Poison: 'Acid Downpour', Ground: 'Tectonic Rage', Flying: 'Supersonic Skystrike', Psychic: 'Shattered Psyche', Bug: 'Savage Spin-Out', Rock: 'Continental Crush', Ghost: 'Never-Ending Nightmare', Dragon: 'Devastating Drake', Dark: 'Black Hole Eclipse', Steel: 'Corkscrew Crash', Fairy: 'Twinkle Tackle' };
+function zMoveOf(m) {
+  if (Z_EXCLUSIVE[m.name]) { const [name, type] = Z_EXCLUSIVE[m.name]; return { name, type, exclusive: true }; }
+  // its primary type if it knows an attack of that type; otherwise its strongest same-type attack; otherwise its strongest attack
+  const atk = m.moves.map(n => MOVES[n]).filter(mv => mv && mv.cat !== 'X' && (mv.pow || 0) > 0).sort((x, y) => y.pow - x.pow);
+  const pick = atk.find(mv => mv.type === m.types[0]) || atk.find(mv => m.types.includes(mv.type)) || atk[0];
+  const type = pick && Z_BY_TYPE[pick.type] ? pick.type : m.types[0];
+  return { name: Z_BY_TYPE[type] || 'Breakneck Blitz', type };
 }
-function finishMega(S) {
-  const sd = side(S), m = act(S); m.mega = true;
-  for (const k of ['atk', 'def', 'spa', 'spd']) m.stats[k] = Math.round(m.stats[k] * 1.22);
-  m.stats.spe = Math.round(m.stats.spe * 1.08);
-  sd.state = 'idle'; sd.stateT = 0; logLine(`${m.name} Mega Evolved into Mega ${m.name}!`, 't'); VFX.megaDone(S); G.hudDirty = true;
+const Z_ANIM = 2400, Z_HIT = 1750;
+function canZ(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && !sd.zUsed && sd.zCharge >= 100 && sd.state === 'idle' && !sd.cast && sd.stun <= 0 && m.hp > 0 && present(other(S)); }
+function zMove(S) {
+  if (!canZ(S)) return false;
+  const sd = side(S), m = act(S), fs = other(S), z = zMoveOf(m);
+  sd.zUsed = true; sd.zCharge = 0; sd.zInfo = z; sd.zHit = false; sd.state = 'zmove'; sd.stateT = 0;
+  cancelCast(fs); side(fs).stun = Math.max(side(fs).stun, Z_ANIM); side(fs).vx = side(fs).vy = 0;
+  logLine(`${m.name} unleashed its full-force Z-Move: ${z.name}!`, 't'); VFX.zStart(S, m.name, z.name, z.type); G.hudDirty = true; return true;
+}
+function zMoveTick(S, dt) {
+  const sd = side(S); sd.stateT += dt; sd.vx = sd.vy = 0;
+  if (!sd.zHit && sd.stateT >= Z_HIT) {
+    sd.zHit = true; const u = act(S), z = sd.zInfo;
+    const mv = { name: z.name, type: z.type, pow: 220, cat: u.stats.atk >= u.stats.spa ? 'P' : 'S', e: {}, anim: 'beam' };
+    sd.state = 'idle'; applyHit(S, mv, u, { z: true, floor: .32, cap: .6 }); if (sd.state === 'idle') sd.state = 'zmove';
+    VFX.zImpact(S, z.type);
+  }
+  if (sd.stateT >= Z_ANIM) { sd.state = 'idle'; sd.stateT = 0; sd.zInfo = null; }
+}
+function canMega(S) { return canZ(S); }
+function megaEvolve(S) { return zMove(S); }
+
+/* ---------- Dodge: a quick dash in the direction you are moving, with a brief moment of invulnerability ---------- */
+const DODGE_CD = 1400, DODGE_IFRAMES = 280;
+function canDodge(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && sd.state === 'idle' && !(sd.dodgeCd > 0) && sd.stun <= 0 && m && m.hp > 0 && m.status !== 'slp' && m.status !== 'frz'; }
+function dodge(S, dx, dy) {
+  if (!canDodge(S)) return false;
+  const sd = side(S); dx = +dx || 0; dy = +dy || 0; let l = Math.hypot(dx, dy);
+  if (l < .05) { dx = sd.vx; dy = sd.vy; l = Math.hypot(dx, dy); }                          // moving: dodge that way
+  if (l < 5) { const t = side(other(S)); dx = sd.x - t.x; dy = sd.y - t.y; l = Math.hypot(dx, dy) || 1; }   // standing still: hop away from the opponent
+  if (sd.cast && sd.cast.phase === 'wind') cancelCast(S);
+  sd.kbx += dx / l * 760; sd.kby += dy / l * 760; sd.dodgeT = DODGE_IFRAMES; sd.dodgeCd = DODGE_CD;
+  VFX.dodge(S, dx / l, dy / l); return true;
 }
 
 /* ---------- switching, fainting, ending ---------- */

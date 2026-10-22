@@ -67,6 +67,7 @@ function mirrorEvent(ev) {
   const [name, ...args] = ev;
   if (name === '__log') return ev;
   if (name === 'markFire') return [name, mirror(args[0])];
+  if (name === 'dodge') return [name, swapSide(args[0]), -(+args[1] || 0), +args[2] || 0];
   return [name, ...args.map((a, i) => (POS_EVENTS.has(name) && i === 0 && typeof a === 'number') ? WW - a : (a === 'A' || a === 'B') ? swapSide(a) : a)];
 }
 
@@ -167,13 +168,14 @@ parentPort.on('message', m => {
     switch (m.cmd) {
       case 'ready': room.ready[m.S] = true; break;
       case 'cue': if (room.cues[m.srv]) room.cues[m.srv][m.S] = true; break;
-      case 'input': { const msg = { ...m.msg }; if (m.S === 'B' && msg.t === 'in') msg.x = -(+msg.x || 0); room.ctx.__input(m.S, msg); break; }
+      case 'input': { const msg = { ...m.msg }; if (m.S === 'B' && (msg.t === 'in' || msg.t === 'dodge')) msg.x = -(+msg.x || 0); room.ctx.__input(m.S, msg); break; }
       case 'hold': room.hold = m.side ? { side: m.side, until: mono() + (m.left || 0) } : null; break;
       case 'resync': room.needKey[m.S] = true; room.pend[m.S] = []; break;     // next snapshot to this phone is complete
       case 'forfeit': if (!room.over) room.ctx.__forfeit(m.loser); break;
       case 'dbgThrow': if (TEST) room.throwUntil = mono() + (m.ms || 3000); break;
       case 'dbgMute': if (TEST) { room.muteSide = m.S; room.muteUntil = mono() + (m.ms || 10000); } break;
       case 'dbgWin': if (TEST && !room.over) room.ctx.__forfeit(swapSide(m.S)); break;
+      case 'dbgZ': if (TEST && !room.over) room.ctx.__dbgZ(m.S); break;   // test only: fill the Z gauge
       case 'dbgHang': if (TEST) room.hangNow = true; break;
     }
   }, 'command ' + m.cmd);

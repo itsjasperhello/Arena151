@@ -238,7 +238,7 @@ function handle(ws, m) {
     }
     case 'ready': if (room && room.worker) toWorker(room, { cmd: 'ready', S: sideOf(room, ws) }); break;
     case 'cue': if (room && room.worker) { const S = sideOf(room, ws); if (S) toWorker(room, { cmd: 'cue', S, srv: fromSide(S, m.s) }); } break;
-    case 'in': case 'mv': case 'sw': case 'mega': case 'pick':
+    case 'in': case 'mv': case 'sw': case 'mega': case 'dodge': case 'pick':
       if (room && room.worker) { const S = sideOf(room, ws); if (S) toWorker(room, { cmd: 'input', S, msg: m }); }
       break;
     case 'rematch':
@@ -263,7 +263,7 @@ function handle(ws, m) {
       break;
     }
     case 'dbgFreeze': if (process.env.ARENA_TEST && room && room.worker) room.worker.postMessage({ cmd: 'dbgFreeze', ms: +m.ms || 10000 }); break;
-    case 'dbgMute': case 'dbgThrow': case 'dbgWin': case 'dbgHang':
+    case 'dbgMute': case 'dbgThrow': case 'dbgWin': case 'dbgHang': case 'dbgZ':
       if (process.env.ARENA_TEST && room && room.worker) toWorker(room, { cmd: m.t, S: sideOf(room, ws), ms: +m.ms || 0 });
       break;
   }

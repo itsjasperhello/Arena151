@@ -48,6 +48,7 @@ function __input(S, m) {
     if (m.t === 'mv') { const mon = act(S), i = m.i | 0; if (i >= 0 && i < mon.moves.length && !tryCast(S, i)) { sd.queued = i; sd.queuedT = 600; } }
     else if (m.t === 'sw') requestSwitch(S, m.i | 0);
     else if (m.t === 'mega') { if (canMega(S)) megaEvolve(S); }
+    else if (m.t === 'dodge') dodge(S, +m.x || 0, +m.y || 0);
   }
   if (m.t === 'pick') __pick(S, m.i | 0);
 }
@@ -66,3 +67,6 @@ function __state() { return { phase: G ? G.phase : 'none', waiting: G ? __waitin
 function __forfeit(loser) { if (G && G.phase !== 'over') { G.decision = 'Opponent disconnected.'; endBattle(other(loser), 'FORFEIT'); } }
 function __validTeam(t) { return Array.isArray(t) && t.length === 6 && t.every(n => DEX.some(d => d.name === n)); }
 function __teamHp(S) { return side(S).team.reduce((s, m) => s + Math.max(0, m.hp), 0); }
+
+// Test only (ARENA_TEST): fill a side's Z gauge.
+function __dbgZ(S) { if (G && G.sides[S]) G.sides[S].zCharge = 100; }
