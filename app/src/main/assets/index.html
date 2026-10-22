@@ -7215,6 +7215,50 @@ function drawMap() {
   </svg>`;
 }
 
+
+/* ---------- the Kanto map (story/kanto_map.webp) with real routes ---------- */
+// Town centres and route waypoints in the map image's own pixels (1920×1358). Each leg follows the roads and sea routes
+// you can actually travel: Route 1 & 2 (via Viridian Forest), 3 & 4 (Mt. Moon), 5 & 6 (Underground Path), 6 & 7,
+// 16 → Cycling Road (17) → 18, 15 → 14 → 13 → 12 → Lavender → 8, 7 → Cycling Road → 19 & 20 (sea), 21 (sea) → 1.
+const KANTO = {
+  img: 'story/kanto_map.webp', w: 1920, h: 1358,
+  home: { x: 460, y: 855, city: 'Pallet Town' },
+  gyms: {"1": [480, 280], "2": [1240, 245], "3": [1230, 750], "4": [915, 470], "5": [960, 1050], "6": [1240, 475], "7": [455, 1245], "8": [475, 615]},
+  legs: [[[460, 855], [455, 780], [470, 690], [475, 615], [490, 560], [505, 500], [505, 440], [505, 380], [500, 320], [480, 280]], [[480, 280], [545, 285], [640, 275], [740, 265], [800, 235], [870, 215], [960, 215], [1060, 215], [1160, 215], [1240, 245]], [[1240, 245], [1240, 320], [1240, 400], [1240, 475], [1240, 560], [1238, 640], [1230, 750]], [[1230, 750], [1238, 640], [1240, 560], [1240, 490], [1140, 480], [1080, 495], [1030, 495], [915, 470]], [[915, 470], [810, 470], [720, 460], [685, 470], [683, 600], [683, 750], [683, 900], [690, 1000], [760, 1025], [850, 1030], [960, 1050]], [[960, 1050], [1080, 1035], [1250, 1030], [1395, 1025], [1395, 955], [1550, 950], [1715, 945], [1720, 850], [1715, 720], [1712, 600], [1705, 520], [1610, 480], [1470, 468], [1350, 475], [1240, 475]], [[1240, 475], [1140, 480], [1080, 495], [1030, 495], [915, 470], [810, 470], [720, 460], [685, 470], [683, 600], [683, 750], [683, 900], [690, 1000], [760, 1025], [850, 1030], [960, 1050], [965, 1120], [962, 1200], [950, 1265], [850, 1268], [740, 1262], [620, 1252], [520, 1245], [455, 1245]], [[455, 1245], [450, 1180], [445, 1080], [445, 980], [455, 910], [460, 855], [455, 780], [470, 690], [475, 615]]]
+};
+STORY.kanto = true;                                          // switched off automatically if the image is missing
+(function preloadKanto() { const im = new Image(); im.onload = () => { STORY.kanto = true; }; im.onerror = () => { STORY.kanto = false; if (STORY.open) renderStory(); }; im.src = KANTO.img; })();
+const nodeAt = i => {                                         // 0 = Pallet Town, 1..8 = gyms
+  if (STORY.kanto) { if (i === 0) return KANTO.home; const [x, y] = KANTO.gyms[i]; return { x, y }; }
+  return i === 0 ? HOME : GYMS[i - 1];
+};
+function drawKanto() {
+  const sv = STORY.save, beaten = sv ? sv.badges : 0, r = 40;
+  const legs = KANTO.legs.map((pts, i) => {
+    const g = GYMS[i], d = 'M' + pts.map(p => p.join(',')).join(' L'), oc = orderColor(g.n), state = i < beaten ? 'done' : i === beaten ? 'next' : 'locked';
+    return `<path d="${d}" stroke="rgba(8,12,34,.7)" stroke-width="17" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="leg${i}" d="${d}" stroke="${state === 'locked' ? 'rgba(255,255,255,.75)' : oc}" stroke-width="${state === 'done' ? 10 : 8}" fill="none" stroke-linecap="round" stroke-linejoin="round"
+        stroke-dasharray="${state === 'done' ? 'none' : '22 18'}" class="${state === 'next' ? 'leg-next' : ''}" opacity="${state === 'locked' ? .5 : 1}"/>`;
+  }).join('');
+  const gymNodes = GYMS.map((g, i) => {
+    const state = i < beaten ? 'done' : i === beaten ? 'next' : 'locked', [x, y] = KANTO.gyms[g.n];
+    return `<g class="gym ${state}" data-g="${i}" transform="translate(${x},${y})" tabindex="0" role="button" aria-label="Gym ${g.n}: ${g.leader}, ${g.city}${state === 'done' ? ', badge earned' : state === 'locked' ? ', locked' : ', next challenge'}">
+      ${state === 'next' ? `<circle class="pulse" r="${r + 9}" fill="none" stroke="${orderColor(g.n)}" stroke-width="6"/>` : ''}
+      ${medallionSvg(g, r, { done: state === 'done', idSuffix: 'k' })}
+      <text class="lbl" y="${r + 30}" text-anchor="middle" font-size="24" fill="#fff" style="stroke-width:6px">${g.city}</text>
+      <text class="lbl" y="${r + 52}" text-anchor="middle" font-size="18" fill="${orderColor(g.n)}" style="stroke-width:5px">${g.badge}</text></g>`;
+  }).join('');
+  const h = KANTO.home;
+  return `<svg viewBox="0 0 ${KANTO.w} ${KANTO.h}" preserveAspectRatio="xMidYMid meet" aria-label="Map of the Kanto region">
+    <image href="${KANTO.img}" x="0" y="0" width="${KANTO.w}" height="${KANTO.h}"/>
+    <rect width="${KANTO.w}" height="${KANTO.h}" fill="rgba(6,10,30,.18)"/>
+    ${legs}
+    <g transform="translate(${h.x},${h.y})"><circle r="22" fill="#fff" stroke="#2bd46b" stroke-width="7"/><path d="M-11,6 v-10 l11,-10 l11,10 v10Z" fill="#c8553d"/><text class="lbl" y="48" text-anchor="middle" font-size="24" fill="#fff" style="stroke-width:6px">${h.city}</text></g>
+    ${gymNodes}
+    <g id="syAvatar" class="avatar"></g>
+  </svg>`;
+}
+
 /* ---------- the story screen ---------- */
 (function storyUi() {
   const ov = document.createElement('div'); ov.id = 'storyOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Story mode');
@@ -7243,7 +7287,7 @@ function gymPic(g, big) {
 }
 function renderStory() {
   const sv = STORY.save; if (!sv) return;
-  $('syMap').innerHTML = drawMap();
+  $('syMap').innerHTML = STORY.kanto ? drawKanto() : drawMap();
   $('sySub').textContent = sv.badges >= 8 ? 'All 8 badges earned — you are a champion!' : `Next stop: ${GYMS[sv.badges].city} · Gym ${sv.badges + 1} of 8`;
   $('syGo').style.display = sv.badges >= 8 ? 'none' : '';
   $('syMe').innerHTML = `<img src="${portraitUrl(sv.trainer)}" alt=""><div><b>${escapeHtml(trainerTitle(sv.trainer))}</b><small>${sv.wins} wins · ${sv.losses} losses</small></div>`;
@@ -7262,18 +7306,19 @@ function renderStory() {
     const go = () => openGymCard(+el.dataset.g);
     el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   }
-  placeAvatar(sv.badges === 0 ? HOME : GYMS[sv.badges - 1]);
+  placeAvatar(nodeAt(sv.badges));
 }
-function avatarSvg() { const sv = STORY.save; return `<ellipse cy="2" rx="14" ry="5" fill="rgba(0,0,0,.35)"/><image href="${portraitUrl(sv.trainer)}" x="-18" y="-52" width="36" height="54" preserveAspectRatio="xMidYMax meet" style="image-rendering:pixelated"/>`; }
-function placeAvatar(n) { const a = $('syAvatar'); if (!a) return; a.innerHTML = avatarSvg(); a.setAttribute('transform', `translate(${n.x - 30},${n.y + 6})`); }
+function avatarSvg() { const sv = STORY.save, k = STORY.kanto ? 1.7 : 1; return `<g transform="scale(${k})"><ellipse cy="2" rx="14" ry="5" fill="rgba(0,0,0,.4)"/><image href="${portraitUrl(sv.trainer)}" x="-18" y="-52" width="36" height="54" preserveAspectRatio="xMidYMax meet" style="image-rendering:pixelated"/></g>`; }
+const AVATAR_OFF = () => (STORY.kanto ? 58 : 30);
+function placeAvatar(n) { const a = $('syAvatar'); if (!a) return; a.innerHTML = avatarSvg(); a.setAttribute('transform', `translate(${n.x - AVATAR_OFF()},${n.y + 6})`); }
 // Walk the trainer along a leg of the route (the step after a badge is earned).
 function walkLeg(i) {
   return new Promise(res => {
     const path = $('leg' + i), a = $('syAvatar'); if (!path || !a) return res();
-    const L = path.getTotalLength(), dur = Math.min(3200, 900 + L * 4.5), t0 = performance.now(); STORY.walking = true;
+    const L = path.getTotalLength(), dur = STORY.kanto ? Math.min(7500, 1200 + L * 2.8) : Math.min(3200, 900 + L * 4.5), t0 = performance.now(), off = AVATAR_OFF(); STORY.walking = true;
     const step = now => {
       const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, p = path.getPointAtLength(L * e), hop = Math.abs(Math.sin(now / 90)) * 3;
-      a.setAttribute('transform', `translate(${p.x - (k > .9 ? 30 * (k - .9) * 10 : 0)},${p.y + 6 - hop})`);
+      a.setAttribute('transform', `translate(${p.x - (k > .9 ? off * (k - .9) * 10 : 0)},${p.y + 6 - hop * (STORY.kanto ? 1.7 : 1)})`);
       if (k < 1) requestAnimationFrame(step); else { STORY.walking = false; res(); }
     };
     requestAnimationFrame(step);
@@ -7359,7 +7404,7 @@ function storyResult(won) {
   }
 }
 // Draw the map with the trainer still standing at the gym just beaten (before the walk to the next one).
-function renderStoryWithAvatarAt(i) { renderStory(); placeAvatar(GYMS[i]); }
+function renderStoryWithAvatarAt(i) { renderStory(); placeAvatar(nodeAt(i + 1)); }
 
 /* ---------- confetti ---------- */
 function confetti(color) {
