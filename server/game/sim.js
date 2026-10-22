@@ -53,8 +53,9 @@ const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s === 'B');   // 
 // AI difficulty 1–10 per side (G.aiLevel). Level 6 is the classic AI exactly; nothing set = classic.
 // aiK(S, atLevel1, atLevel6, atLevel10) blends a setting between those three points.
 const AI_CLASSIC = 6;
-function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[S]; return l >= 1 && l <= 10 ? l : AI_CLASSIC; }
-function aiK(S, lo, base, hi) { const l = aiLv(S); return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
+function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[S]; return l >= 1 && l <= 13 ? l : AI_CLASSIC; }
+// Levels 11–13 exist only for story secrets: they keep sharpening every setting past level 10.
+function aiK(S, lo, base, hi) { const l = aiLv(S); if (l > 10) return hi + (hi - base) * (l - 10) / 8; return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
 
 function calcDamage(u, t, mv, crit, eff, roll = true) {

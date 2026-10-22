@@ -198,7 +198,11 @@ setTimeout(hookMoveSfx, 0);
 
 /* ---------- stage music: music/<Stage_Name>.mp3, optional music/Opening.mp3 on the start screen ---------- */
 const MUSIC = { el: null, file: null, missing: new Set(), vol: 0 };
-const musicFileFor = () => ((typeof START !== 'undefined' && START.open) || typeof G === 'undefined' || !G || G.phase === 'title') ? 'Opening.mp3' : STAGE.name.replace(/\s+/g, '_') + '.mp3';
+const musicFileFor = () => {
+  if ((typeof START !== 'undefined' && START.open) || typeof G === 'undefined' || !G || G.phase === 'title') return 'Opening.mp3';
+  if (STAGE.music) { const own = STAGE.music + '.mp3'; return MUSIC.missing.has(own) ? STAGE.musicFallback + '.mp3' : own; }   // story stages: own track, else a borrowed one
+  return STAGE.name.replace(/\s+/g, '_') + '.mp3';
+};
 const musicTargetVol = () => .7 * ((window.SETTINGS && SETTINGS.musicVol != null) ? SETTINGS.musicVol : .5);
 function musicTick() {
   const want = musicFileFor(), quiet = document.hidden || (typeof clock !== 'undefined' && clock.paused && G && G.phase === 'battle');

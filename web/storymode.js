@@ -6,50 +6,56 @@
    coloured by order, green (first) to red (last). Progress is saved.
    ===================================================================== */
 const GYMS = [
-  { n: 1, leader: 'Brock', file: 'Brock', city: 'Pewter City', type: 'Rock', badge: 'Boulder Badge', arena: 'grotto', x: 190, y: 175,
+  { n: 1, leader: 'Brock', file: 'Brock', city: 'Pewter City', type: 'Rock', badge: 'Boulder Badge', arena: 'pewter', x: 190, y: 175,
     team: ['Sandshrew', 'Diglett', 'Cubone', 'Omanyte', 'Geodude', 'Onix'],
     hello: 'My rock-hard resolve is as tough as my Pokémon. Show me what you\u2019ve got!',
     win: 'Solid as stone. Train harder and come back.', lose: 'Your strategy cracked my defense. The Boulder Badge is yours.' },
-  { n: 2, leader: 'Misty', file: 'Misty', city: 'Cerulean City', type: 'Water', badge: 'Cascade Badge', arena: 'glacier', x: 505, y: 118,
+  { n: 2, leader: 'Misty', file: 'Misty', city: 'Cerulean City', type: 'Water', badge: 'Cascade Badge', arena: 'cerulean', x: 505, y: 118,
     team: ['Goldeen', 'Poliwag', 'Shellder', 'Horsea', 'Staryu', 'Starmie'],
     hello: 'Water adapts to anything. Can your team keep up with the current?',
     win: 'Washed out! Come back when you can swim with the tide.', lose: 'Okay, okay \u2014 you win! Take the Cascade Badge.' },
-  { n: 3, leader: 'Lt. Surge', file: 'Lt_Surge', city: 'Vermilion City', type: 'Electric', badge: 'Thunder Badge', arena: 'cyber', x: 690, y: 430,
+  { n: 3, leader: 'Lt. Surge', file: 'Lt_Surge', city: 'Vermilion City', type: 'Electric', badge: 'Thunder Badge', arena: 'vermilion', x: 690, y: 430,
     team: ['Pikachu', 'Magnemite', 'Electabuzz', 'Voltorb', 'Jolteon', 'Raichu'], levels: [18, 19, 20, 21, 22, 24],
     hello: 'Ten-hut! In my unit, speed and voltage win wars.',
     win: 'Grounded! Come back when you\u2019ve got some spark.', lose: 'You shocked me, soldier. The Thunder Badge is yours!' },
-  { n: 4, leader: 'Erika', file: 'Erika', city: 'Celadon City', type: 'Grass', badge: 'Rainbow Badge', arena: 'ruins', x: 385, y: 305,
+  { n: 4, leader: 'Erika', file: 'Erika', city: 'Celadon City', type: 'Grass', badge: 'Rainbow Badge', arena: 'celadon', x: 385, y: 305,
     team: ['Tangela', 'Oddish', 'Bellsprout', 'Exeggcute', 'Victreebel', 'Vileplume'], levels: [24, 25, 25, 26, 29, 29],
     hello: 'Welcome to my garden. Let us have a gentle \u2014 but serious \u2014 battle.',
     win: 'Your blossoms need more time to bloom.', lose: 'Splendid. You\u2019ve earned the Rainbow Badge.' },
-  { n: 5, leader: 'Koga', file: 'Koga', city: 'Fuchsia City', type: 'Poison', badge: 'Soul Badge', arena: 'plaza', x: 500, y: 540,
+  { n: 5, leader: 'Koga', file: 'Koga', city: 'Fuchsia City', type: 'Poison', badge: 'Soul Badge', arena: 'fuchsia', x: 500, y: 540,
     team: ['Grimer', 'Arbok', 'Koffing', 'Golbat', 'Muk', 'Weezing'],
     hello: 'A ninja strikes from the shadows. Poison rewards patience.',
     win: 'You walked right into my trap.', lose: 'Hmph. You saw through my tricks. The Soul Badge is yours.' },
-  { n: 6, leader: 'Sabrina', file: 'Sabrina', city: 'Saffron City', type: 'Psychic', badge: 'Marsh Badge', arena: 'skyfort', x: 585, y: 290,
+  { n: 6, leader: 'Sabrina', file: 'Sabrina', city: 'Saffron City', type: 'Psychic', badge: 'Marsh Badge', arena: 'saffron', x: 585, y: 290,
     team: ['Slowpoke', 'Mr. Mime', 'Hypno', 'Kadabra', 'Venomoth', 'Alakazam'],
     hello: 'I already know how this battle ends. Do you?',
     win: 'Exactly as I foresaw.', lose: 'I did not see this coming\u2026 Take the Marsh Badge.' },
-  { n: 7, leader: 'Blaine', file: 'Blaine', city: 'Cinnabar Island', type: 'Fire', badge: 'Volcano Badge', arena: 'oasis', x: 112, y: 548,
+  { n: 7, leader: 'Blaine', file: 'Blaine', city: 'Cinnabar Island', type: 'Fire', badge: 'Volcano Badge', arena: 'cinnabar', x: 112, y: 548,
     team: ['Vulpix', 'Ponyta', 'Magmar', 'Growlithe', 'Rapidash', 'Arcanine'],
     hello: 'Hah! Hope you packed Burn Heal, because my flames run hot!',
     win: 'Burned to a crisp! Cool off and try again.', lose: 'You\u2019ve put out my fire! The Volcano Badge is yours.' },
-  { n: 8, leader: 'Giovanni', file: 'Giovanni', city: 'Viridian City', type: 'Ground', badge: 'Earth Badge', arena: 'grotto', x: 235, y: 365,
+  { n: 8, leader: 'Giovanni', file: 'Giovanni', city: 'Viridian City', type: 'Ground', badge: 'Earth Badge', arena: 'viridian', x: 235, y: 365,
     team: ['Dugtrio', 'Sandslash', 'Nidoqueen', 'Rhyhorn', 'Nidoking', 'Rhydon'],
     hello: 'So, you\u2019ve come this far. Let me show you what real power looks like.',
     win: 'As expected. You are not ready.', lose: 'Impressive\u2026 The Earth Badge is yours. Go \u2014 become a legend.' },
-  { n: 9, leader: 'Lance', file: 'Lance', city: 'Indigo Plateau', type: 'Dragon', badge: 'Elite Four Badge', title: 'Elite Four', arena: 'skyfort', x: 150, y: 150,
+  { n: 9, leader: 'Lance', file: 'Lance', city: 'Indigo Plateau', type: 'Dragon', badge: 'Elite Four Badge', title: 'Elite Four', arena: 'lance', x: 150, y: 150,
     team: ['Seadra', 'Dragonair', 'Gyarados', 'Charizard', 'Aerodactyl', 'Dragonite'],
     hello: 'Dragons are mystical creatures \u2014 majestic and nearly unbeatable. I am the last of the Elite Four. Show me your resolve!',
     win: 'Your journey ends here. Dragons do not yield.', lose: 'You have tamed my dragons. The Champion is waiting \u2014 and you know him well.' },
-  { n: 10, leader: 'Gary', file: 'Gary', city: 'Indigo Plateau', type: 'Rival', typeLabel: 'Rival Match', badge: 'Champion Badge', title: 'Rival Match', arena: 'cyber', x: 175, y: 92,
+  { n: 10, leader: 'Gary', file: 'Gary', city: 'Indigo Plateau', type: 'Rival', typeLabel: 'Rival Match', badge: 'Champion Badge', title: 'Rival Match', arena: 'champion', x: 175, y: 92,
     team: null,                                            // chosen from your team: see garyTeam()
     hello: 'Hey! I was hoping you\u2019d show up. I\u2019m the Champion now \u2014 and I picked my team just to beat yours!',
     win: 'Ha! Told you I\u2019m the greatest trainer in the world!', lose: 'What?! I can\u2019t believe it\u2026 You\u2019re the new Champion. I\u2019ll be back, rival.' }
 ];
 const BADGE_FILES = ['boulder', 'cascade', 'thunder', 'rainbow', 'soul', 'marsh', 'volcano', 'earth', 'elite', 'champion'];
-const badgeUrl = g => 'story/badges/' + BADGE_FILES[g.n - 1] + '.png';
-const TOTAL = GYMS.length;                                   // 8 gyms + the Elite Four + the Champion
+const badgeUrl = g => (g.secret ? 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#20232f" stroke="#c8ccd8" stroke-width="3"/><text x="20" y="27" font-size="20" font-family="sans-serif" font-weight="900" fill="#fff" text-anchor="middle">?</text></svg>') : 'story/badges/' + BADGE_FILES[g.n - 1] + '.png');
+const TOTAL = GYMS.length;
+/* The secret battle: after the Champion, an unknown trainer waits on Mt. Silver. One attempt only. */
+const ASH = { n: 11, leader: 'Ash', file: 'Ash', city: 'Mt. Silver', type: 'Mystery', typeLabel: '???', badge: 'Secret Battle', title: 'Secret Battle', arena: 'silver', ai: 13, secret: true, x: 100, y: 240,
+  team: ['Pikachu', 'Venusaur', 'Charizard', 'Blastoise', 'Snorlax', 'Lapras'],
+  hello: '\u2026', win: '\u2026', lose: '\u2026' };
+const gymAt = i => (i < TOTAL ? GYMS[i] : ASH);
+const ashOpen = () => STORY.save && STORY.save.badges >= TOTAL;                                   // 8 gyms + the Elite Four + the Champion
 /* Gary's Champion team: Pidgeot, Alakazam and Rhydon always, plus three that counter your starter.
    Your starter is the starter-line Pokémon in your team at the highest evolution stage; a tie goes to whichever comes first. */
 const GARY_TEAMS = [
@@ -63,11 +69,11 @@ function garyPick(playerTeam) {
   return best ? { ...best.G, because: best.name } : { ...GARY_TEAMS[0], because: null };   // no starter in your team: Gary brings his Charizard lineup
 }
 const teamOf = g => (g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[0]) : g.team);
-const levelsOf = g => (g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[1]) : g.levels);
+const levelsOf = g => (g.n >= 10 ? null : g.levels);
 const stageName = g => (g.title ? g.title.toUpperCase() : `GYM ${g.n} OF 8`);
 const HOME = { city: 'Pallet Town', x: 230, y: 505 };
 const orderColor = n => `hsl(${Math.round(120 - (n - 1) * 120 / 9)} 82% 52%)`;     // green (1st) → red (10th)
-const typeCol = t => (t === 'Rival' ? '#5b7cff' : (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[t]) || '#8890b0');
+const typeCol = t => (t === 'Mystery' ? '#20232f' : t === 'Rival' ? '#5b7cff' : (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[t]) || '#8890b0');
 const hasPortrait = g => TRAINERS.includes(g.file);
 const portraitUrl = file => spriteUrl(file + '_trainer.png');
 
@@ -192,6 +198,13 @@ loadStory();
 #startOv .st-storyp p{margin:0;font:13px var(--ui);color:#d9deff}
 #startOv .st-storyp .badges{display:flex;gap:4px;flex-wrap:wrap}
 #startOv .st-storyp{justify-content:space-between}
+/* the boxes grow into the free space (to the bottom of the screen); the screen still shrinks to fit when it has to */
+#startOv .st-grid{flex:1 0 auto}
+/* story mode: the panel is the blue box's content, so the box grows to fit every bubble and the red box matches it */
+#startOv.story .st-side.blue{display:flex !important;flex-direction:column}
+#startOv.story .st-side.blue > :not(.st-storyp){display:none !important}
+#startOv.story .st-storyp{position:relative;inset:auto;flex:1 0 auto;min-height:0}
+@media (max-height:560px){#startOv.story .st-storyp .bubs{grid-template-columns:repeat(6,1fr);gap:6px 8px}}
 #startOv .st-storyp .bubs{flex:1;display:grid;grid-template-columns:repeat(4,1fr);align-content:space-evenly;gap:10px 12px;min-height:0;padding:4px}
 #startOv .st-storyp .bub{position:relative;border-radius:50%;aspect-ratio:1;max-height:100%;margin:auto;width:100%;border:4px solid var(--c);background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--c) 45%,#0b1230),#0b1230 72%);filter:grayscale(.6) brightness(.8);transition:filter .3s,transform .2s}
 #startOv .st-storyp .bub.on{filter:none;box-shadow:0 0 0 2px #ffd84a,0 0 14px #ffd84a88}
@@ -310,14 +323,15 @@ STORY.kanto = true;                                          // switched off aut
 const ROUTE_NAMES = ['Route 1 \u2192 Viridian City \u2192 Route 2 \u00B7 Viridian Forest', 'Route 3 \u2192 Mt. Moon \u2192 Route 4', 'Route 5 \u2192 Underground Path \u2192 Route 6',
   'Route 6 \u2192 Saffron City \u2192 Route 7', 'Route 16 \u2192 Cycling Road \u2192 Route 18', 'Routes 15 \u00B7 14 \u00B7 13 \u2192 Route 12 \u2192 Lavender Town \u2192 Route 8',
   'Route 7 \u2192 Celadon \u2192 Cycling Road \u2192 Fuchsia \u2192 Sea Routes 19 & 20', 'Sea Route 21 \u2192 Pallet Town \u2192 Route 1', 'Route 22 \u2192 Route 23 \u2192 Victory Road',
-  'Indigo Plateau \u00B7 the Champion\u2019s room'];
+  'Indigo Plateau \u00B7 the Champion\u2019s room', 'Victory Road \u2192 Route 22 \u2192 Route 28 \u2192 Mt. Silver'];
+const ASH_LEG = [[240, 62], [240, 190], [240, 340], [240, 560], [248, 620], [170, 622], [118, 560], [110, 450], [110, 330]];
 (function preloadKanto() { const im = new Image(); im.onload = () => { STORY.kanto = true; }; im.onerror = () => { STORY.kanto = false; if (STORY.open) renderStory(); }; im.src = KANTO.img; })();
-const nodeAt = i => {                                         // 0 = Pallet Town, 1..8 = gyms
-  if (STORY.kanto) { if (i === 0) return KANTO.home; const [x, y] = KANTO.gyms[i]; return { x, y }; }
-  return i === 0 ? HOME : GYMS[i - 1];
+const nodeAt = i => {                                         // 0 = Pallet Town, 1..10 = gyms, 11 = Mt. Silver
+  if (STORY.kanto) { if (i === 0) return KANTO.home; if (i === 11) { const [x, y] = ASH_LEG[ASH_LEG.length - 1]; return { x, y }; } const [x, y] = KANTO.gyms[i]; return { x, y }; }
+  return i === 0 ? HOME : gymAt(i - 1);
 };
 function drawKanto() {
-  const sv = STORY.save, beaten = sv ? sv.badges : 0, r = 40;
+  const sv = STORY.save, beaten = sv ? sv.badges : 0, r = 40; let secretNode = '';
   const legs = KANTO.legs.map((pts, i) => {
     const g = GYMS[i], d = 'M' + pts.map(p => p.join(',')).join(' L'), oc = orderColor(g.n), state = i < beaten ? 'done' : i === beaten ? 'next' : 'locked';
     return `<path d="${d}" stroke="rgba(8,12,34,.7)" stroke-width="17" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -334,12 +348,24 @@ function drawKanto() {
       <text class="lbl" y="${r + 52}" text-anchor="middle" font-size="18" fill="${orderColor(g.n)}" style="stroke-width:5px">${g.badge}</text></g>`;
   }).join('');
   const h = KANTO.home;
+  let secret = '';
+  if (ashOpen()) {                                           // Mt. Silver appears once the Champion is beaten
+    const done = !!sv.ash, d = 'M' + ASH_LEG.map(p => p.join(',')).join(' L'), [x, y] = ASH_LEG[ASH_LEG.length - 1];
+    secret = `<path d="${d}" stroke="rgba(8,12,34,.7)" stroke-width="17" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="leg10" d="${d}" stroke="${done ? '#c8ccd8' : '#ffffff'}" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${done ? 'none' : '22 18'}" class="${done ? '' : 'leg-next'}"/>`;
+    secretNode = `<g class="gym ${done ? 'done' : 'next'}" data-g="10" transform="translate(${x},${y})" tabindex="0" role="button" aria-label="Secret battle on Mt. Silver">
+      ${done ? '' : `<circle class="pulse" r="49" fill="none" stroke="#ffffff" stroke-width="6"/>`}
+      <circle r="40" fill="#20232f" stroke="#c8ccd8" stroke-width="8"/>
+      ${hasPortrait(ASH) ? `<defs><clipPath id="clipAsh"><circle r="37"/></clipPath></defs><image href="${portraitUrl(ASH.file)}" x="-37" y="-37" width="74" height="104" preserveAspectRatio="xMidYMin slice" clip-path="url(#clipAsh)" style="image-rendering:pixelated;${done ? '' : 'filter:brightness(0)'}"/>` : '<text y="14" text-anchor="middle" font-size="40" fill="#fff">?</text>'}
+      <text class="lbl" y="70" text-anchor="middle" font-size="24" fill="#fff" style="stroke-width:6px">Mt. Silver</text>
+      <text class="lbl" y="92" text-anchor="middle" font-size="18" fill="#c8ccd8" style="stroke-width:5px">${done ? 'Ash \u00B7 ' + (sv.ash === 'won' ? 'defeated' : 'undefeated') : '??? \u00B7 Secret Battle'}</text></g>`;
+  }
   return `<svg viewBox="0 0 ${KANTO.w} ${KANTO.h}" preserveAspectRatio="xMidYMid meet" aria-label="Map of the Kanto region">
     <image href="${KANTO.img}" x="0" y="0" width="${KANTO.w}" height="${KANTO.h}"/>
     <rect width="${KANTO.w}" height="${KANTO.h}" fill="rgba(6,10,30,.18)"/>
-    ${legs}
+    ${legs}${secret}
     <g transform="translate(${h.x},${h.y})"><circle r="22" fill="#fff" stroke="#2bd46b" stroke-width="7"/><path d="M-11,6 v-10 l11,-10 l11,10 v10Z" fill="#c8553d"/><text class="lbl" y="48" text-anchor="middle" font-size="24" fill="#fff" style="stroke-width:6px">${h.city}</text></g>
-    ${gymNodes}
+    ${gymNodes}${secretNode}
     <g id="syAvatar" class="avatar"></g>
   </svg>`;
 }
@@ -365,7 +391,7 @@ function drawKanto() {
     <div class="sy-hof" id="syHof"></div>`;
   document.body.appendChild(ov);
   $('syMenu').onclick = () => closeStory(true);
-  $('syGo').onclick = () => { const sv = STORY.save; if (sv && sv.badges < TOTAL) openGymCard(sv.badges); };
+  $('syGo').onclick = () => { const sv = STORY.save; if (sv && sv.badges < TOTAL) openGymCard(sv.badges); else if (sv && !sv.ash) openGymCard(10); };
   ov.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('syModal').classList.contains('show')) closeModal(); else closeStory(true); } });
 })();
 function gymPic(g, big) {
@@ -375,7 +401,7 @@ function renderStory() {
   const sv = STORY.save; if (!sv) return;
   $('syMap').innerHTML = STORY.kanto ? drawKanto() : drawMap();
   $('sySub').textContent = sv.badges >= TOTAL ? `All ${TOTAL} badges earned \u2014 you are the Champion!` : `Next: ${GYMS[sv.badges].leader} \u00B7 ${GYMS[sv.badges].city} \u00B7 ${sv.badges + 1} of ${TOTAL}`;
-  $('syGo').style.display = sv.badges >= TOTAL ? 'none' : '';
+  $('syGo').style.display = sv.badges >= TOTAL && (sv.ash || !ashOpen()) ? 'none' : '';
   $('syMe').innerHTML = `<img src="${portraitUrl(sv.trainer)}" alt=""><div><b>${escapeHtml(trainerTitle(sv.trainer))}</b><small>${sv.wins} wins · ${sv.losses} losses</small></div>`;
   const team = $('syTeam'); team.innerHTML = '';
   for (const n of sv.team) { const d = document.createElement('div'); d.className = 'm'; d.title = n; try { d.appendChild(monPic(n)); } catch (e) { d.textContent = n.slice(0, 3); } team.appendChild(d); }
@@ -392,7 +418,7 @@ function renderStory() {
     const go = () => openGymCard(+el.dataset.g);
     el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   }
-  placeAvatar(nodeAt(sv.badges));
+  placeAvatar(nodeAt(sv.ash ? 11 : sv.badges));
   renderProgress();
 }
 function renderProgress(popIndex) {
@@ -407,7 +433,7 @@ function placeAvatar(n) { const a = $('syAvatar'); if (!a) return; a.innerHTML =
 function walkLeg(i) {
   return new Promise(res => {
     const path = $('leg' + i), a = $('syAvatar'); if (!path || !a) return res();
-    const tr = $('syTravel'), g = GYMS[i]; if (tr) { tr.style.setProperty('--c', orderColor(g.n)); tr.innerHTML = `Travelling to <b>${g.n > 8 ? g.leader : g.city}</b> \u00B7 ${STORY.kanto ? ROUTE_NAMES[i] : 'on the road'}`; tr.classList.add('show'); }
+    const tr = $('syTravel'), g = gymAt(i); if (tr) { tr.style.setProperty('--c', orderColor(g.n)); tr.innerHTML = `Travelling to <b>${g.secret ? 'Mt. Silver' : g.n > 8 ? g.leader : g.city}</b> \u00B7 ${STORY.kanto ? ROUTE_NAMES[i] : 'on the road'}`; tr.classList.add('show'); }
     const L = path.getTotalLength(), dur = STORY.kanto ? Math.min(7500, 1200 + L * 2.8) : Math.min(3200, 900 + L * 4.5), t0 = performance.now(), off = AVATAR_OFF(); STORY.walking = true;
     const step = now => {
       const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, p = path.getPointAtLength(L * e), hop = Math.abs(Math.sin(now / 90)) * 3;
@@ -421,22 +447,23 @@ function walkLeg(i) {
 
 /* ---------- gym card ---------- */
 function openGymCard(i) {
-  const sv = STORY.save, g = GYMS[i], state = i < sv.badges ? 'done' : i === sv.badges ? 'next' : 'locked', m = $('syModal');
-  const lvl = Array.from({ length: TOTAL }, (_, k) => `<i class="${k < g.n ? 'on' : ''}"></i>`).join('');
+  const sv = STORY.save, g = gymAt(i), state = g.secret ? (sv.ash ? 'done' : ashOpen() ? 'next' : 'locked') : i < sv.badges ? 'done' : i === sv.badges ? 'next' : 'locked', m = $('syModal'), lvN = g.ai || g.n;
+  const lvl = Array.from({ length: Math.max(TOTAL, lvN) }, (_, k) => `<i class="${k < lvN ? 'on' : ''}" style="${k >= 10 ? 'background:#ff3a4a;box-shadow:0 0 6px #ff3a4a' : ''}"></i>`).join('');
   m.innerHTML = `<div class="sy-gc" style="--oc:${orderColor(g.n)};--tc:${typeCol(g.type)}">
-    <div class="pf"><div class="num">${g.n}</div>${gymPic(g, true)}<img src="${badgeUrl(g)}" alt="${g.badge} at stake" title="${g.badge} at stake" style="position:absolute;right:6px;bottom:6px;width:48px;height:48px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))${state === 'done' ? '' : ';opacity:.95'}"></div>
+    <div class="pf"><div class="num">${g.secret ? '?' : g.n}</div>${g.secret && !sv.ash ? gymPic(g, true).replace('<img ', '<img style="filter:brightness(0) drop-shadow(0 0 2px #fff)" ') : gymPic(g, true)}<img src="${badgeUrl(g)}" alt="${g.badge} at stake" title="${g.badge} at stake" style="position:absolute;right:6px;bottom:6px;width:48px;height:48px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))${state === 'done' ? '' : ';opacity:.95'}"></div>
     <div><div style="font:800 12px var(--ui);letter-spacing:.16em;color:${orderColor(g.n)}">${stageName(g)} · ${g.city.toUpperCase()}</div>
-      <h3>${g.leader}</h3>
+      <h3>${g.secret && !sv.ash ? '???' : g.leader}</h3>
       <div class="meta"><span class="chip" style="background:${typeCol(g.type)};color:#111">${g.typeLabel || g.type}</span><span class="chip" style="display:inline-flex;align-items:center;gap:5px"><img src="${badgeUrl(g)}" alt="" style="width:18px;height:18px">${g.badge}</span><span class="chip">${state === 'done' ? '✔ Badge earned' : state === 'locked' ? '🔒 Locked' : 'Next challenge'}</span></div>
-      <div class="lv">DIFFICULTY ${lvl} <span style="margin-left:6px">AI level ${g.n}</span></div>
+      <div class="lv">DIFFICULTY ${lvl} <span style="margin-left:6px">AI level ${lvN}${lvN > 10 ? ' of 10' : ''}</span></div>
       <div class="quote" id="syQuote"></div>
-      <div class="foes">${teamOf(g).map((n, k) => `<div class="m"><div class="p" data-mon="${escapeHtml(n)}"></div>${escapeHtml(n)}${levelsOf(g) ? ` <span style="color:#ffd84a">Lv${levelsOf(g)[k]}</span>` : ''}</div>`).join('')}</div>
+      ${g.secret && !sv.ash ? '<div class="quote" style="min-height:0">A silent trainer waits at the summit. You will only get <b>one</b> chance.</div>' : ''}
+      <div class="foes" style="${g.secret && !sv.ash ? 'filter:brightness(0) drop-shadow(0 0 1px #fff)' : ''}">${teamOf(g).map((n, k) => `<div class="m"><div class="p" data-mon="${escapeHtml(n)}"></div>${g.secret && !sv.ash ? '???' : escapeHtml(n)}${levelsOf(g) ? ` <span style="color:#ffd84a">Lv${levelsOf(g)[k]}</span>` : ''}</div>`).join('')}</div>
       ${g.n === 10 ? `<div style="font:700 12px var(--ui);color:#a9b6ff">${(p => p.because ? `Your ${p.because} decides it: Gary brings ${p.counter} to counter you.` : `No starter Pok\u00E9mon in your team, so Gary brings his ${p.counter} lineup.`)(garyPick(STORY.save.team))}</div>` : ''}
-      <div class="acts">${state === 'locked' ? `<button class="sy-btn" type="button" disabled>Earn the ${GYMS[i - 1].badge} first</button>` : `<button class="sy-btn go" type="button" id="syFight">${state === 'done' ? 'Rematch for fun' : 'Challenge!'}</button>`}<button class="sy-btn" type="button" id="syBack">Back to map</button></div>
+      <div class="acts">${state === 'locked' ? `<button class="sy-btn" type="button" disabled>Earn the ${GYMS[Math.min(i, TOTAL) - 1].badge} first</button>` : g.secret && state === 'done' ? `<button class="sy-btn" type="button" disabled>The trainer has vanished\u2026</button>` : `<button class="sy-btn go" type="button" id="syFight">${g.secret ? 'Face the trainer' : state === 'done' ? 'Rematch for fun' : 'Challenge!'}</button>`}<button class="sy-btn" type="button" id="syBack">Back to map</button></div>
     </div></div>`;
   for (const el of m.querySelectorAll('[data-mon]')) { try { el.appendChild(monPic(el.dataset.mon)); } catch (e) { } }
   m.classList.add('show');
-  typeOut($('syQuote'), `\u201C${g.hello}\u201D`);
+  typeOut($('syQuote'), g.secret ? '\u2026' : `\u201C${g.hello}\u201D`);
   $('syBack').onclick = closeModal;
   if ($('syFight')) { $('syFight').onclick = () => startGymBattle(i); $('syFight').focus(); }
 }
@@ -445,9 +472,10 @@ function typeOut(el, text) { if (!el) return; let k = 0; el.textContent = ''; co
 
 /* ---------- battles ---------- */
 function startGymBattle(i) {
-  const sv = STORY.save, g = GYMS[i];
+  const sv = STORY.save, g = gymAt(i);
+  if (g.secret && sv.ash) return;
   closeModal();
-  STORY.battle = { gym: i, level: g.n, practice: i < sv.badges };
+  STORY.battle = { gym: i, level: g.ai || g.n, practice: !g.secret && i < sv.badges };
   if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
   TRSEL.A = sv.trainer; TRSEL.B = g.file; loadTrainer(sv.trainer); if (hasPortrait(g)) loadTrainer(g.file);
   try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
@@ -469,7 +497,8 @@ onBattleEnd = function (w, big) {
   return r;
 };
 function storyResult(won) {
-  const b = STORY.battle, sv = STORY.save, g = GYMS[b.gym]; STORY.battle = null;
+  const b = STORY.battle, sv = STORY.save, g = gymAt(b.gym); STORY.battle = null;
+  if (g.secret) return ashResult(won);
   showOverlay('ovResults', false);
   if (won) sv.wins++; else sv.losses++;
   const firstTime = won && b.gym === sv.badges;
@@ -482,12 +511,12 @@ function storyResult(won) {
       <img class="medal" src="${badgeUrl(g)}" alt="${g.badge}" style="object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.55)) drop-shadow(0 0 22px ${orderColor(g.n)})">
       <h2>${firstTime ? `${g.badge} earned!` : 'Rematch won!'}</h2>
       <p>${g.leader}: \u201C${g.lose}\u201D</p>
-      <button class="sy-btn go" type="button" id="syOn">${sv.badges >= TOTAL && firstTime ? 'Enter the Hall of Fame' : firstTime ? `On to ${GYMS[b.gym + 1].city} \u25B6` : 'Back to map'}</button></div>`;
+      <button class="sy-btn go" type="button" id="syOn">${sv.badges >= TOTAL && firstTime ? 'Continue\u2026' : firstTime ? `On to ${GYMS[b.gym + 1].city} \u25B6` : 'Back to map'}</button></div>`;
     m.classList.add('show'); confetti(orderColor(g.n));
     $('syOn').focus();
     $('syOn').onclick = async () => {
       closeModal();
-      if (firstTime && sv.badges >= TOTAL) return showHallOfFame();
+      if (firstTime && sv.badges >= TOTAL) { renderStoryWithAvatarAt(b.gym); await unknownTrainer(); await walkLeg(10); renderStory(); openGymCard(10); return; }
       if (firstTime) { renderStoryWithAvatarAt(b.gym); renderProgress(b.gym); await new Promise(r => setTimeout(r, 900)); await walkLeg(b.gym + 1); renderStory(); openGymCard(sv.badges); }
     };
   } else {
@@ -522,7 +551,7 @@ function showHallOfFame() {
   h.innerHTML = `<h2>HALL OF FAME</h2>
     <div class="ring"><svg viewBox="-210 -210 420 420">${ring}<image href="${portraitUrl(sv.trainer)}" x="-55" y="-95" width="110" height="160" preserveAspectRatio="xMidYMax meet" style="image-rendering:pixelated"/><text y="92" text-anchor="middle" class="lbl" font-size="24" fill="#ffd84a">${escapeHtml(trainerTitle(sv.trainer))}</text></svg></div>
     <div class="sy-team" id="syHofTeam" style="width:min(460px,90vw)"></div>
-    <div style="font:700 14px var(--ui);color:#c7cff0">${sv.wins} wins · ${sv.losses} losses${mins != null ? ` · journey time ${mins} min` : ''}</div>
+    <div style="font:700 14px var(--ui);color:#c7cff0">${sv.wins} wins · ${sv.losses} losses${mins != null ? ` · journey time ${mins} min` : ''}${sv.ash ? ` · Mt. Silver: ${sv.ash === 'won' ? 'defeated Ash!' : 'Ash undefeated'}` : ''}</div>
     <div style="display:flex;gap:8px"><button class="sy-btn" type="button" id="syHofMap">Back to map</button><button class="sy-btn go" type="button" id="syHofNew">New journey</button></div>`;
   const team = $('syHofTeam'); for (const n of sv.team) { const d = document.createElement('div'); d.className = 'm'; try { d.appendChild(monPic(n)); } catch (e) { } team.appendChild(d); }
   h.classList.add('show'); confetti('#ffd84a'); setTimeout(() => confetti('#6fb8ff'), 900);
@@ -542,6 +571,7 @@ function beginJourney(fresh) {
   }
   openStoryScreen();
   if (STORY.save.badges < TOTAL) setTimeout(() => openGymCard(STORY.save.badges), fresh ? 700 : 250);
+  else if (!STORY.save.ash) setTimeout(() => openGymCard(10), 250);
 }
 function closeStory(toMenu) {
   STORY.battle = null; closeModal(); $('storyOv').classList.remove('show'); STORY.open = false;
@@ -571,11 +601,12 @@ showStart = function () {
 function renderStoryPanel() {
   const p = $('stStoryP'); if (!p) return; const sv = loadStory(), got = sv ? sv.badges : 0;
   const bubbles = GYMS.map((g, i) => `<div class="bub ${i < got ? 'on' : ''} ${i === got ? 'next' : ''}" style="--c:${orderColor(g.n)}" title="${g.n}. ${g.leader} \u2014 ${g.badge}${i < got ? ' (earned)' : ''}">
-      <div class="face">${hasPortrait(g) ? `<img src="${portraitUrl(g.file)}" alt="">` : `<b>${g.leader[0]}</b>`}</div><span class="num">${g.n}</span><img class="bdg" src="${badgeUrl(g)}" alt=""></div>`).join('');
+      <div class="face">${hasPortrait(g) ? `<img src="${portraitUrl(g.file)}" alt="">` : `<b>${g.leader[0]}</b>`}</div><span class="num">${g.n}</span><img class="bdg" src="${badgeUrl(g)}" alt=""></div>`).join('')
+    + (sv && sv.badges >= TOTAL ? `<div class="bub ${sv.ash ? 'on' : 'next'}" style="--c:#c8ccd8" title="${sv.ash ? 'Ash \u2014 Mt. Silver' : '??? \u2014 a secret battle awaits'}"><div class="face">${hasPortrait(ASH) ? `<img src="${portraitUrl(ASH.file)}" alt="" style="${sv.ash ? '' : 'filter:brightness(0)'}">` : '<b>?</b>'}</div><span class="num">?</span></div>` : '');
   p.innerHTML = `<div class="bubs">${bubbles}</div>
-    <div class="row">${sv && got < TOTAL ? `<button class="big" type="button" id="stStoryCont">Continue (${got}/${TOTAL})</button>` : ''}
+    <div class="row">${sv && (got < TOTAL || !sv.ash) ? `<button class="big" type="button" id="stStoryCont">${got < TOTAL ? `Continue (${got}/${TOTAL})` : 'Continue journey'}</button>` : ''}
       <button class="big ${sv ? 'alt' : ''}" type="button" id="stStoryNew">${sv ? 'New journey' : 'Begin journey'}</button>
-      ${sv && got >= TOTAL ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}</div>`;
+      ${sv && sv.ash ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}</div>`;
   if ($('stStoryCont')) $('stStoryCont').onclick = () => beginJourney(false);
   if ($('stStoryHof')) $('stStoryHof').onclick = () => { openStoryScreen(); showHallOfFame(); };
   $('stStoryNew').onclick = () => { if (sv && got > 0 && got < TOTAL && !confirm('Start a new journey? Your current badges will be reset.')) return; beginJourney(true); };
@@ -590,3 +621,49 @@ syncOnlineUi = function () {
   if (NET.mode === 'story') renderStoryPanel();
 };
 syncOnlineUi();
+
+/* ---------- the secret battle: "An unknown trainer appeared!" ---------- */
+(function whoCss() {
+  const st = document.createElement('style');
+  st.textContent = `
+#syWho{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;overflow:hidden;background:#0a3a8f}
+#syWho.show{display:flex}
+#syWho .rays{position:absolute;inset:-50%;background:repeating-conic-gradient(from 0deg,#1c6be0 0 9deg,#0a3a8f 9deg 18deg);animation:whoSpin 6s linear infinite}
+@keyframes whoSpin{to{transform:rotate(360deg)}}
+#syWho .burst{position:absolute;width:min(70vh,520px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#ffe36b 0 30%,#ffb627 55%,transparent 70%);animation:whoPulse 1s ease-in-out infinite alternate}
+@keyframes whoPulse{to{transform:scale(1.08)}}
+#syWho img{position:relative;height:min(58vh,420px);image-rendering:pixelated;filter:brightness(0) drop-shadow(0 0 3px #fff) drop-shadow(0 0 14px #fff);animation:whoIn .6s cubic-bezier(.2,1.5,.4,1)}
+#syWho img.reveal{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 22px #ffe36b);animation:whoFlash .7s}
+@keyframes whoIn{from{transform:scale(.2) rotate(-25deg);opacity:0}}
+@keyframes whoFlash{0%{filter:brightness(4)}100%{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 22px #ffe36b)}}
+#syWho .t{position:absolute;bottom:7%;left:0;right:0;text-align:center;font-family:var(--display);font-size:clamp(26px,5vw,58px);color:#ffe36b;-webkit-text-stroke:2px #0a1f5a;text-shadow:0 5px 0 #0a1f5a;letter-spacing:1px}
+#syWho .q{position:absolute;top:6%;left:0;right:0;text-align:center;font-family:var(--display);font-size:clamp(20px,3.4vw,40px);color:#fff;-webkit-text-stroke:1.5px #0a1f5a}`;
+  document.head.appendChild(st);
+  const d = document.createElement('div'); d.id = 'syWho'; d.setAttribute('role', 'alert');
+  d.innerHTML = '<div class="rays"></div><div class="burst"></div><div class="q"></div><img alt=""><div class="t"></div>';
+  $('storyOv').appendChild(d);
+})();
+function whoScreen(top, line, reveal, ms) {
+  return new Promise(res => {
+    const d = $('syWho'), img = d.querySelector('img');
+    img.src = portraitUrl(ASH.file); img.classList.toggle('reveal', !!reveal); img.style.display = hasPortrait(ASH) ? '' : 'none';
+    d.querySelector('.q').textContent = top; d.querySelector('.t').textContent = ''; d.classList.add('show');
+    try { if (typeof sfx === 'function') sfx('mega'); } catch (e) { }
+    let k = 0; const iv = setInterval(() => { d.querySelector('.t').textContent = line.slice(0, ++k); if (k >= line.length) clearInterval(iv); }, 38);
+    const done = () => { clearInterval(iv); d.classList.remove('show'); d.onclick = null; res(); };
+    const tm = setTimeout(done, ms); d.onclick = () => { clearTimeout(tm); done(); };
+  });
+}
+const unknownTrainer = () => whoScreen("Who's that trainer?", 'An unknown trainer appeared!', false, 3600);
+async function ashResult(won) {
+  const sv = STORY.save; sv.ash = won ? 'won' : 'lost'; if (won) sv.wins++; else sv.losses++; saveStory();
+  showOverlay('ovResults', false); openStoryScreen();
+  await whoScreen("It's\u2026", 'ASH!', true, 3200);
+  const m = $('syModal');
+  m.innerHTML = `<div class="sy-cer"><img class="medal" src="${portraitUrl(ASH.file)}" alt="Ash" style="object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 18px #ffe36b)">
+    <h2 style="${won ? '' : 'color:#ff8a8a'}">${won ? 'You defeated Ash!' : 'Ash wins\u2026'}</h2>
+    <p>${won ? 'The legendary trainer of Mt. Silver has fallen. Your name will be remembered forever.' : 'He nods once, and vanishes into the snow. Some battles are only fought once.'}</p>
+    <button class="sy-btn go" type="button" id="syAshOn">Enter the Hall of Fame</button></div>`;
+  m.classList.add('show'); if (won) confetti('#ffe36b');
+  $('syAshOn').onclick = () => { closeModal(); showHallOfFame(); };
+}
