@@ -49,6 +49,9 @@ const SHAKE_MSG = ['You missed the POKéMON!', 'Darn! The POKéMON broke free!',
 #safariOv .sf-menu button:hover:not(:disabled)::before,#safariOv .sf-menu button:focus-visible::before{content:'\\25B6';position:absolute;left:8px;font-size:.8em;top:50%;transform:translateY(-50%)}
 #safariOv .sf-menu button:disabled{color:#a0a6b8;cursor:default}
 #safariOv .sf-menu small{font:700 .7em var(--ui);color:#5a6078;margin-left:4px}
+#safariOv .sf-run{position:absolute;top:10px;right:12px;z-index:2;border:3px solid #283048;border-radius:10px;background:#f8f8f0;font:900 14px var(--ui);padding:7px 12px;cursor:pointer;color:#111}
+#safariOv .sf-run:hover{background:#e2e6f0}
+#safariOv .sf-msg{cursor:pointer}
 #safariOv .sf-head{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(8,12,34,.75);color:#fff;border-radius:10px;padding:6px 14px;font:800 13px var(--ui);letter-spacing:.06em;white-space:nowrap}
 #safariOv{background:#0b0f24}
 #safariOv .sf-tag{position:absolute;top:13%;left:max(12px,calc(50% - 30vw));background:#f8f8f0;border:4px solid #283048;border-radius:8px;padding:6px 12px;font:900 clamp(13px,1.7vw,19px) var(--ui);min-width:150px}
@@ -56,7 +59,7 @@ const SHAKE_MSG = ['You missed the POKéMON!', 'Darn! The POKéMON broke free!',
 @media (max-height:560px){#safariOv .sf-box{min-height:84px;bottom:6px}#safariOv .sf-msg{padding:8px 12px}#safariOv .sf-menu{min-width:220px;padding:6px}#safariOv .sf-menu button{padding:5px 8px 5px 22px}}`;
   document.head.appendChild(st);
   const ov = document.createElement('div'); ov.id = 'safariOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Wild Pokémon encounter');
-  ov.innerHTML = '<canvas id="sfCv" width="480" height="270"></canvas><div class="sf-head" id="sfHead"></div><div class="sf-tag" id="sfTag"></div><div class="sf-box"><div class="sf-msg" id="sfMsg" aria-live="polite"></div><div class="sf-menu" id="sfMenu" hidden></div></div>';
+  ov.innerHTML = '<canvas id="sfCv" width="480" height="270"></canvas><div class="sf-head" id="sfHead"></div><button type="button" class="sf-run" id="sfRun" aria-label="Run from the encounter">RUN ✕</button><div class="sf-tag" id="sfTag"></div><div class="sf-box"><div class="sf-msg" id="sfMsg" aria-live="polite"></div><div class="sf-menu" id="sfMenu" hidden></div></div>';
   document.body.appendChild(ov);
   // The scene covers the screen; on short screens it shifts up (trimming sky) so the trainer and platforms stay above the text box.
   const fit = () => { const c = $('sfCv'), box = ov.querySelector('.sf-box'), boxH = (box && box.offsetHeight) || 120, availH = innerHeight - boxH * .45;
@@ -246,36 +249,58 @@ function safariEncounter(leg) {
     $('sfTag').innerHTML = `${w.sp.toUpperCase()}<small>:L${w.lv}${dexEntry(sv, w.sp) ? ' \u00B7 \u25CF in Pok\u00E9dex' : ''}</small>`;
     ov.classList.add('show'); menu.hidden = true; requestAnimationFrame(() => window.__sfFit && window.__sfFit());
     let typer = null;
-    const say = (text, ms = 22) => new Promise(r => { clearInterval(typer); let k = 0; msgEl.textContent = ''; typer = setInterval(() => { msgEl.textContent = text.slice(0, ++k); if (k >= text.length) { clearInterval(typer); setTimeout(r, 650); } }, ms); });
+    // Text types quickly; tap the text box (or Enter / Space / Z) to finish a line, tap again to move on.
+    let skipNow = null;
+    const say = (text, ms = 11) => new Promise(r => {
+      clearInterval(typer); let k = 0, done = false, hold = null; msgEl.textContent = '';
+      const end = () => { if (done) return; done = true; clearInterval(typer); clearTimeout(hold); msgEl.textContent = text; skipNow = null; r(); };
+      const full = () => { clearInterval(typer); msgEl.textContent = text; skipNow = end; hold = setTimeout(end, 380); };
+      skipNow = full;
+      typer = setInterval(() => { msgEl.textContent = text.slice(0, ++k); if (k >= text.length) full(); }, ms);
+    });
+    msgEl.onclick = () => skipNow && skipNow();
+    let ran = false;
+    const runAway = () => { if (ran || S.caught) return; ran = true; clearInterval(typer); skipNow = null; menu.hidden = true; ov.classList.remove('show'); document.removeEventListener('keydown', keys, true); resolve({ caught: false, sp: w.sp, lv: w.lv, ran: true }); };
+    $('sfRun').onclick = runAway;
+    const keys = e => { if (!ov.classList.contains('show')) return; if (e.key === 'Escape') { e.preventDefault(); runAway(); } else if ((e.key === 'Enter' || e.key === ' ' || e.key === 'z' || e.key === 'Z') && skipNow) { e.preventDefault(); skipNow(); } };
+    document.addEventListener('keydown', keys, true);
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const anim = (key, ms) => new Promise(r => { S[key] = { t0: performance.now(), ms }; setTimeout(r, ms); });
     const FAR = { x: 352, y: 150, rx: 74, ry: 15 }, NEAR = { x: 112, y: 262, rx: 120, ry: 24 };
+    const mk = () => { const k = document.createElement('canvas'); k.width = W; k.height = H; const x = k.getContext('2d'); x.imageSmoothingEnabled = false; return [k, x]; };
+    const [backC, backX] = mk(), [nearC, nearX2] = mk(), [vigC, vigX] = mk(), mainC = SX.c, propsSorted = scene.props.slice().sort((a, b) => a[1] - b[1]);
+    SX.c = vigX; vignette(R.scene === 'tower' || R.scene === 'cave' ? .55 : .32); SX.c = mainC;
+    const whiteMon = (() => { const tc = document.createElement('canvas'); tc.width = tc.height = 96; const tx = tc.getContext('2d'); tx.drawImage(mon, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ffffff'; tx.fillRect(0, 0, 96, 96); return tc; })();
+    let cacheT = -1e9;
+    const refreshLayers = t => {
+      SX.c = backX; backX.clearRect(0, 0, W, H); scene.back(t); for (const p of propsSorted) if (p[1] <= FAR.y) prop(p[2], p[0], p[1], hz, t);
+      SX.c = nearX2; nearX2.clearRect(0, 0, W, H); for (const p of propsSorted) if (p[1] > FAR.y) prop(p[2], p[0], p[1], hz, t);
+      SX.c = mainC; cacheT = t;
+    };
     const frame = now => {
       if (!ov.classList.contains('show')) return;
       const t = now - S.t0, c = SX.c; c.clearRect(0, 0, W, H);
-      scene.back(t);
-      const slide = Math.min(1, t / 750), farX = FAR.x + (1 - slide) * -420, nearX = NEAR.x + (1 - slide) * 420;
-      // props behind the far platform, then the far platform + Pokémon, then nearer props, then the near platform + trainer
-      const props = scene.props.slice().sort((a, b) => a[1] - b[1]);
-      for (const p of props) if (p[1] <= FAR.y) prop(p[2], p[0], p[1], hz, t);
+      if (t - cacheT > 120) refreshLayers(t);
+      c.drawImage(backC, 0, 0);
+      const slide = Math.min(1, t / 450), farX = FAR.x + (1 - slide) * -420, nearX = NEAR.x + (1 - slide) * 420;
       platform(farX, FAR.y, FAR.rx, FAR.ry, R.scene, t);
       if (!S.mon.gone) {
         const h = 82 * S.mon.scale, bob = S.mon.bob ? Math.abs(Math.sin(t / 120)) * 4 : 0, mx = farX + S.mon.x;
         Alpha(S.mon.a * .35, () => El(mx, FAR.y + 2, h * .32, 4, '#000'));
         c.save(); c.globalAlpha = S.mon.a; c.drawImage(mon, Math.round(mx - h / 2), Math.round(FAR.y - h + 6 - bob), Math.round(h), Math.round(h)); c.restore();
-        if (S.mon.white > 0) { const tc = document.createElement('canvas'); tc.width = tc.height = 96; const tx = tc.getContext('2d'); tx.drawImage(mon, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ffffff'; tx.fillRect(0, 0, 96, 96); Alpha(S.mon.white * S.mon.a, () => c.drawImage(tc, Math.round(mx - h / 2), Math.round(FAR.y - h + 6), Math.round(h), Math.round(h))); }
+        if (S.mon.white > 0) Alpha(S.mon.white * S.mon.a, () => c.drawImage(whiteMon, Math.round(mx - h / 2), Math.round(FAR.y - h + 6), Math.round(h), Math.round(h)));
         if (S.eat > 0 && S.mon.bob) { const k = (t / 450) % 1; Alpha(1 - k, () => { P(mx + 26, FAR.y - 70 - k * 14, 3, 3, '#ff7aa8'); P(mx + 29, FAR.y - 73 - k * 14, 3, 3, '#ff7aa8'); P(mx + 32, FAR.y - 70 - k * 14, 3, 3, '#ff7aa8'); }); }
       }
       if (S.baitDown) { Dk(farX - 28, FAR.y + 2, 4, '#a8703a'); P(farX - 30, FAR.y, 2, 2, '#e0b070'); }
       if (S.ballAt) { const wob = S.wobA ? Math.sin(Math.min(1, (now - S.wobA.t0) / S.wobA.ms) * Math.PI * 2) * .55 : 0, dk = S.dropA ? Math.min(1, (now - S.dropA.t0) / S.dropA.ms) : 1; drawBall(farX, 104 + (FAR.y - 6 - 104) * dk - Math.abs(Math.sin(dk * Math.PI * 2)) * 9 * (1 - dk), wob, 1.5); }
       if (S.burstA) { const k = Math.min(1, (now - S.burstA.t0) / S.burstA.ms); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, d = k * 40; P(farX + Math.cos(a) * d, FAR.y - 24 + Math.sin(a) * d * .6, 3, 3, i % 2 ? '#ffffff' : '#ffe066'); } }
       if (S.starsA) { const k = Math.min(1, (now - S.starsA.t0) / S.starsA.ms); for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + (i - 1) * .7, d = 12 + k * 24, sx = farX + Math.cos(a) * d, sy = FAR.y - 12 + Math.sin(a) * d; P(sx - 3, sy, 7, 2, '#ffe066'); P(sx, sy - 3, 2, 7, '#ffe066'); } }
-      for (const p of props) if (p[1] > FAR.y) prop(p[2], p[0], p[1], hz, t);
+      c.drawImage(nearC, 0, 0);
       platform(nearX, NEAR.y, NEAR.rx, NEAR.ry, R.scene, t);
       if (tr.complete && tr.naturalWidth) { const h = 170, wv = h * tr.naturalWidth / tr.naturalHeight; Alpha(.3, () => El(nearX + 6, NEAR.y + 2, wv * .45, 6, '#000')); c.drawImage(tr, Math.round(nearX - wv / 2), Math.round(NEAR.y - h + 10), Math.round(wv), Math.round(h)); }
       if (S.baitA) { const k = Math.min(1, (now - S.baitA.t0) / S.baitA.ms), x = nearX + 40 + (farX - 28 - nearX - 40) * k, y = 160 - Math.sin(k * Math.PI) * 90 + (FAR.y - 160) * k; Dk(x, y, 4, '#a8703a'); P(x - 1, y - 2, 2, 2, '#e0b070'); }
       if (S.ballA) { const k = Math.min(1, (now - S.ballA.t0) / S.ballA.ms), x = nearX + 40 + (farX - nearX - 40) * k, y = 150 - Math.sin(k * Math.PI) * 110 + (104 - 150) * k; drawBall(x, y, k * 14, 1.5); }
-      scene.front(t); scene.fx(t); vignette(R.scene === 'tower' || R.scene === 'cave' ? .55 : .32);
+      scene.front(t); scene.fx(t); c.drawImage(vigC, 0, 0);
       requestAnimationFrame(frame);
     };
     function drawBall(x, y, rot, k = 1) {
@@ -296,8 +321,8 @@ function safariEncounter(leg) {
         msgEl.textContent = `${w.sp.toUpperCase()} (Lv ${dexEntry(sv, w.sp).level}) is in your POKéDEX.` + (inParty ? '' : sv.team.length >= 6 ? '\nYour party is full \u2014 change it from the POKéDEX.' : '\nAdd it to your party?');
         menu.innerHTML = (inParty || sv.team.length >= 6 ? '' : '<button type="button" data-a="add">ADD TO PARTY</button>') + '<button type="button" data-a="ok">CONTINUE</button>'; menu.hidden = false;
         await new Promise(r => { for (const b of menu.querySelectorAll('button')) b.onclick = () => { if (b.dataset.a === 'add') { sv.team.push(w.sp); saveStory(); toastMsg(`${w.sp} joined your party!`); } r(); }; menu.querySelector('button').focus(); });
-      } else { await say(text); await wait(300); }
-      ov.classList.remove('show'); clearInterval(typer); resolve({ caught, sp: w.sp, lv: w.lv });
+      } else { await say(text); }
+      if (ran) return; ran = true; document.removeEventListener('keydown', keys, true); ov.classList.remove('show'); clearInterval(typer); resolve({ caught, sp: w.sp, lv: w.lv });
     };
     const showMenu = () => {
       menu.innerHTML = `<button type="button" data-a="ball" ${S.balls ? '' : 'disabled'}>BALL<small>\u00D7${S.balls}</small></button><button type="button" data-a="bait" ${S.baits ? '' : 'disabled'}>BAIT<small>\u00D7${S.baits}</small></button><button type="button" data-a="run">RUN</button>`;
@@ -305,30 +330,30 @@ function safariEncounter(leg) {
       for (const b of menu.querySelectorAll('button')) b.onclick = () => act(b.dataset.a);
       const first = menu.querySelector('button:not(:disabled)'); if (first) first.focus();
     };
-    const fleeAnim = async () => { for (let k = 0; k <= 16; k++) { S.mon.x = k * 14; S.mon.a = 1 - k / 16; await wait(26); } S.mon.gone = true; };
+    const fleeAnim = async () => { for (let k = 0; k <= 12; k++) { S.mon.x = k * 18; S.mon.a = 1 - k / 12; await wait(16); } S.mon.gone = true; };
     const act = async a => {
-      menu.hidden = true;
+      if (ran) return; menu.hidden = true;
       if (a === 'run') return finish(false, 'Got away safely!');
       if (a === 'bait') {
-        S.baits--; await say(`${trainerTitle(sv.trainer).toUpperCase()} threw some BAIT.`); await anim('baitA', 650); S.baitA = null; S.baitDown = true;
+        S.baits--; await say(`${trainerTitle(sv.trainer).toUpperCase()} threw some BAIT.`); await anim('baitA', 400); S.baitA = null; S.baitDown = true;
         S.rate = Math.max(1, Math.floor(S.rate / 2)); S.eat = rIn(1, 5); S.mon.bob = true;
         await say(`Wild ${w.sp.toUpperCase()} is eating!`);
         if (fleeCheck()) { await fleeAnim(); return finish(false, `Wild ${w.sp.toUpperCase()} ran away!`); }
         return showMenu();
       }
-      S.balls--; await say(`${trainerTitle(sv.trainer).toUpperCase()} used SAFARI BALL!`, 18);
-      await anim('ballA', 700); S.ballA = null;
-      for (let k = 0; k <= 10; k++) { S.mon.white = Math.min(1, k / 4); S.mon.scale = 1 - k / 10; await wait(28); }
-      S.mon.gone = true; S.ballAt = true; await anim('dropA', 480);
+      S.balls--; await say(`${trainerTitle(sv.trainer).toUpperCase()} used SAFARI BALL!`);
+      await anim('ballA', 430); S.ballA = null;
+      for (let k = 0; k <= 10; k++) { S.mon.white = Math.min(1, k / 4); S.mon.scale = 1 - k / 10; await wait(16); }
+      S.mon.gone = true; S.ballAt = true; await anim('dropA', 300);
       const res = safariBall(S.rate, S.hp);
-      for (let i = 0; i < res.shakes; i++) { await wait(260); await anim('wobA', 440); }
-      if (res.caught) { await wait(200); await anim('starsA', 650); return finish(true); }
-      await wait(220); S.ballAt = false; await anim('burstA', 320); S.burstA = null; S.mon.gone = false; S.mon.scale = 1;
-      for (let k = 0; k <= 6; k++) { S.mon.white = 1 - k / 6; await wait(30); }
+      for (let i = 0; i < res.shakes; i++) { await wait(140); await anim('wobA', 300); }
+      if (res.caught) { S.caught = true; await wait(120); await anim('starsA', 420); return finish(true); }
+      await wait(120); S.ballAt = false; await anim('burstA', 220); S.burstA = null; S.mon.gone = false; S.mon.scale = 1;
+      for (let k = 0; k <= 6; k++) { S.mon.white = 1 - k / 6; await wait(18); }
       await say(SHAKE_MSG[res.shakes]);
       await fleeAnim(); return finish(false, `Wild ${w.sp.toUpperCase()} ran away!`);
     };
-    (async () => { await wait(800); await say(`Wild ${w.sp.toUpperCase()} appeared!`); showMenu(); })();
+    (async () => { await wait(480); if (ran) return; await say(`Wild ${w.sp.toUpperCase()} appeared!`); if (!ran) showMenu(); })();
   });
 }
 
@@ -340,10 +365,23 @@ startGymBattle = function (i) {
   if (!isDexSave(sv) || SAFARI.busy || i > 9) return _sfStartGymBattle.apply(this, arguments);
   SAFARI.busy = true; closeModal(); STORY.at = null;
   (async () => {
-    try { placeAvatar(nodeAt(i)); await walkLeg(i); if (i < ROUTES.length) await safariEncounter(i); }
+    try { placeAvatar(nodeAt(i)); await walkLeg(i); if (i < ROUTES.length && !sv.encountersOff) await safariEncounter(i); }
     finally { SAFARI.busy = false; }
     _sfStartGymBattle(i);
   })();
 };
+// The battle arena is fully hidden behind the encounter and the story map: don't spend frames drawing it there.
+const _sfDraw = draw;
+draw = function () { const so = $('storyOv'), sf = $('safariOv'); if ((sf && sf.classList.contains('show')) || (so && so.classList.contains('show'))) return; return _sfDraw.apply(this, arguments); };
+// The per-save switch on the story map (Pokédex runs).
+(function encounterSwitch() {
+  const top = document.querySelector('#storyOv .sy-top'); if (!top) return;
+  const b = document.createElement('button'); b.className = 'sy-btn'; b.id = 'syEnc'; b.type = 'button'; b.style.display = 'none';
+  b.onclick = () => { const sv = STORY.save; if (!isDexSave(sv)) return; sv.encountersOff = !sv.encountersOff; saveStory(); syncEnc(); toastMsg(sv.encountersOff ? 'Wild encounters off for this save' : 'Wild encounters on for this save'); };
+  top.insertBefore(b, $('syMenu'));
+})();
+function syncEnc() { const b = $('syEnc'), sv = STORY.save; if (!b) return; b.style.display = isDexSave(sv) ? '' : 'none'; if (isDexSave(sv)) { b.textContent = sv.encountersOff ? 'Encounters: OFF' : 'Encounters: ON'; b.setAttribute('aria-pressed', String(!sv.encountersOff)); b.title = 'Wild Pok\u00E9mon encounters when you challenge a gym (this save only)'; } }
+const _sfRenderStory = renderStory;
+renderStory = function () { const r = _sfRenderStory.apply(this, arguments); syncEnc(); return r; };
 window.safariBall = safariBall; window.pickWild = pickWild; window.safariEncounter = safariEncounter;
 })();
