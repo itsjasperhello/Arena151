@@ -493,7 +493,7 @@ function zMoveOf(m) {
   const type = pick && Z_BY_TYPE[pick.type] ? pick.type : m.types[0];
   return { name: Z_BY_TYPE[type] || 'Breakneck Blitz', type };
 }
-const Z_ANIM = 2400, Z_HIT = 1750;
+const Z_ANIM = 4300, Z_HIT = 3700;      // cinematic (≈1.6 s), then the in-arena final smash; the hit lands at its climax
 function canZ(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && !sd.zUsed && sd.zCharge >= 100 && sd.state === 'idle' && !sd.cast && sd.stun <= 0 && m.hp > 0 && present(other(S)); }
 function zMove(S) {
   if (!canZ(S)) return false;
@@ -507,6 +507,7 @@ function zMoveTick(S, dt) {
   if (!sd.zHit && sd.stateT >= Z_HIT) {
     sd.zHit = true; const u = act(S), z = sd.zInfo;
     const mv = { name: z.name, type: z.type, pow: 220, cat: u.stats.atk >= u.stats.spa ? 'P' : 'S', e: {}, anim: 'beam' };
+    const fsd = side(other(S)); fsd.dodgeT = 0; fsd.dig = false;          // a Z-Move always hits
     sd.state = 'idle'; applyHit(S, mv, u, { z: true, floor: .32, cap: .6 }); if (sd.state === 'idle') sd.state = 'zmove';
     VFX.zImpact(S, z.type);
   }

@@ -77,10 +77,19 @@ const typeCol = t => (t === 'Mystery' ? '#20232f' : t === 'Rival' ? '#5b7cff' : 
 const hasPortrait = g => TRAINERS.includes(g.file);
 const portraitUrl = file => spriteUrl(file + '_trainer.png');
 
-const STORY_KEY = 'arena151.story';
-const STORY = { save: null, battle: null, prevTrsel: null, walking: false, open: false };
-function loadStory() { try { STORY.save = JSON.parse(localStorage.getItem(STORY_KEY)) || null; } catch (e) { STORY.save = null; } if (STORY.save && STORY.save.badges < GYMS.length) STORY.save.finishedAt = null; return STORY.save; }
-function saveStory() { try { localStorage.setItem(STORY_KEY, JSON.stringify(STORY.save)); } catch (e) { } }
+const STORY_KEY = 'arena151.story';                          // the old single save (moved into slot 1)
+const STORY_SLOTS = 3, slotKey = n => STORY_KEY + '.' + n;
+const STORY = { save: null, battle: null, prevTrsel: null, walking: false, open: false, slot: 1 };
+try {
+  STORY.slot = Math.min(STORY_SLOTS, Math.max(1, +localStorage.getItem('arena151.storySlot') || 1));
+  const old = localStorage.getItem(STORY_KEY);
+  if (old && !localStorage.getItem(slotKey(1))) localStorage.setItem(slotKey(1), old);
+  if (old) localStorage.removeItem(STORY_KEY);
+} catch (e) { }
+function readSlot(n) { try { const v = JSON.parse(localStorage.getItem(slotKey(n))); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
+function useSlot(n) { STORY.slot = n; try { localStorage.setItem('arena151.storySlot', String(n)); } catch (e) { } loadStory(); }
+function loadStory() { STORY.save = readSlot(STORY.slot); if (STORY.save && STORY.save.badges < GYMS.length) STORY.save.finishedAt = null; return STORY.save; }
+function saveStory() { try { localStorage.setItem(slotKey(STORY.slot), JSON.stringify(STORY.save)); } catch (e) { } }
 loadStory();
 
 /* ---------- styles ---------- */
@@ -198,6 +207,15 @@ loadStory();
 #startOv .st-storyp p{margin:0;font:13px var(--ui);color:#d9deff}
 #startOv .st-storyp .badges{display:flex;gap:4px;flex-wrap:wrap}
 #startOv .st-storyp{justify-content:space-between}
+#startOv .st-storyp .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#startOv .st-storyp .slot{border:2px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(8,12,32,.55);color:#fff;padding:5px 8px;text-align:left;cursor:pointer;font-family:var(--ui);min-width:0}
+#startOv .st-storyp .slot b{display:block;font:900 13px var(--ui)}
+#startOv .st-storyp .slot small{display:block;font:700 11px var(--ui);color:#c7cff0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#startOv .st-storyp .slot.on{border-color:#ffd84a;background:rgba(255,216,74,.16);box-shadow:0 0 10px rgba(255,216,74,.35)}
+#startOv .st-storyp .big.del{background:rgba(255,255,255,.12);color:#ffb3b3}
+@media (max-height:560px){#startOv .st-storyp .slot{padding:3px 6px}#startOv .st-storyp .slot b{font-size:11px}#startOv .st-storyp .slot small{font-size:9px}}
+/* Settings and Controls open above everything, including the start screen and the story map */
+#setOv.show,#helpOv.show{position:fixed;z-index:80}
 /* the boxes grow into the free space (to the bottom of the screen); the screen still shrinks to fit when it has to */
 #startOv .st-grid{flex:1 0 auto}
 /* story mode: the panel is the blue box's content, so the box grows to fit every bubble and the red box matches it */
@@ -603,13 +621,19 @@ function renderStoryPanel() {
   const bubbles = GYMS.map((g, i) => `<div class="bub ${i < got ? 'on' : ''} ${i === got ? 'next' : ''}" style="--c:${orderColor(g.n)}" title="${g.n}. ${g.leader} \u2014 ${g.badge}${i < got ? ' (earned)' : ''}">
       <div class="face">${hasPortrait(g) ? `<img src="${portraitUrl(g.file)}" alt="">` : `<b>${g.leader[0]}</b>`}</div><span class="num">${g.n}</span><img class="bdg" src="${badgeUrl(g)}" alt=""></div>`).join('')
     + (sv && sv.badges >= TOTAL ? `<div class="bub ${sv.ash ? 'on' : 'next'}" style="--c:#c8ccd8" title="${sv.ash ? 'Ash \u2014 Mt. Silver' : '??? \u2014 a secret battle awaits'}"><div class="face">${hasPortrait(ASH) ? `<img src="${portraitUrl(ASH.file)}" alt="" style="${sv.ash ? '' : 'filter:brightness(0)'}">` : '<b>?</b>'}</div><span class="num">?</span></div>` : '');
-  p.innerHTML = `<div class="bubs">${bubbles}</div>
+  const tabs = Array.from({ length: STORY_SLOTS }, (_, k) => { const n = k + 1, v = readSlot(n);
+    const info = !v ? 'Empty' : v.ash ? (v.ash === 'won' ? 'Beat Ash!' : 'Champion') : v.badges >= TOTAL ? 'Champion' : `${v.badges}/${TOTAL} badges`;
+    return `<button type="button" class="slot ${n === STORY.slot ? 'on' : ''}" data-slot="${n}" aria-pressed="${n === STORY.slot}"><b>Slot ${n}</b><small>${info}${v ? ' \u00B7 ' + escapeHtml(trainerTitle(v.trainer)) : ''}</small></button>`; }).join('');
+  p.innerHTML = `<div class="slots" role="group" aria-label="Story save slots">${tabs}</div><div class="bubs">${bubbles}</div>
     <div class="row">${sv && (got < TOTAL || !sv.ash) ? `<button class="big" type="button" id="stStoryCont">${got < TOTAL ? `Continue (${got}/${TOTAL})` : 'Continue journey'}</button>` : ''}
       <button class="big ${sv ? 'alt' : ''}" type="button" id="stStoryNew">${sv ? 'New journey' : 'Begin journey'}</button>
-      ${sv && sv.ash ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}</div>`;
+      ${sv && sv.ash ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}
+      ${sv ? `<button class="big alt del" type="button" id="stStoryDel" title="Delete the journey in slot ${STORY.slot}">Delete</button>` : ''}</div>`;
+  for (const b of p.querySelectorAll('.slot')) b.onclick = () => { useSlot(+b.dataset.slot); renderStoryPanel(); };
+  if ($('stStoryDel')) $('stStoryDel').onclick = () => { if (!confirm(`Delete the journey in slot ${STORY.slot}? This can\u2019t be undone.`)) return; try { localStorage.removeItem(slotKey(STORY.slot)); } catch (e) { } loadStory(); renderStoryPanel(); };
   if ($('stStoryCont')) $('stStoryCont').onclick = () => beginJourney(false);
   if ($('stStoryHof')) $('stStoryHof').onclick = () => { openStoryScreen(); showHallOfFame(); };
-  $('stStoryNew').onclick = () => { if (sv && got > 0 && got < TOTAL && !confirm('Start a new journey? Your current badges will be reset.')) return; beginJourney(true); };
+  $('stStoryNew').onclick = () => { if (sv && !confirm(`Start a new journey in slot ${STORY.slot}? The journey saved there will be replaced.`)) return; beginJourney(true); };
 }
 // the mode switch knows about STORY too
 const _storySyncOnline = syncOnlineUi;

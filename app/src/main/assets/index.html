@@ -2702,7 +2702,7 @@ function zMoveOf(m) {
   const type = pick && Z_BY_TYPE[pick.type] ? pick.type : m.types[0];
   return { name: Z_BY_TYPE[type] || 'Breakneck Blitz', type };
 }
-const Z_ANIM = 2400, Z_HIT = 1750;
+const Z_ANIM = 4300, Z_HIT = 3700;      // cinematic (≈1.6 s), then the in-arena final smash; the hit lands at its climax
 function canZ(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && !sd.zUsed && sd.zCharge >= 100 && sd.state === 'idle' && !sd.cast && sd.stun <= 0 && m.hp > 0 && present(other(S)); }
 function zMove(S) {
   if (!canZ(S)) return false;
@@ -2716,6 +2716,7 @@ function zMoveTick(S, dt) {
   if (!sd.zHit && sd.stateT >= Z_HIT) {
     sd.zHit = true; const u = act(S), z = sd.zInfo;
     const mv = { name: z.name, type: z.type, pow: 220, cat: u.stats.atk >= u.stats.spa ? 'P' : 'S', e: {}, anim: 'beam' };
+    const fsd = side(other(S)); fsd.dodgeT = 0; fsd.dig = false;          // a Z-Move always hits
     sd.state = 'idle'; applyHit(S, mv, u, { z: true, floor: .32, cap: .6 }); if (sd.state === 'idle') sd.state = 'zmove';
     VFX.zImpact(S, z.type);
   }
@@ -6338,7 +6339,9 @@ renderAiLevels();
   const opts = AI_LEVEL_NAMES.map((n, i) => `<option value="${i + 1}">${i + 1} · ${n}</option>`).join('');
   const row = document.createElement('label'); row.className = 'qrow';
   row.innerHTML = `<span>AI level<small>Red (AI vs AI) · Blue — changes apply right away</small></span><span style="display:flex;gap:6px"><select id="setLvA" aria-label="Red AI level">${opts}</select><select id="setLvB" aria-label="Blue AI level">${opts}</select></span>`;
-  const first = card.querySelector('.qrow'); card.insertBefore(row, first || null);
+  // under the "Battle" heading (falls back to the top of the panel)
+  const heading = [...card.children].find(e => !e.classList.contains('qrow') && /^\s*battle\s*$/i.test(e.textContent));
+  if (heading) heading.after(row); else { const first = card.querySelector('.qrow'); card.insertBefore(row, first || null); }
   for (const S of ['A', 'B']) $('setLv' + S).onchange = e => {
     START.lvl[S] = +e.target.value; saveLevels(); renderAiLevels();
     if (G && !G.online && !(typeof STORY !== 'undefined' && STORY.battle)) G.aiLevel = currentAiLevels();
@@ -6430,7 +6433,7 @@ async function battleCountdown(my) {
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '15.2';
+const APP_VERSION = '15.3';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -7111,10 +7114,19 @@ const typeCol = t => (t === 'Mystery' ? '#20232f' : t === 'Rival' ? '#5b7cff' : 
 const hasPortrait = g => TRAINERS.includes(g.file);
 const portraitUrl = file => spriteUrl(file + '_trainer.png');
 
-const STORY_KEY = 'arena151.story';
-const STORY = { save: null, battle: null, prevTrsel: null, walking: false, open: false };
-function loadStory() { try { STORY.save = JSON.parse(localStorage.getItem(STORY_KEY)) || null; } catch (e) { STORY.save = null; } if (STORY.save && STORY.save.badges < GYMS.length) STORY.save.finishedAt = null; return STORY.save; }
-function saveStory() { try { localStorage.setItem(STORY_KEY, JSON.stringify(STORY.save)); } catch (e) { } }
+const STORY_KEY = 'arena151.story';                          // the old single save (moved into slot 1)
+const STORY_SLOTS = 3, slotKey = n => STORY_KEY + '.' + n;
+const STORY = { save: null, battle: null, prevTrsel: null, walking: false, open: false, slot: 1 };
+try {
+  STORY.slot = Math.min(STORY_SLOTS, Math.max(1, +localStorage.getItem('arena151.storySlot') || 1));
+  const old = localStorage.getItem(STORY_KEY);
+  if (old && !localStorage.getItem(slotKey(1))) localStorage.setItem(slotKey(1), old);
+  if (old) localStorage.removeItem(STORY_KEY);
+} catch (e) { }
+function readSlot(n) { try { const v = JSON.parse(localStorage.getItem(slotKey(n))); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
+function useSlot(n) { STORY.slot = n; try { localStorage.setItem('arena151.storySlot', String(n)); } catch (e) { } loadStory(); }
+function loadStory() { STORY.save = readSlot(STORY.slot); if (STORY.save && STORY.save.badges < GYMS.length) STORY.save.finishedAt = null; return STORY.save; }
+function saveStory() { try { localStorage.setItem(slotKey(STORY.slot), JSON.stringify(STORY.save)); } catch (e) { } }
 loadStory();
 
 /* ---------- styles ---------- */
@@ -7232,6 +7244,15 @@ loadStory();
 #startOv .st-storyp p{margin:0;font:13px var(--ui);color:#d9deff}
 #startOv .st-storyp .badges{display:flex;gap:4px;flex-wrap:wrap}
 #startOv .st-storyp{justify-content:space-between}
+#startOv .st-storyp .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#startOv .st-storyp .slot{border:2px solid rgba(255,255,255,.18);border-radius:12px;background:rgba(8,12,32,.55);color:#fff;padding:5px 8px;text-align:left;cursor:pointer;font-family:var(--ui);min-width:0}
+#startOv .st-storyp .slot b{display:block;font:900 13px var(--ui)}
+#startOv .st-storyp .slot small{display:block;font:700 11px var(--ui);color:#c7cff0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#startOv .st-storyp .slot.on{border-color:#ffd84a;background:rgba(255,216,74,.16);box-shadow:0 0 10px rgba(255,216,74,.35)}
+#startOv .st-storyp .big.del{background:rgba(255,255,255,.12);color:#ffb3b3}
+@media (max-height:560px){#startOv .st-storyp .slot{padding:3px 6px}#startOv .st-storyp .slot b{font-size:11px}#startOv .st-storyp .slot small{font-size:9px}}
+/* Settings and Controls open above everything, including the start screen and the story map */
+#setOv.show,#helpOv.show{position:fixed;z-index:80}
 /* the boxes grow into the free space (to the bottom of the screen); the screen still shrinks to fit when it has to */
 #startOv .st-grid{flex:1 0 auto}
 /* story mode: the panel is the blue box's content, so the box grows to fit every bubble and the red box matches it */
@@ -7637,13 +7658,19 @@ function renderStoryPanel() {
   const bubbles = GYMS.map((g, i) => `<div class="bub ${i < got ? 'on' : ''} ${i === got ? 'next' : ''}" style="--c:${orderColor(g.n)}" title="${g.n}. ${g.leader} \u2014 ${g.badge}${i < got ? ' (earned)' : ''}">
       <div class="face">${hasPortrait(g) ? `<img src="${portraitUrl(g.file)}" alt="">` : `<b>${g.leader[0]}</b>`}</div><span class="num">${g.n}</span><img class="bdg" src="${badgeUrl(g)}" alt=""></div>`).join('')
     + (sv && sv.badges >= TOTAL ? `<div class="bub ${sv.ash ? 'on' : 'next'}" style="--c:#c8ccd8" title="${sv.ash ? 'Ash \u2014 Mt. Silver' : '??? \u2014 a secret battle awaits'}"><div class="face">${hasPortrait(ASH) ? `<img src="${portraitUrl(ASH.file)}" alt="" style="${sv.ash ? '' : 'filter:brightness(0)'}">` : '<b>?</b>'}</div><span class="num">?</span></div>` : '');
-  p.innerHTML = `<div class="bubs">${bubbles}</div>
+  const tabs = Array.from({ length: STORY_SLOTS }, (_, k) => { const n = k + 1, v = readSlot(n);
+    const info = !v ? 'Empty' : v.ash ? (v.ash === 'won' ? 'Beat Ash!' : 'Champion') : v.badges >= TOTAL ? 'Champion' : `${v.badges}/${TOTAL} badges`;
+    return `<button type="button" class="slot ${n === STORY.slot ? 'on' : ''}" data-slot="${n}" aria-pressed="${n === STORY.slot}"><b>Slot ${n}</b><small>${info}${v ? ' \u00B7 ' + escapeHtml(trainerTitle(v.trainer)) : ''}</small></button>`; }).join('');
+  p.innerHTML = `<div class="slots" role="group" aria-label="Story save slots">${tabs}</div><div class="bubs">${bubbles}</div>
     <div class="row">${sv && (got < TOTAL || !sv.ash) ? `<button class="big" type="button" id="stStoryCont">${got < TOTAL ? `Continue (${got}/${TOTAL})` : 'Continue journey'}</button>` : ''}
       <button class="big ${sv ? 'alt' : ''}" type="button" id="stStoryNew">${sv ? 'New journey' : 'Begin journey'}</button>
-      ${sv && sv.ash ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}</div>`;
+      ${sv && sv.ash ? `<button class="big" type="button" id="stStoryHof">Hall of Fame</button>` : ''}
+      ${sv ? `<button class="big alt del" type="button" id="stStoryDel" title="Delete the journey in slot ${STORY.slot}">Delete</button>` : ''}</div>`;
+  for (const b of p.querySelectorAll('.slot')) b.onclick = () => { useSlot(+b.dataset.slot); renderStoryPanel(); };
+  if ($('stStoryDel')) $('stStoryDel').onclick = () => { if (!confirm(`Delete the journey in slot ${STORY.slot}? This can\u2019t be undone.`)) return; try { localStorage.removeItem(slotKey(STORY.slot)); } catch (e) { } loadStory(); renderStoryPanel(); };
   if ($('stStoryCont')) $('stStoryCont').onclick = () => beginJourney(false);
   if ($('stStoryHof')) $('stStoryHof').onclick = () => { openStoryScreen(); showHallOfFame(); };
-  $('stStoryNew').onclick = () => { if (sv && got > 0 && got < TOTAL && !confirm('Start a new journey? Your current badges will be reset.')) return; beginJourney(true); };
+  $('stStoryNew').onclick = () => { if (sv && !confirm(`Start a new journey in slot ${STORY.slot}? The journey saved there will be replaced.`)) return; beginJourney(true); };
 }
 // the mode switch knows about STORY too
 const _storySyncOnline = syncOnlineUi;
@@ -7875,13 +7902,13 @@ function zStart(S, monName, zName, zType) {
 function zFrame(now) {
   ZFX.loop = null; const r = ZFX.run; if (!r) { ZFX.cv.style.display = 'none'; return; }
   const t = now - r.t0, c = ZFX.ctx; c.clearRect(0, 0, ZW, ZH);
-  const fadeOut = t > 2100 ? Math.max(0, 1 - (t - 2100) / 300) : 1;
+  const fadeOut = t > 1350 ? Math.max(0, 1 - (t - 1350) / 250) : 1;
   // backdrop: darkened screen tinted toward the type colour
   c.globalAlpha = Math.min(1, t / 250) * fadeOut; c.fillStyle = zMix('#05060f', r.col, .18); c.fillRect(0, 0, ZW, ZH);
   for (let y = 0; y < ZH; y += 4) { c.fillStyle = 'rgba(255,255,255,.025)'; c.fillRect(0, y, ZW, 1); }
   // act 1 (0–700 ms): Z crystal + diagonal cut-in banner
-  if (t < 900) {
-    const k = Math.min(1, t / 380), bx = -ZW + ease(k) * ZW;
+  if (t < 800) {
+    const k = Math.min(1, t / 320), bx = -ZW + ease(k) * ZW;
     c.save(); c.translate(bx, 0); c.fillStyle = r.col; c.beginPath(); c.moveTo(0, 46); c.lineTo(ZW, 30); c.lineTo(ZW, 112); c.lineTo(0, 128); c.fill();
     c.fillStyle = zMix(r.col, '#000000', .45); c.fillRect(0, 118, ZW, 3); c.restore();
     drawSprite(c, r.img, bx + 74, 80, 80, 1);
@@ -7896,8 +7923,8 @@ function zFrame(now) {
     c.fillStyle = r.col; c.font = 'bold 12px "Lilita One", sans-serif'; c.fillText('Z', zx - 4, zy + 1);
   }
   // act 2 (700–1750 ms): the attacker looms behind its type choreography
-  if (t >= 700 && t < 2200) {
-    const k = Math.min(1, (t - 700) / 1050), a = Math.min(1, (t - 700) / 300) * fadeOut;
+  if (t >= 600 && t < 1600) {
+    const k = Math.min(1, (t - 600) / 900), a = Math.min(1, (t - 600) / 200) * fadeOut;
     drawSprite(c, r.img, CX, CY - 10, 150, .22 * a, r.col);
     drawSprite(c, r.img, CX + Math.sin(t / 40) * 1.5, CY - 10, 150, .14 * a);
     c.save(); c.globalAlpha = a; const f = ZCHOREO[r.type] || ZCHOREO.Normal; f(c, k, r.P, r.col, r.name); c.restore();
@@ -7905,7 +7932,7 @@ function zFrame(now) {
     c.globalAlpha = fadeOut; c.font = 'bold 13px "Lilita One", sans-serif'; c.fillStyle = '#05060f'; c.fillText(r.name.toUpperCase(), 9, ZH - 11); c.fillStyle = r.col; c.fillText(r.name.toUpperCase(), 8, ZH - 12);
   }
   // act 3 (1750 ms): impact flash, shockwave, embers
-  if (t >= 1750) {
+  if (false) {
     const k = Math.min(1, (t - 1750) / 450);
     if (!r.shook) { r.shook = true; const gc = document.getElementById('game') || document.querySelector('canvas'); if (gc) { gc.classList.remove('zshake'); void gc.offsetWidth; gc.classList.add('zshake'); } }
     c.globalAlpha = Math.max(0, .9 - k * 1.4); c.fillStyle = '#ffffff'; c.fillRect(0, 0, ZW, ZH);
@@ -7913,13 +7940,13 @@ function zFrame(now) {
     for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2; px(c, CX + Math.cos(a) * k * 140, CY + Math.sin(a) * k * 80, 3, i % 2 ? r.col : '#fff3a0'); }
   }
   c.globalAlpha = 1;
-  if (t >= 2400) { ZFX.run = null; c.clearRect(0, 0, ZW, ZH); ZFX.cv.style.display = 'none'; return; }
+  if (t >= 1600) { ZFX.run = null; c.clearRect(0, 0, ZW, ZH); ZFX.cv.style.display = 'none'; return; }
   ZFX.loop = requestAnimationFrame(zFrame);
 }
 
 /* ---------- VFX hooks the simulation calls (also replayed in online battles) ---------- */
-VFX.zStart = (S, monName, zName, zType) => { zStart(S, monName, zName, zType); VFX.shake(3, 600); };
-VFX.zImpact = (S, zType) => { const fs = other(S), sd = side(fs); try { screenFlash('#ffffff', .5); VFX.shake(16, 600); burstAt(sd.x, sd.y - 30, zTypeCol(zType), 40, 420, 3); } catch (e) { } };
+VFX.zStart = (S, monName, zName, zType) => { zStart(S, monName, zName, zType); VFX.shake(3, 600); zSmashStart(S, monName, zType); };
+VFX.zImpact = (S, zType) => { const fs = other(S), sd = side(fs); try { screenFlash('#ffffff', .7); VFX.shake(22, 800); burstAt(sd.x, sd.y - 30, zTypeCol(zType), 70, 620, 4); burstAt(sd.x, sd.y - 30, '#ffffff', 40, 420, 3); } catch (e) { } };
 VFX.dodge = (S, dx, dy) => {
   const sd = side(S); try { for (let i = 1; i <= 4; i++) burstAt(sd.x - dx * i * 14, sd.y - 20 - dy * i * 8, 'rgba(160,220,255,.9)', 3, 80, 1); } catch (e) { }
   if (S === 'A' && typeof haptic === 'function') haptic(15);
@@ -7956,6 +7983,105 @@ function doDodge() {
   return dodge('A', sd.vx, sd.vy);
 }
 
+/* ---------- the final smash: a huge in-arena attack unique to the Pokémon ----------
+   The pattern follows how the Pokémon actually fights (the animation of its main attack); its own giant
+   sprite looms over the arena; its type colours and a seed from its name vary counts, angles, spin and timing. */
+const ZS = [];
+const ZS_START = 1500, ZS_HIT = 2200, ZS_END = 2800;          // ms after the Z-Move begins: world part, impact, end
+const STYLE_OF = { beam: 'beam', bolt: 'beam', wave: 'beam', projectile: 'barrage', stars: 'barrage', leaves: 'barrage', powder: 'barrage', splash: 'barrage', burst: 'barrage', multi: 'barrage',
+  contact: 'rush', dash: 'rush', slash: 'slash', quake: 'quake', dig: 'quake', hex: 'cosmic', psy: 'cosmic', aura: 'cosmic', drain: 'cosmic', heal: 'cosmic', wind: 'storm', sky: 'barrage' };
+const hashStr = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+function zStyle(m) {
+  const atk = m.moves.map(n => MOVES[n]).filter(mv => mv && mv.cat !== 'X' && (mv.pow || 0) > 0).sort((a, b) => b.pow - a.pow);
+  const pick = atk.find(mv => mv.type === m.types[0]) || atk[0];
+  if (m.types.includes('Flying') && !(pick && STYLE_OF[pick.anim] === 'beam')) return 'storm';   // flyers whip up storms
+  if (pick && pick.anim === 'sky') return 'barrage';                                               // rock-throwers rain boulders
+  return STYLE_OF[pick && pick.anim] || 'beam';
+}
+function silhouette(img, col) { if (!img) return null; const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); return c; }
+function zSmashStart(S, mon, type) {
+  if (!G) return; const m = act(S), seed = hashStr(mon), col = zTypeCol(type), img = zSprite(mon);
+  let r = seed; const rnd2 = () => ((r = Math.imul(r ^ (r >>> 15), 2246822519) >>> 0) % 10000) / 10000;   // seeded: the same Pokémon always looks the same
+  ZS.push({ S, mon, type, t0: clock.t, style: zStyle(m), seed, rnd: rnd2, col, light: zMix(col, '#ffffff', .55), dark: zMix(col, '#000000', .45), img, sil: silhouette(img, col), P: [], hit: false,
+    n: 3 + (seed % 4), spin: seed & 1 ? 1 : -1, ang: (seed % 360) * Math.PI / 180 });
+}
+function giant(z, x, y, h, a) { if (!z.img) return; const w = h * z.img.width / z.img.height; bctx.save(); bctx.imageSmoothingEnabled = false;
+  bctx.globalAlpha = a * .5; bctx.drawImage(z.sil, Math.round(x - w / 2 - 2), Math.round(y - h), Math.round(w + 4), Math.round(h + 4));
+  bctx.globalAlpha = a; bctx.drawImage(z.img, Math.round(x - w / 2), Math.round(y - h), Math.round(w), Math.round(h)); bctx.restore(); }
+function drawZSmash() {
+  if (!G || !ZS.length) return;
+  const W = Math.round(DW / cam.pz), H = Math.round(DH / cam.pz), U = H / 280;     // the visible part of the arena, in effect pixels
+  for (let i = ZS.length - 1; i >= 0; i--) {
+    const z = ZS[i], T = clock.t - z.t0 - ZS_START;
+    if (clock.t < z.t0 || T > ZS_END) { ZS.splice(i, 1); continue; }
+    if (T < 0) continue;
+    const A = side(z.S), F = side(other(z.S)), ax = bx(A.x), ay = by(A.y - 20), fx = bx(F.x), fy = by(F.y - 20), dir = Math.sign(fx - ax) || 1;
+    const out = T > ZS_HIT ? 1 - (T - ZS_HIT) / (ZS_END - ZS_HIT) : 1, t = T / 1000;
+    // the arena goes dark, tinted by the type, and the attacker's giant form towers over the battlefield
+    aRect(0, 0, W, H, '#03040b', .62 * Math.min(1, T / 250) * out); aRect(0, 0, W, H, z.col, .1 * out);
+    giant(z, ax - dir * W * .1, ay + H * .3, H * .78 + Math.sin(t * 3) * 6 * U, Math.min(1, T / 400) * .8 * out);
+    for (let a = 0; a < 3; a++) { const r = (26 + a * 14) * U + Math.sin(t * 8 + a) * 4; aRing(ax, ay, r, r * .6, z.light, .6 * out, 3); }
+    const go = Math.max(0, (T - 600) / (ZS_HIT - 600));
+    if (T > 600 && T < ZS_HIT + 200) STYLES[z.style](z, { ax, ay, fx, fy, dir, W, H, U, go, t });
+    if (T >= ZS_HIT) { const q = (T - ZS_HIT) / (ZS_END - ZS_HIT); aDisc(fx, fy, (90 * (1 - q) + 14) * U, '#ffffff', .9 * (1 - q)); aDisc(fx, fy, (60 * (1 - q) + 8) * U, z.light, .9 * (1 - q));
+      for (let rr = 0; rr < 4; rr++) { const R = (50 + q * 320 + rr * 30) * U; aRing(fx, fy, R, R * .6, rr % 2 ? z.col : '#ffffff', (1 - q) * .95, Math.round(4 * U)); } }
+  }
+  bctx.globalAlpha = 1;
+}
+const STYLES = {
+  beam(z, o) {                                                      // a colossal beam, a third of the screen tall, sweeping to the edge
+    const { ax, ay, fy, dir, W, U, go, t } = o, orb = Math.min(1, go * 3), ox = ax + dir * 26 * U;
+    aDisc(ox, ay, (12 + orb * 40) * U, z.col, .9); aDisc(ox, ay, (8 + orb * 26) * U, z.light, 1); aDisc(ox, ay, (4 + orb * 13) * U, '#ffffff', 1);
+    if (go > .3) { const len = Math.min(1, (go - .3) / .7 * 1.6), ex = dir > 0 ? ox + (W + 80 - ox) * len : ox - (ox + 80) * len, th = (46 + Math.sin(t * 30) * 5) * U;
+      const x0 = Math.min(ox, ex), x1 = Math.max(ox, ex), yc = ay + (fy - ay) * .5, st = Math.max(2, Math.round(2 * U));
+      for (let x = x0; x < x1; x += st) { const wob = Math.sin(x * .05 + t * 40) * 5 * U; aRect(x, yc - th - wob, st, (th + wob) * 2, z.col, .78); aRect(x, yc - th * .55, st, th * 1.1, z.light, .92); aRect(x, yc - th * .22, st, th * .44, '#ffffff', 1); }
+      for (let r = 0; r < z.n + 3; r++) { const span = x1 - x0 + 1, px2 = x0 + (((t * 420 * z.spin + r * 90 * U) % span) + span) % span; aRing(px2, yc, 14 * U, th + 14 * U, '#ffffff', .65, Math.round(3 * U)); } }
+  },
+  barrage(z, o) {                                                   // a rain of huge projectiles across the whole arena, then one enormous shot
+    const { ax, ay, fx, fy, W, H, U, go } = o, n = 22 + (z.seed % 15);
+    if (!z.P.length) for (let i = 0; i < n; i++) z.P.push({ d: z.rnd() * .7, x: z.rnd(), y: .12 + z.rnd() * .76, r: 9 + z.rnd() * 13, from: z.rnd() < .55 ? 'sky' : 'me' });
+    for (const p of z.P) { const q = (go - p.d) / .18, tx = p.x * W, ty = p.y * H, r = p.r * U; if (q < 0) continue;
+      if (q < 1) { const sx = p.from === 'sky' ? tx - 120 * U : ax, sy = p.from === 'sky' ? -30 * U : ay, x = sx + (tx - sx) * q, y = sy + (ty - sy) * q; aLine(x, y, x - (tx - sx) * .15, y - (ty - sy) * .15, z.light, .7, Math.round(r * .6)); aDisc(x, y, r, z.col, .95); aDisc(x, y, r * .5, '#ffffff', 1); }
+      else if (q < 2) { const e = q - 1; aDisc(tx, ty, r * 2.4 * (1 - e), z.light, .85 * (1 - e)); aRing(tx, ty, r * 3.2 * e + 6, (r * 3.2 * e + 6) * .6, z.col, 1 - e, Math.round(3 * U)); } }
+    if (go > .72) { const q = (go - .72) / .28, x = ax + (fx - ax) * q, y = ay + (fy - ay) * q - Math.sin(q * Math.PI) * 90 * U; aDisc(x, y, 62 * U, z.col, .95); aDisc(x, y, 42 * U, z.light, 1); aDisc(x, y, 20 * U, '#ffffff', 1); }
+  },
+  rush(z, o) {                                                      // a giant afterimage of the Pokémon charges across the screen again and again
+    const { fx, fy, W, H, U, go } = o, passes = 2 + (z.seed % 3), seg = 1 / passes, i = Math.min(passes - 1, Math.floor(go / seg)), q = (go - i * seg) / seg, ltr = (i + (z.seed & 1)) % 2 === 0, sg = ltr ? 1 : -1;
+    const x = ltr ? -W * .25 + W * 1.5 * q : W * 1.25 - W * 1.5 * q, y = fy + (i % 2 ? -18 : 14) * U;
+    for (let l = 0; l < 16; l++) { const yy = y - H * .32 + l * H * .04; aLine(x - sg * W * .6, yy, x - sg * W * .05, yy, z.light, .45, Math.round(2 * U)); }
+    for (let s2 = 0; s2 < 6; s2++) giant(z, x - sg * s2 * 46 * U, y + H * .2, H * .5, .62 - s2 * .09);
+    if (Math.abs(x - fx) < 60 * U) { aDisc(fx, fy, 50 * U, '#ffffff', .9); for (let a = 0; a < 10; a++) { const an = a * Math.PI / 5; aLine(fx, fy, fx + Math.cos(an) * 120 * U, fy + Math.sin(an) * 80 * U, z.col, .95, Math.round(5 * U)); } }
+  },
+  slash(z, o) {                                                     // slashes that span the screen carve the arena, then a giant X
+    const { fx, fy, W, H, U, go } = o, n = 5 + (z.seed % 4);
+    for (let i = 0; i < n; i++) { const d = i / (n + 1) * .85, q = (go - d) / .16; if (q < 0) continue; const an = z.ang + i * 2.1 * z.spin, cx = fx + Math.cos(i * 1.7) * W * .12, cy = fy + Math.sin(i * 2.3) * H * .14, L = Math.min(1, q) * W * .7;
+      const dx = Math.cos(an) * L, dy = Math.sin(an) * L * .55, fade = q > 1 ? Math.max(0, 1 - (q - 1) * .5) : 1;
+      aLine(cx - dx, cy - dy, cx + dx, cy + dy, z.col, .85 * fade, Math.round(16 * U)); aLine(cx - dx, cy - dy, cx + dx, cy + dy, z.light, .9 * fade, Math.round(8 * U)); aLine(cx - dx, cy - dy, cx + dx, cy + dy, '#ffffff', fade, Math.round(3 * U)); }
+    if (go > .78) { const q = (go - .78) / .22, L = q * H * .55; for (const sg of [1, -1]) { aLine(fx - L, fy - sg * L * .7, fx + L, fy + sg * L * .7, z.col, .9, Math.round(20 * U)); aLine(fx - L, fy - sg * L * .7, fx + L, fy + sg * L * .7, '#ffffff', 1, Math.round(8 * U)); } }
+  },
+  quake(z, o) {                                                     // fissures split the whole floor, geysers erupt toward the target
+    const { ax, ay, fx, fy, W, H, U, go } = o, cols = 7 + (z.seed % 4), rows = 3;
+    for (let f = 0; f < 9; f++) { const an = f / 9 * Math.PI * 2 + z.ang; let x = ax, y = ay + 24 * U; const L = go * 34; for (let sgm = 0; sgm < L; sgm++) { const nx = x + Math.cos(an + Math.sin(sgm * 1.3 + f) * .4) * 18 * U, ny = y + Math.sin(an) * 10 * U; aLine(x, y, nx, ny, '#1a0f08', .95, Math.round(6 * U)); aLine(x, y, nx, ny, z.light, .7, Math.round(2 * U)); x = nx; y = ny; } }
+    for (let c = 0; c < cols; c++) for (let r2 = 0; r2 < rows; r2++) { const gx = (c + .5) / cols * W, gy = H * (.32 + r2 * .22), d = Math.hypot(gx - ax, gy - ay) / W, q = (go - d * .6) / .25; if (q < 0 || q > 1.4) continue;
+      const h = Math.sin(Math.min(1, q) * Math.PI) * H * .36, w = 16 * U; aRect(gx - w, gy - h, w * 2, h, z.col, .88); aRect(gx - w * .45, gy - h, w * .9, h, z.light, .95); aDisc(gx, gy - h, w * 1.2, '#ffffff', .85); }
+    if (go > .78) { const q = (go - .78) / .22, h = q * H * 1.1, w = 46 * U; aRect(fx - w, fy + 20 * U - h, w * 2, h, z.col, .92); aRect(fx - w * .45, fy + 20 * U - h, w * .9, h, '#ffffff', .95); }
+  },
+  cosmic(z, o) {                                                    // rings wider than the screen and orbiting orbs collapse onto the target
+    const { fx, fy, W, U, go, t } = o, orbs = 10 + (z.seed % 8), R = (1 - go) * W * .75 + 26 * U;
+    for (let rr = 0; rr < 5; rr++) aRing(fx, fy, R * (1 - rr * .15), R * (1 - rr * .15) * .55, rr % 2 ? z.col : z.light, .8, Math.round(5 * U));
+    for (let i = 0; i < orbs; i++) { const an = i / orbs * Math.PI * 2 + t * 4 * z.spin, rr = R * (.6 + (i % 3) * .15), r = (11 + (i % 3) * 5) * U; aDisc(fx + Math.cos(an) * rr, fy + Math.sin(an) * rr * .55, r, i % 2 ? z.col : z.light, .95); aDisc(fx + Math.cos(an) * rr, fy + Math.sin(an) * rr * .55, r * .35, '#ffffff', 1); }
+    aDisc(fx, fy, (10 + go * 54) * U, z.dark, .85); aDisc(fx, fy, (5 + go * 32) * U, z.light, .95); aDisc(fx, fy, (2 + go * 14) * U, '#ffffff', 1);
+  },
+  storm(z, o) {                                                     // towering tornadoes sweep the field and converge on the target
+    const { fx, fy, W, H, U, go, t } = o, n = 3 + (z.seed % 3);
+    for (let l = 0; l < 22; l++) { const y = (l * H / 22 + t * 500) % H; aLine(0, y, W, y + 26 * U * z.spin, z.light, .22, Math.round(2 * U)); }
+    for (let i = 0; i < n; i++) { const start = (i + .5) / n * W, x = start + (fx - start) * go, base = fy + 40 * U, segs = 26;
+      for (let l = 0; l < segs; l++) { const y = base - l * H * .75 / segs, wdt = (10 + l * 3.4) * U, sw = Math.sin(t * 12 * z.spin + l * .6 + i) * wdt; aRect(x + sw - 6 * U, y, 12 * U, 7 * U, l % 3 ? z.light : '#ffffff', .85); aRect(x - sw - 4 * U, y, 8 * U, 5 * U, z.col, .75); } }
+  }
+};
+const _drawWorldFx = drawWorldFx;
+drawWorldFx = function () { _drawWorldFx.apply(this, arguments); try { drawZSmash(); } catch (e) { } };
+window.zSmashStyle = m => zStyle(m);
 window.doDodge = doDodge;
 })();
 

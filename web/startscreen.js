@@ -318,7 +318,9 @@ renderAiLevels();
   const opts = AI_LEVEL_NAMES.map((n, i) => `<option value="${i + 1}">${i + 1} · ${n}</option>`).join('');
   const row = document.createElement('label'); row.className = 'qrow';
   row.innerHTML = `<span>AI level<small>Red (AI vs AI) · Blue — changes apply right away</small></span><span style="display:flex;gap:6px"><select id="setLvA" aria-label="Red AI level">${opts}</select><select id="setLvB" aria-label="Blue AI level">${opts}</select></span>`;
-  const first = card.querySelector('.qrow'); card.insertBefore(row, first || null);
+  // under the "Battle" heading (falls back to the top of the panel)
+  const heading = [...card.children].find(e => !e.classList.contains('qrow') && /^\s*battle\s*$/i.test(e.textContent));
+  if (heading) heading.after(row); else { const first = card.querySelector('.qrow'); card.insertBefore(row, first || null); }
   for (const S of ['A', 'B']) $('setLv' + S).onchange = e => {
     START.lvl[S] = +e.target.value; saveLevels(); renderAiLevels();
     if (G && !G.online && !(typeof STORY !== 'undefined' && STORY.battle)) G.aiLevel = currentAiLevels();
