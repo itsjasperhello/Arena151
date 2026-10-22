@@ -9,6 +9,20 @@ const NET = { ws: null, active: false, mode: 'local', url: '', status: '', code:
   latest: null, evq: [], lastRx: 0, lastSnap: 0, predicting: false, hist: [], corr: { x: 0, y: 0 }, interp: { A: [], B: [] }, clockOff: null, offs: [], token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
 try { NET.url = localStorage.getItem('arena151.server') || ''; NET.mode = localStorage.getItem('arena151.mode') === 'online' ? 'online' : 'local'; } catch (e) { }
 const netSend = msg => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(msg)); };
+const WEB_DEFAULT_SERVER = 'poke.itsjasperhello.com';
+const isWebVersion = () => !!window.DesktopApp || (!window.AndroidApp && !window.IOSApp);
+// A site name (e.g. poke.itsjasperhello.com) is used as-is: no port is added. Secure first, then plain.
+// IP addresses and local names keep the old behavior (the game server's port 8151).
+function serverCandidates(input) {
+  const raw = String(input || '').trim(); if (!raw) return [];
+  if (/^(wss?|https?):\/\//i.test(raw)) { const u = serverUrl(raw); return u ? [u] : []; }
+  const m = raw.match(/^([^\/:]+)(?::(\d+))?(\/.*)?$/); if (!m) { const u = serverUrl(raw); return u ? [u] : []; }
+  const host = m[1], port = m[2], path = m[3] || '/ws';
+  const isSiteName = /[a-z]/i.test(host) && host.includes('.') && !/^localhost$/i.test(host);
+  if (!isSiteName || port) { const u = serverUrl(raw); return u ? [u] : []; }
+  const secureOnly = location.protocol === 'https:';           // a secure page can only open secure connections
+  return secureOnly ? ['wss://' + host + path] : ['wss://' + host + path, 'ws://' + host + path];
+}
 function serverUrl(input) {
   let s = String(input || '').trim(); if (!s) return '';
   if (/^https?:\/\//i.test(s)) s = s.replace(/^http/i, 'ws');
@@ -19,20 +33,22 @@ function netStatus(text, kind) { NET.status = text; const el = $('olStatus'); if
 
 /* ---------- connection ---------- */
 function netConnect() {
-  const url = serverUrl($('olServer').value); if (!url) { netStatus('Enter the server address shown in the setup guide, e.g. 192.168.1.20', 'err'); return Promise.reject(); }
+  const urls = serverCandidates($('olServer').value); if (!urls.length) { netStatus('Enter the server address, e.g. poke.itsjasperhello.com or 192.168.1.20', 'err'); return Promise.reject(); }
   try { localStorage.setItem('arena151.server', $('olServer').value.trim()); } catch (e) { }
-  if (NET.ws && NET.ws.readyState === 1 && NET.ws._url === url) return Promise.resolve();
+  if (NET.ws && NET.ws.readyState === 1 && urls.includes(NET.ws._url)) return Promise.resolve();
   if (NET.ws) try { NET.ws.close(); } catch (e) { }
-  netStatus('Connecting to ' + url + '…');
-  return new Promise((res, rej) => {
-    let ws; try { ws = new WebSocket(url); } catch (e) { netStatus('Could not open a connection to ' + url, 'err'); return rej(); }
-    ws._url = url; NET.ws = ws; NET.wsUrl = url; let ok = false;
-    const fail = setTimeout(() => { if (!ok) { netStatus('No answer from ' + url + '. Is the server running, and is this device on the same network?', 'err'); try { ws.close(); } catch (e) { } rej(); } }, 6000);
+  const tryUrl = (url, last) => new Promise((res, rej) => {
+    netStatus('Connecting to ' + url + '…');
+    let ws; try { ws = new WebSocket(url); } catch (e) { return rej(); }
+    ws._url = url; let ok = false;
+    const fail = setTimeout(() => { if (!ok) { try { ws.close(); } catch (e) { } rej(); } }, 6000);
     ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', v: APP_VERSION }));
-    ws.onmessage = e => { NET.lastRx = performance.now(); let m; try { m = JSON.parse(e.data); } catch (x) { return; } if (m.t === 'hi' && !ok) { ok = true; clearTimeout(fail); netStatus('Connected to the server (v' + m.v + ').', 'ok'); res(); } onNetMessage(m); };
+    ws.onmessage = e => { NET.lastRx = performance.now(); let m; try { m = JSON.parse(e.data); } catch (x) { return; } if (m.t === 'hi' && !ok) { ok = true; clearTimeout(fail); NET.ws = ws; NET.wsUrl = url; netStatus('Connected to the server (v' + m.v + ').', 'ok'); res(); } if (NET.ws === ws || m.t === 'error') onNetMessage(m); };
     ws.onclose = () => { clearTimeout(fail); if (NET.ws === ws) { NET.ws = null; if (NET.active && !NET.over) startReconnect(); } if (!ok) rej(); };
     ws.onerror = () => {};
   });
+  return urls.reduce((chain, url, i) => chain.catch(() => tryUrl(url, i === urls.length - 1)), Promise.reject())
+    .catch(() => { netStatus('No answer from ' + urls.join(' or ') + '. Is the server running and reachable?', 'err'); return Promise.reject(); });
 }
 function myInfo() { return { trainer: trainerTitle(TRSEL.A), trainerFile: TRSEL.A, team: readPickers('A') }; }
 async function hostGame() { try { await netConnect(); } catch (e) { return; } netSend({ t: 'host', ...myInfo(), arena: START.arena, timeLimit: +$('stTime').value || 0 }); netStatus('Creating a game…'); }
@@ -219,7 +235,8 @@ const _showStart = showStart; showStart = () => { if (NET.active) leaveOnline();
   blue.appendChild(panel);
   $('olServer').value = NET.url; $('olHost').onclick = hostGame; $('olJoin').onclick = joinGame;
   // On the hosted desktop page, the game server is reached through the same address and port as the page (/ws).
-  if (!$('olServer').value && window.DesktopApp) $('olServer').value = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+  // The web version (browser) connects to poke.itsjasperhello.com by default; an old remembered arena151 address is replaced.
+  if (isWebVersion() && (!$('olServer').value || /arena151\.itsjasperhello\.com/i.test($('olServer').value))) $('olServer').value = WEB_DEFAULT_SERVER;
   $('olCode').onkeydown = e => { if (e.key === 'Enter') joinGame(); };
   for (const b of mode.children) b.onclick = () => { NET.mode = b.dataset.m; try { localStorage.setItem('arena151.mode', NET.mode); } catch (e) { } if (NET.mode === 'local' && NET.code) leaveOnline(); syncOnlineUi(); };
   syncOnlineUi();

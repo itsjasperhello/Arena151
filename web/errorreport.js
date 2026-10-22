@@ -49,7 +49,10 @@
       var phaseTitle = typeof G !== 'undefined' && G && G.phase === 'title';
       var startOpen = typeof START !== 'undefined' && START && START.open;
       var ov = document.getElementById('startOv'), ovShown = ov && getComputedStyle(ov).display !== 'none';
-      if (startOpen || !phaseTitle || document.getElementById('a151Menu')) return;
+      // Other full screens legitimately sit on top of the menu state: the story map, the tournament bracket, an online session.
+      var busy = ['storyOv', 'tourOv'].some(function (id) { var e = document.getElementById(id); return e && e.classList.contains('show'); })
+        || (typeof NET !== 'undefined' && NET && (NET.active || NET.tour)) || (typeof STORY !== 'undefined' && STORY && (STORY.open || STORY.battle));
+      if (startOpen || !phaseTitle || busy || document.getElementById('a151Menu')) return;
       if (typeof showStart === 'function') { try { showStart(); } catch (x) { add('showStart: ' + (x && x.message)); } }
       if (typeof START !== 'undefined' && START && START.open) return;
       var m = el('div', 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(10,12,30,.92);font:16px system-ui,Segoe UI,Arial,sans-serif;color:#fff');

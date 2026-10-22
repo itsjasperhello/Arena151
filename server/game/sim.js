@@ -50,6 +50,11 @@ const effSpe = m => m.stats.spe * stageMult(m.stages.spe) * (m.status === 'par' 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const present = s => { const sd = side(s); return sd.state === 'idle' && !sd.dig && act(s).hp > 0; };
 const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s === 'B');   // online battles mark both sides human
+// AI difficulty 1–10 per side (G.aiLevel). Level 6 is the classic AI exactly; nothing set = classic.
+// aiK(S, atLevel1, atLevel6, atLevel10) blends a setting between those three points.
+const AI_CLASSIC = 6;
+function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[S]; return l >= 1 && l <= 10 ? l : AI_CLASSIC; }
+function aiK(S, lo, base, hi) { const l = aiLv(S); return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
 
 function calcDamage(u, t, mv, crit, eff, roll = true) {
@@ -171,7 +176,8 @@ function tryCast(S, idx) {
 const WINDUP = mv => mv.cat === 'X' ? 260 : mv.pri > 0 ? 110 : 250;
 function aimPoint(S, accOk, spread = 95) {
   const t = side(other(S));
-  const lead = .18; let x = t.x + t.vx * lead, y = t.y + t.vy * lead;
+  const ai = controlledByAI(S), lead = ai ? aiK(S, .04, .18, .26) : .18; let x = t.x + t.vx * lead, y = t.y + t.vy * lead;
+  if (ai) { const e = aiK(S, 80, 0, 0); if (e > 0) { const a = Math.random() * Math.PI * 2, r = Math.random() * e; x += Math.cos(a) * r; y += Math.sin(a) * r; } }
   if (!accOk) { const a = Math.random() * Math.PI * 2; x += Math.cos(a) * spread; y += Math.sin(a) * spread; }
   return { x: clamp(x, BOUND.x0 - 40, BOUND.x1 + 40), y: clamp(y, BOUND.y0 - 40, BOUND.y1 + 40) };
 }
@@ -341,14 +347,14 @@ function updateSide(S, dt) {
   const rate = clamp(.85 + effSpe(m) / 320, .85, 1.35);
   for (let i = 0; i < m.cd.length; i++) m.cd[i] = Math.max(0, m.cd[i] - dt * rate);
   sd.gcd -= dt; sd.switchCd -= dt; sd.sinceIn += dt;
-  if (controlledByAI(S) && canMega(S) && (m.hp < m.max * .7 || sd.sinceIn > 5000) && Math.random() < dt / 1500) { megaEvolve(S); return; }
+  if (controlledByAI(S) && canMega(S) && (m.hp < m.max * .7 || sd.sinceIn > 5000) && Math.random() < dt / aiK(S, 14000, 1500, 800)) { megaEvolve(S); return; }
   if (sd.stun > 0) { sd.stun -= dt; if (sd.stun <= 0 && sd.stunKind === 'recharge') m.vol.recharge = false; }
   statusTick(S, m, dt);
   if (m.hp <= 0) return;
   const blocked = sd.stun > 0 || m.status === 'slp' || m.status === 'frz';
   if (sd.cast && !blocked) updateCast(S, dt);
   else if (!blocked) {
-    if (controlledByAI(S)) { sd.aiT -= dt; if (sd.aiT <= 0) { sd.aiT = 180 + Math.random() * 300; aiThink(S); } }
+    if (controlledByAI(S)) { sd.aiT -= dt; if (sd.aiT <= 0) { sd.aiT = aiK(S, 950, 180, 90) + Math.random() * aiK(S, 700, 300, 110); aiThink(S); } }
     else if (sd.queued != null) { if (tryCast(S, sd.queued) || (sd.queuedT -= dt) <= 0) sd.queued = null; }
   }
   move(S, dt, isRooted(S));
@@ -386,7 +392,7 @@ function move(S, dt, rooted) {
       dx += ux * clamp(err / 120, -1, 1); dy += uy * clamp(err / 120, -1, 1);
       sd.strafeT -= dt; if (sd.strafeT <= 0) { sd.strafe = Math.random() < .5 ? -1 : 1; sd.strafeT = 900 + Math.random() * 1800; }
       dx += -uy * sd.strafe * .7; dy += ux * sd.strafe * .7;
-      const react = .45 + effSpe(m) / 400;
+      const react = (.45 + effSpe(m) / 400) * aiK(S, .1, 1, 1.6);
       for (const p of G.shots) if (p.owner !== S) { const rx = sd.x - p.x, ry = sd.y - 30 - p.y, dd = Math.hypot(rx, ry); if (dd < 190 && (p.vx * rx + p.vy * ry) > 0) { const s2 = (p.vx * ry - p.vy * rx) > 0 ? 1 : -1; dx += (-p.vy / p.speed) * s2 * 2.2 * react; dy += (p.vx / p.speed) * s2 * 2.2 * react; } }
       for (const mk of G.marks) if (mk.owner !== S) { const rx = sd.x - mk.x, ry = sd.y - mk.y, dd = Math.hypot(rx, ry); if (dd < mk.r + 30) { dx += rx / (dd || 1) * 2 * react; dy += ry / (dd || 1) * 2 * react; } }
       const cx = (BOUND.x0 + BOUND.x1) / 2, cy = (BOUND.y0 + BOUND.y1) / 2;
@@ -436,17 +442,18 @@ function aiThink(S) {
   const sd = side(S), u = act(S), fs = other(S);
   if (!present(fs)) return;
   const t = act(fs), d = dist(sd, side(fs));
-  const all = u.moves.map((n, i) => ({ i, v: scoreMove(u, t, n, d) + Math.random() * .08 }));
+  const all = u.moves.map((n, i) => ({ i, v: scoreMove(u, t, n, d) + Math.random() * aiK(S, 1.2, .08, 0) }));
   const best = all.slice().sort((a, b) => b.v - a.v)[0];
-  sd.prefDist = ['contact', 'dash', 'slash', 'dig'].includes(MOVES[u.moves[best.i]].anim) ? 70 : 250 + (u.stats.spe > 90 ? 60 : 0);
+  sd.prefDist = (['contact', 'dash', 'slash', 'dig'].includes(MOVES[u.moves[best.i]].anim) ? 70 : 250 + (u.stats.spe > 90 ? 60 : 0)) + (Math.random() - .5) * aiK(S, 220, 0, 0);
   const ready = all.filter(x => u.cd[x.i] <= 0).sort((a, b) => b.v - a.v);
   // switch out of a hopeless matchup now and then
   if (S === 'B' || G.auto) {
     const weak = u.moves.every(n => MOVES[n].cat === 'X' || typeEff(MOVES[n].type, t.types) < 1);
-    if (weak && sd.switchCd <= 0 && u.hp / u.max > .4 && Math.random() < .06) { const alt = bestSwitchFor(S); if (alt != null) { requestSwitch(S, alt); return; } }
+    if (weak && sd.switchCd <= 0 && u.hp / u.max > .4 && Math.random() < aiK(S, 0, .06, .2)) { const alt = bestSwitchFor(S); if (alt != null) { requestSwitch(S, alt); return; } }
   }
   if (!ready.length || ready[0].v < .04) return;
-  const pick = (Math.random() < .8 || ready.length < 2) ? ready[0] : ready[1];
+  if (Math.random() < aiK(S, .45, 0, 0)) return;                     // weaker AIs hesitate
+  const pick = (Math.random() < aiK(S, .35, .8, .98) || ready.length < 2) ? ready[0] : ready[1];
   tryCast(S, pick.i);
 }
 function bestSwitchFor(S) {
@@ -503,7 +510,11 @@ function startFaint(S) {
 function teamAlive(S) { return side(S).team.some(m => m.hp > 0); }
 function afterFaint(S) {
   if (!teamAlive(S)) { endBattle(teamAlive(other(S)) ? other(S) : 'draw'); return; }
-  if (controlledByAI(S)) spawnIn(S, bestSwitchFor(S));
+  if (controlledByAI(S)) {
+    const healthy = side(S).team.map((m, i) => (m.hp > 0 ? i : -1)).filter(i => i >= 0);
+    const sloppy = healthy.length && Math.random() < aiK(S, .85, 0, 0);
+    spawnIn(S, sloppy ? healthy[Math.floor(Math.random() * healthy.length)] : bestSwitchFor(S));
+  }
   else { side(S).state = 'wait'; G.phase = 'pick'; if (typeof onNeedPick === 'function') onNeedPick(); }
 }
 function decideByHp(reason) {

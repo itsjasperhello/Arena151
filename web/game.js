@@ -140,6 +140,7 @@ async function startBattle(picksA, picksB, stageId) {
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
+  G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
   $('log').innerHTML = ''; $('timer').textContent = '0:00'; movesKey = ''; rosterKey = '';
   logLine(`${TEAM_NAME.A} and ${TEAM_NAME.B} meet in the ${STAGE.name}. Live battle — six Pokémon each.`, 't');

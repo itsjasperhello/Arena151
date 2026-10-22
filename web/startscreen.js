@@ -42,6 +42,12 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
 #startOv .st-ctrl button{border:0;border-radius:999px;padding:6px 16px;font:700 13px var(--ui);color:#c7cff0;background:transparent;cursor:pointer;letter-spacing:.06em}
 #startOv .st-ctrl button.on{background:#fff;color:#141a33}
 #startOv .st-ctrl button:disabled{cursor:default;opacity:.55}
+#startOv .st-ctlrow{display:flex;flex-direction:column;align-items:center;gap:5px}
+#startOv .st-lvl{display:flex;align-items:center;gap:4px;border-radius:999px;background:rgba(0,0,0,.35);padding:3px}
+#startOv .st-lvl[hidden]{display:none}
+#startOv .st-lvl button{width:24px;height:24px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font:800 15px var(--ui);cursor:pointer;line-height:1}
+#startOv .st-lvl span{font:800 12px var(--ui);color:#ffd84a;letter-spacing:.06em;min-width:118px;text-align:center}
+#startOv .st-lvl .nm{color:#c7cff0;font-weight:700}
 #startOv .st-note{text-align:center;font:12px var(--ui);color:#9aa6d6;min-height:15px}
 #startOv .st-team{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 #startOv .st-mon{position:relative;color:#fff;font-family:var(--ui);border-radius:14px;padding:6px 4px 5px;background:rgba(8,12,32,.55);border:1px solid rgba(255,255,255,.1);cursor:pointer;text-align:center;transition:transform .12s,border-color .12s}
@@ -96,7 +102,8 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
   #startOv .st-tag{display:none} #startOv .st-tsel,#startOv .st-note{display:none}
   #startOv .st-trainer{grid-area:tr;gap:2px} #startOv .st-stage{width:70px;height:70px} #startOv .st-arrow{width:24px;height:24px;font-size:15px}
   #startOv .st-tname{grid-area:name;align-self:end;text-align:left;font-size:18px} #startOv .blue .st-tname{text-align:right}
-  #startOv .st-ctrl{grid-area:ctrl;margin:0;align-self:start} #startOv .blue .st-ctrl{justify-self:end} #startOv .st-ctrl button{padding:4px 11px;font-size:11px}
+  #startOv .st-ctlrow{grid-area:ctrl;flex-direction:row;align-self:start;gap:6px} #startOv .blue .st-ctlrow{justify-self:end;flex-direction:row-reverse} #startOv .st-ctrl{margin:0}
+  #startOv .st-lvl{padding:2px} #startOv .st-lvl button{width:20px;height:20px;font-size:13px} #startOv .st-lvl span{font-size:11px;min-width:44px} #startOv .st-lvl .nm{display:none} #startOv .st-ctrl button{padding:4px 11px;font-size:11px}
   #startOv .st-team{grid-area:team;grid-template-columns:repeat(6,1fr);gap:4px} #startOv .st-mon{padding:3px 2px;border-radius:10px} #startOv .st-mon .pic{height:34px} #startOv .st-mon img,#startOv .st-mon canvas{max-height:34px}
   #startOv .st-mon .ty{display:none} #startOv .st-mon .nm{font-size:9px;margin-top:1px}
   #startOv .st-row{grid-area:row} #startOv .st-btn{padding:4px 10px;font-size:11px;border-radius:9px}
@@ -126,7 +133,8 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
       <div class="st-trainer"><button class="st-arrow" data-tr="${S}" data-d="-1" aria-label="Previous trainer">‹</button><div class="st-stage"><canvas id="stTr${S}" width="160" height="160"></canvas></div><button class="st-arrow" data-tr="${S}" data-d="1" aria-label="Next trainer">›</button></div>
       <div class="st-tname" id="stName${S}"></div>
       <select class="st-tsel" id="stSel${S}" aria-label="${label} trainer"></select>
-      <div class="st-ctrl" role="group" aria-label="${label} control"><button data-c="${S}" data-v="human">HUMAN</button><button data-c="${S}" data-v="ai">AI</button></div>
+      <div class="st-ctlrow"><div class="st-ctrl" role="group" aria-label="${label} control"><button data-c="${S}" data-v="human">HUMAN</button><button data-c="${S}" data-v="ai">AI</button></div>
+        <div class="st-lvl" id="stLvl${S}" hidden><button type="button" data-lv="${S}" data-d="-1" aria-label="Lower AI level">‹</button><span id="stLvlTxt${S}" aria-live="polite"></span><button type="button" data-lv="${S}" data-d="1" aria-label="Raise AI level">›</button></div></div>
       <div class="st-note" id="stNote${S}"></div>
       <div class="st-team" id="stTeam${S}"></div>
       <div class="st-row"><button class="st-btn" data-rand="${S}">🎲 Random team</button><button class="st-btn" data-def="${S}">Starter team</button></div>
@@ -218,7 +226,7 @@ $('stPick').onclick = e => { if (e.target.id === 'stPick') closeMonPicker(); };
 /* ---------- controls ---------- */
 for (const b of document.querySelectorAll('#startOv .st-arrow')) b.onclick = () => { const S = b.dataset.tr, k = TRAINERS.indexOf(TRSEL[S]); TRSEL[S] = TRAINERS[(k + +b.dataset.d + TRAINERS.length) % TRAINERS.length]; saveTrsel(); renderStartTrainers(); syncTrainerPickers(); };
 for (const S of ['A', 'B']) $('stSel' + S).onchange = e => { TRSEL[S] = e.target.value; saveTrsel(); renderStartTrainers(); syncTrainerPickers(); };
-for (const b of document.querySelectorAll('#startOv .st-ctrl button')) b.onclick = () => { if (b.disabled) return; START.ctrl[b.dataset.c] = b.dataset.v; renderStartTrainers(); };
+for (const b of document.querySelectorAll('#startOv .st-ctrl button')) b.onclick = () => { if (b.disabled) return; START.ctrl[b.dataset.c] = b.dataset.v; renderStartTrainers(); renderAiLevels(); };
 for (const b of document.querySelectorAll('#startOv [data-rand]')) b.onclick = () => { const S = b.dataset.rand, t = randomTeam(); setPickers(S === 'A' ? t : readPickers('A'), S === 'B' ? t : readPickers('B')); renderStartTeams(); };
 for (const b of document.querySelectorAll('#startOv [data-def]')) b.onclick = () => { const S = b.dataset.def; setPickers(S === 'A' ? DEFAULT_A : readPickers('A'), S === 'B' ? DEFAULT_B : readPickers('B')); renderStartTeams(); };
 $('stSettings').onclick = () => { const b = $('bSettings'); if (b) b.click(); };
@@ -226,6 +234,27 @@ $('stBack').onclick = () => { hideStart(); clock.paused = false; };
 $('stHelp').onclick = () => { const b = $('bHelp'); if (b) b.click(); };
 function syncTrainerPickers() { for (const S of ['A', 'B']) { const s = $('trSel' + S); if (s) s.value = TRSEL[S]; } if (typeof refreshTrainerLabels === 'function') refreshTrainerLabels(); try { drawMinis(); } catch (e) { } }
 $('stContinue').onclick = () => { hideStart(); loadKey('auto'); };
+/* ---------- AI difficulty 1–10 per side (6 = classic) ---------- */
+const AI_LEVEL_NAMES = ['Rookie', 'Novice', 'Beginner', 'Casual', 'Trainer', 'Skilled', 'Veteran', 'Expert', 'Elite', 'Champion'];
+START.lvl = Object.assign({ A: 6, B: 6 }, (() => { try { return JSON.parse(localStorage.getItem('arena151.ailevel')) || {}; } catch (e) { return {}; } })());
+const saveLevels = () => { try { localStorage.setItem('arena151.ailevel', JSON.stringify({ A: START.lvl.A, B: START.lvl.B })); } catch (e) { } };
+function renderAiLevels() {
+  for (const S of ['A', 'B']) {
+    const box = $('stLvl' + S); if (!box) continue;
+    box.hidden = START.ctrl[S] !== 'ai';
+    const n = START.lvl[S]; $('stLvlTxt' + S).innerHTML = `AI LV ${n} <span class="nm">· ${AI_LEVEL_NAMES[n - 1]}</span>`;
+    box.title = `AI difficulty ${n} of 10 (${AI_LEVEL_NAMES[n - 1]})`;
+  }
+}
+for (const b of document.querySelectorAll('#startOv .st-lvl button')) b.onclick = () => {
+  const S = b.dataset.lv; START.lvl[S] = Math.max(1, Math.min(10, START.lvl[S] + +b.dataset.d)); saveLevels(); renderAiLevels(); syncSettingsLevels();
+};
+// What the next battle uses: Blue's level always (Blue is the AI); Red's only when Red is AI too (AI vs AI).
+function currentAiLevels() {
+  if (typeof STORY !== 'undefined' && STORY.battle) return { A: null, B: STORY.battle.level };
+  return { A: watchMode ? START.lvl.A : null, B: START.lvl.B };
+}
+function syncSettingsLevels() { for (const S of ['A', 'B']) { const sel = $('setLv' + S); if (sel) sel.value = String(START.lvl[S]); } }
 $('stGo').onclick = () => {
   $('stageSel').value = START.arena; $('timeLimit').value = $('stTime').value;
   watchMode = START.ctrl.A === 'ai'; syncWatchButton(); syncTrainerPickers();
@@ -281,3 +310,18 @@ setInterval(() => {
   if (typeof NET !== 'undefined' && (NET.active || NET.tour)) return;
   showStart();
 }, 1500);
+
+renderAiLevels();
+/* AI level in the in-battle Settings panel: change either side's level mid-battle */
+(function settingsLevels() {
+  const card = document.querySelector('#setOv .qol-card'); if (!card) return;
+  const opts = AI_LEVEL_NAMES.map((n, i) => `<option value="${i + 1}">${i + 1} · ${n}</option>`).join('');
+  const row = document.createElement('label'); row.className = 'qrow';
+  row.innerHTML = `<span>AI level<small>Red (AI vs AI) · Blue — changes apply right away</small></span><span style="display:flex;gap:6px"><select id="setLvA" aria-label="Red AI level">${opts}</select><select id="setLvB" aria-label="Blue AI level">${opts}</select></span>`;
+  const first = card.querySelector('.qrow'); card.insertBefore(row, first || null);
+  for (const S of ['A', 'B']) $('setLv' + S).onchange = e => {
+    START.lvl[S] = +e.target.value; saveLevels(); renderAiLevels();
+    if (G && !G.online && !(typeof STORY !== 'undefined' && STORY.battle)) G.aiLevel = currentAiLevels();
+  };
+  syncSettingsLevels();
+})();

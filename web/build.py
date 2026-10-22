@@ -13,7 +13,7 @@ head = '''<!doctype html>
 out = head + (src/'fonts.css').read_text(encoding='utf-8') + (src/'style.css').read_text(encoding='utf-8') + '</style>\n</head>\n<body>\n' + (src/'body.html').read_text(encoding='utf-8')
 # Each part of the game is its own <script>: if one part fails to load in some browser, the others (start screen,
 # online play…) still run. Every part is strict, as the original single script was.
-FILES = ['errorreport.js', 'desktopapp.js', 'data.js', 'gif.js', 'apng.js', 'sprites.js', 'stages.js', 'stages_core.js', 'stage_images.js', 'stages_img.js', 'sim.js', 'render.js', 'movefx_core.js', 'movefx_moves.js', 'movefx_signature.js', 'movefx_signature2.js', 'movefx_signature3.js', 'game.js', 'session4.js', 'session5.js', 'session5b.js', 'session6.js', 'audio.js', 'stage_thumbs.js', 'startscreen.js', 'cries.js', 'buildinfo.js', 'online.js', 'tournament.js']
+FILES = ['errorreport.js', 'desktopapp.js', 'data.js', 'gif.js', 'apng.js', 'sprites.js', 'stages.js', 'stages_core.js', 'stage_images.js', 'stages_img.js', 'sim.js', 'render.js', 'movefx_core.js', 'movefx_moves.js', 'movefx_signature.js', 'movefx_signature2.js', 'movefx_signature3.js', 'game.js', 'session4.js', 'session5.js', 'session5b.js', 'session6.js', 'audio.js', 'stage_thumbs.js', 'startscreen.js', 'cries.js', 'buildinfo.js', 'online.js', 'tournament.js', 'storymode.js']
 for f in FILES:
     code = (src/f).read_text(encoding='utf-8')
     assert '</script' not in code.lower(), f
