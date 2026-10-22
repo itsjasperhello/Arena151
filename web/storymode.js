@@ -535,7 +535,8 @@ function storyResult(won) {
     $('syOn').onclick = async () => {
       closeModal();
       if (firstTime && sv.badges >= TOTAL) { renderStoryWithAvatarAt(b.gym); await unknownTrainer(); await walkLeg(10); renderStory(); openGymCard(10); return; }
-      if (firstTime) { renderStoryWithAvatarAt(b.gym); renderProgress(b.gym); await new Promise(r => setTimeout(r, 900)); await walkLeg(b.gym + 1); renderStory(); openGymCard(sv.badges); }
+      if (firstTime && typeof isDexSave === 'function' && isDexSave(sv)) { renderStory(); renderProgress(b.gym); openGymCard(sv.badges); }   // Pokédex runs: you walk the route when you challenge
+      else if (firstTime) { renderStoryWithAvatarAt(b.gym); renderProgress(b.gym); await new Promise(r => setTimeout(r, 900)); await walkLeg(b.gym + 1); renderStory(); openGymCard(sv.badges); }
     };
   } else {
     m.innerHTML = `<div class="sy-cer"><svg class="medal" viewBox="-40 -40 80 80" style="filter:grayscale(.6)">${medallionSvg(g, 30, { idSuffix: 'lose' })}</svg>
