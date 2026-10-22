@@ -2337,7 +2337,7 @@ function applyHit(S, mv, u, opts = {}) {
   if (opts.floor) dmg = Math.max(dmg, Math.round(t.max * opts.floor * (eff < 1 ? .5 : 1)));
   if (opts.cap) dmg = Math.min(dmg, Math.round(t.max * opts.cap));
   if (dmg >= t.hp && t.hp > t.max * .25 && !ts.plotUsed && Math.random() < .12) { ts.plotUsed = true; dmg = t.hp - 1; VFX.plotArmor(fs); logLine(`${t.name} hung on with 1 HP!`, 't'); }
-  dmg = Math.min(dmg, t.hp); t.hp -= dmg;
+  dmg = Math.min(dmg, t.hp); t.hp -= dmg; u.dmgDealt = (u.dmgDealt || 0) + dmg;
   if (!opts.z) { const us = side(S); us.zCharge = Math.min(100, (us.zCharge || 0) + dmg / t.max * 85); ts.zCharge = Math.min(100, (ts.zCharge || 0) + dmg / t.max * 45); }
   if (opts.combo) VFX.combo(fs, opts.combo);
   if (crit || eff > 1 || t.hp <= 0) VFX.crowd(t.hp <= 0 ? 2 : 1);
@@ -4817,7 +4817,9 @@ const showOverlay = (id, on) => { const e = $(id); if (e) e.classList.toggle('sh
 let introSkip = null, autosaveT = 0;
 function resetScene() { cancelAll(); buildScars(); crowdState.length = 0; for (const k in groupState) delete groupState[k]; trainerWalk.A = trainerWalk.B = 1; slide.t = -9999; bigText.t = -9999; }
 function chooseStage() { const v = $('stageSel').value; return v === 'random' ? pickBy(STAGE_ORDER, Math.random) : v; }
+const filledTeam = t => { const f = (t || []).filter(Boolean); return f.length ? f : [DEX[0].name]; };   // empty slots ("No Pokémon") are skipped
 async function startBattle(picksA, picksB, stageId) {
+  picksA = filledTeam(picksA); picksB = filledTeam(picksB);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
@@ -5031,7 +5033,7 @@ function queueMove(i) {
   if (!tryCast('A', i)) { sd.queued = i; sd.queuedT = 600; }
 }
 function buildPickers() {
-  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join(''); root.appendChild(sel); } }
+  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join(''); root.appendChild(sel); } }
 }
 function setPickers(a, b) { a.forEach((n, i) => { if ($('pickA' + i)) $('pickA' + i).value = n; }); b.forEach((n, i) => { if ($('pickB' + i)) $('pickB' + i).value = n; }); }
 const readPickers = S => Array.from({ length: 6 }, (_, i) => $(`pick${S}${i}`).value);
@@ -5524,7 +5526,7 @@ camLock = false; refreshCamUi(); resizeScene();
 const QOL_KEY = 'arena151.qol';
 const QOL = Object.assign({ last: null, presets: [null, null, null, null] }, (() => { try { return JSON.parse(localStorage.getItem(QOL_KEY)) || {}; } catch (e) { return {}; } })());
 const saveQol = () => { try { localStorage.setItem(QOL_KEY, JSON.stringify(QOL)); } catch (e) { } };
-const validTeam = t => Array.isArray(t) && t.length === 6 && t.every(n => DEX_BY_NAME[n]);
+const validTeam = t => Array.isArray(t) && t.length >= 1 && t.length <= 6 && t.every(n => n === '' || DEX_BY_NAME[n]) && t.some(Boolean);   // 1–6 Pokémon; '' = an empty slot
 
 /* ---------- remember the last teams and arena ---------- */
 const _startBattle = startBattle;
@@ -6074,6 +6076,8 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
 #startOv .st-team{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 #startOv .st-mon{position:relative;color:#fff;font-family:var(--ui);border-radius:14px;padding:6px 4px 5px;background:rgba(8,12,32,.55);border:1px solid rgba(255,255,255,.1);cursor:pointer;text-align:center;transition:transform .12s,border-color .12s}
 #startOv .st-mon:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.35)}
+#startOv .st-mon.none{border-style:dashed;border-color:rgba(255,255,255,.25);background:rgba(8,12,32,.3);color:#9aa3c7}
+#startOv .plus{font:900 30px var(--ui);color:rgba(255,255,255,.35);margin:auto}
 #startOv .st-mon .pic{height:62px;display:flex;align-items:flex-end;justify-content:center}
 #startOv .st-mon img,#startOv .st-mon canvas{max-height:62px;max-width:100%;image-rendering:pixelated}
 #startOv .red .st-mon img,#startOv .red .st-mon canvas{transform:scaleX(-1)}
@@ -6193,7 +6197,8 @@ function renderStartTeams() {
     const box = $('stTeam' + S); box.replaceChildren();
     stTeam(S).forEach((name, i) => {
       const b = document.createElement('button'); b.className = 'st-mon'; b.type = 'button'; b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: ${name}. Change`);
-      b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${name}</div><div class="ty">${typeChips(name)}</div>`);
+      if (!name) { b.classList.add('none'); b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: no Pokémon. Add one`); b.innerHTML = '<div class="pic"><span class="plus">+</span></div><div class="nm">No Pokémon</div>'; }
+      else { b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${name}</div><div class="ty">${typeChips(name)}</div>`); }
       b.onclick = () => openMonPicker(S, i); box.appendChild(b);
     });
   }
@@ -6231,7 +6236,14 @@ function renderStartArenas() {
 /* ---------- Pokémon picker ---------- */
 function openMonPicker(S, i) {
   START.slot = { S, i }; const grid = $('stGridPk');
-  if (!grid.childElementCount) for (const d of DEX) {
+  if (!grid.childElementCount) {
+    const none = document.createElement('button'); none.type = 'button'; none.className = 'none'; none.dataset.q = 'no pokemon none empty';
+    none.innerHTML = '<div class="pic"><span class="plus">\u2715</span></div>No Pok\u00E9mon<small>leave this slot empty</small>';
+    none.onclick = () => { const { S, i } = START.slot, team = readPickers(S); if (team.filter(Boolean).length <= 1 && team[i]) { toastMsg('A team needs at least one Pok\u00E9mon'); return; }
+      team[i] = ''; setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
+    grid.appendChild(none);
+  }
+  if (grid.childElementCount <= 1) for (const d of DEX) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.q = `${d.name} ${String(d.id).padStart(3, '0')} ${d.types.join(' ')}`.toLowerCase();
     b.appendChild(monPic(d.name)); b.insertAdjacentHTML('beforeend', `${d.name}<small>#${String(d.id).padStart(3, '0')} · ${d.types.join('/')}</small>`);
     b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name; setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
@@ -6434,7 +6446,7 @@ async function battleCountdown(my) {
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '15.5';
+const APP_VERSION = '15.6';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -6522,7 +6534,7 @@ function netConnect() {
   return urls.reduce((chain, url, i) => chain.catch(() => tryUrl(url, i === urls.length - 1)), Promise.reject())
     .catch(() => { netStatus('No answer from ' + urls.join(' or ') + '. Is the server running and reachable?', 'err'); return Promise.reject(); });
 }
-function myInfo() { return { trainer: trainerTitle(TRSEL.A), trainerFile: TRSEL.A, team: readPickers('A') }; }
+function myInfo() { return { trainer: trainerTitle(TRSEL.A), trainerFile: TRSEL.A, team: readPickers('A').filter(Boolean) }; }
 async function hostGame() { try { await netConnect(); } catch (e) { return; } netSend({ t: 'host', ...myInfo(), arena: START.arena, timeLimit: +$('stTime').value || 0 }); netStatus('Creating a game…'); }
 async function joinGame() {
   const code = $('olCode').value.trim().toUpperCase(); if (code.length !== 4) { netStatus('Enter the 4-letter code from the host.', 'err'); return; }
@@ -7622,7 +7634,7 @@ function openStoryScreen() {
 }
 function beginJourney(fresh) {
   if (fresh || !STORY.save) {
-    STORY.save = { trainer: TRSEL.A, team: readPickers('A'), badges: 0, wins: 0, losses: 0, startedAt: Date.now(), finishedAt: null };
+    STORY.save = { trainer: TRSEL.A, team: readPickers('A').filter(Boolean), badges: 0, wins: 0, losses: 0, startedAt: Date.now(), finishedAt: null };
     saveStory();
   }
   openStoryScreen();
@@ -7731,6 +7743,534 @@ async function ashResult(won) {
 }
 
 //# sourceURL=storymode.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 22: POKÉDEX ADVENTURE (story mode, per save slot)
+   Start each run with one starter, catch Pokémon on the routes between
+   gyms, and grow a Pokédex that is kept for the whole save slot.
+   - New run: badges reset, choose a new starter, the Pokédex stays.
+   - Delete (slot): everything is cleared.
+   Levels are a story-progression mechanic only: they never change battles.
+   Experience after each story battle = 0.8 × damage dealt + 200 for
+   taking part. At its evolution level a Pokémon stops levelling and its
+   evolved form joins the Pokédex at that level.
+   ===================================================================== */
+const STARTERS = ['Bulbasaur', 'Charmander', 'Squirtle'];
+// Gen 1 (Red/Blue) catch rates.
+const CATCH_RATE = { Bulbasaur: 45, Ivysaur: 45, Venusaur: 45, Charmander: 45, Charmeleon: 45, Charizard: 45, Squirtle: 45, Wartortle: 45, Blastoise: 45, Caterpie: 255, Metapod: 120, Butterfree: 45,
+  Weedle: 255, Kakuna: 120, Beedrill: 45, Pidgey: 255, Pidgeotto: 120, Pidgeot: 45, Rattata: 255, Raticate: 90, Spearow: 255, Fearow: 90, Ekans: 255, Arbok: 90, Pikachu: 190, Raichu: 75,
+  Sandshrew: 255, Sandslash: 90, 'Nidoran♀': 235, Nidorina: 120, Nidoqueen: 45, 'Nidoran♂': 235, Nidorino: 120, Nidoking: 45, Clefairy: 150, Clefable: 25, Vulpix: 190, Ninetales: 75,
+  Jigglypuff: 170, Wigglytuff: 50, Zubat: 255, Golbat: 90, Oddish: 255, Gloom: 120, Vileplume: 45, Paras: 190, Parasect: 75, Venonat: 190, Venomoth: 75, Diglett: 255, Dugtrio: 50,
+  Meowth: 255, Persian: 90, Psyduck: 190, Golduck: 75, Mankey: 190, Primeape: 75, Growlithe: 190, Arcanine: 75, Poliwag: 255, Poliwhirl: 120, Poliwrath: 45, Abra: 200, Kadabra: 100,
+  Alakazam: 50, Machop: 180, Machoke: 90, Machamp: 45, Bellsprout: 255, Weepinbell: 120, Victreebel: 45, Tentacool: 190, Tentacruel: 60, Geodude: 255, Graveler: 120, Golem: 45,
+  Ponyta: 190, Rapidash: 60, Slowpoke: 190, Slowbro: 75, Magnemite: 190, Magneton: 60, 'Farfetch’d': 45, Doduo: 190, Dodrio: 45, Seel: 190, Dewgong: 75, Grimer: 190, Muk: 75,
+  Shellder: 190, Cloyster: 60, Gastly: 190, Haunter: 90, Gengar: 45, Onix: 45, Drowzee: 190, Hypno: 75, Krabby: 225, Kingler: 60, Voltorb: 190, Electrode: 60, Exeggcute: 90,
+  Exeggutor: 45, Cubone: 190, Marowak: 75, Hitmonlee: 45, Hitmonchan: 45, Lickitung: 45, Koffing: 190, Weezing: 60, Rhyhorn: 120, Rhydon: 60, Chansey: 30, Tangela: 45, Kangaskhan: 45,
+  Horsea: 225, Seadra: 75, Goldeen: 225, Seaking: 60, Staryu: 225, Starmie: 60, 'Mr. Mime': 45, Scyther: 45, Jynx: 45, Electabuzz: 45, Magmar: 45, Pinsir: 45, Tauros: 45, Magikarp: 255,
+  Gyarados: 45, Lapras: 45, Ditto: 35, Eevee: 45, Vaporeon: 45, Jolteon: 45, Flareon: 45, Porygon: 45, Omanyte: 45, Omastar: 45, Kabuto: 45, Kabutops: 45, Aerodactyl: 45, Snorlax: 25,
+  Articuno: 3, Zapdos: 3, Moltres: 3, Dratini: 45, Dragonair: 45, Dragonite: 45, Mewtwo: 3, Mew: 45 };
+// Evolutions with Red/Blue levels; stone and trade evolutions use a fixed level here (stones 30–36, trades 40).
+const EVO = { Bulbasaur: ['Ivysaur', 16], Ivysaur: ['Venusaur', 32], Charmander: ['Charmeleon', 16], Charmeleon: ['Charizard', 36], Squirtle: ['Wartortle', 16], Wartortle: ['Blastoise', 36],
+  Caterpie: ['Metapod', 7], Metapod: ['Butterfree', 10], Weedle: ['Kakuna', 7], Kakuna: ['Beedrill', 10], Pidgey: ['Pidgeotto', 18], Pidgeotto: ['Pidgeot', 36], Rattata: ['Raticate', 20],
+  Spearow: ['Fearow', 20], Ekans: ['Arbok', 22], Pikachu: ['Raichu', 30], Sandshrew: ['Sandslash', 22], 'Nidoran♀': ['Nidorina', 16], Nidorina: ['Nidoqueen', 36], 'Nidoran♂': ['Nidorino', 16],
+  Nidorino: ['Nidoking', 36], Clefairy: ['Clefable', 30], Vulpix: ['Ninetales', 30], Jigglypuff: ['Wigglytuff', 30], Zubat: ['Golbat', 22], Oddish: ['Gloom', 21], Gloom: ['Vileplume', 36],
+  Paras: ['Parasect', 24], Venonat: ['Venomoth', 31], Diglett: ['Dugtrio', 26], Meowth: ['Persian', 28], Psyduck: ['Golduck', 33], Mankey: ['Primeape', 28], Growlithe: ['Arcanine', 35],
+  Poliwag: ['Poliwhirl', 25], Poliwhirl: ['Poliwrath', 36], Abra: ['Kadabra', 16], Kadabra: ['Alakazam', 40], Machop: ['Machoke', 28], Machoke: ['Machamp', 40], Bellsprout: ['Weepinbell', 21],
+  Weepinbell: ['Victreebel', 36], Tentacool: ['Tentacruel', 30], Geodude: ['Graveler', 25], Graveler: ['Golem', 40], Ponyta: ['Rapidash', 40], Slowpoke: ['Slowbro', 37], Magnemite: ['Magneton', 30],
+  Doduo: ['Dodrio', 31], Seel: ['Dewgong', 34], Grimer: ['Muk', 38], Shellder: ['Cloyster', 35], Gastly: ['Haunter', 25], Haunter: ['Gengar', 40], Drowzee: ['Hypno', 26], Krabby: ['Kingler', 28],
+  Voltorb: ['Electrode', 30], Exeggcute: ['Exeggutor', 35], Cubone: ['Marowak', 28], Koffing: ['Weezing', 35], Rhyhorn: ['Rhydon', 42], Horsea: ['Seadra', 32], Goldeen: ['Seaking', 33],
+  Staryu: ['Starmie', 35], Magikarp: ['Gyarados', 20], Eevee: [['Vaporeon', 'Jolteon', 'Flareon'], 30], Omanyte: ['Omastar', 40], Kabuto: ['Kabutops', 40], Dratini: ['Dragonair', 30], Dragonair: ['Dragonite', 55] };
+/* The routes travelled between gyms 1–8 (map legs 0–7) and what can be caught there (Red/Blue), with wild levels.
+   Gifts, trades, fossils and legendaries are placed on the nearest fitting leg. [species, minLv, maxLv, weight] */
+const ROUTES = [
+  { leg: 0, name: 'Route 1 · Viridian Forest · Route 22', scene: 'forest', mons: [['Pidgey', 2, 5, 10], ['Rattata', 2, 4, 10], ['Spearow', 3, 5, 6], ['Nidoran♀', 3, 4, 5], ['Nidoran♂', 3, 4, 5], ['Mankey', 3, 5, 4],
+    ['Caterpie', 3, 5, 8], ['Weedle', 3, 5, 8], ['Metapod', 4, 6, 3], ['Kakuna', 4, 6, 3], ['Pikachu', 3, 5, 2], ['Poliwag', 5, 5, 3], ['Mr. Mime', 10, 10, .5]] },
+  { leg: 1, name: 'Route 3 · Mt. Moon · Route 4', scene: 'cave', mons: [['Spearow', 6, 8, 8], ['Jigglypuff', 3, 7, 5], ['Ekans', 6, 8, 6], ['Sandshrew', 6, 8, 6], ['Rattata', 8, 10, 6], ['Zubat', 8, 11, 9],
+    ['Geodude', 8, 10, 8], ['Paras', 8, 10, 6], ['Clefairy', 8, 12, 3], ['Magikarp', 5, 5, 3], ['Goldeen', 10, 10, 3], ['Omanyte', 15, 15, .8], ['Kabuto', 15, 15, .8], ['Aerodactyl', 30, 30, .3]] },
+  { leg: 2, name: 'Route 5 · Underground Path · Route 6', scene: 'meadow', mons: [['Pidgey', 13, 16, 8], ['Oddish', 13, 16, 7], ['Bellsprout', 13, 16, 7], ['Meowth', 10, 16, 6], ['Mankey', 10, 16, 6],
+    ['Abra', 10, 12, 4], ['Venonat', 13, 16, 5], ['Psyduck', 15, 15, 4], ['Krabby', 15, 15, 4], ['Shellder', 15, 15, 3], ['Horsea', 15, 15, 3], ['Jynx', 20, 20, .6], ['Farfetch’d', 20, 20, .6], ['Mewtwo', 70, 70, .15]] },
+  { leg: 3, name: 'Route 6 · Saffron · Route 7', scene: 'city', mons: [['Pidgey', 19, 22, 7], ['Oddish', 19, 22, 5], ['Bellsprout', 19, 22, 5], ['Gloom', 22, 22, 2], ['Weepinbell', 22, 22, 2], ['Meowth', 17, 20, 6],
+    ['Mankey', 17, 20, 6], ['Vulpix', 18, 20, 4], ['Growlithe', 18, 20, 4], ['Diglett', 15, 22, 6], ['Dugtrio', 29, 31, 1], ['Drowzee', 9, 15, 5], ['Ekans', 12, 15, 4], ['Sandshrew', 12, 15, 4],
+    ['Slowpoke', 18, 18, 3], ['Eevee', 25, 25, .8], ['Porygon', 26, 26, .8]] },
+  { leg: 4, name: 'Route 16 · Cycling Road · Route 18 · Safari Zone', scene: 'safari', mons: [['Spearow', 20, 22, 6], ['Fearow', 25, 27, 2], ['Doduo', 18, 29, 6], ['Rattata', 18, 22, 4], ['Raticate', 23, 29, 2],
+    ['Ponyta', 28, 32, 3], ['Nidorino', 22, 27, 4], ['Nidorina', 22, 27, 4], ['Exeggcute', 24, 25, 4], ['Rhyhorn', 25, 25, 3], ['Venonat', 22, 22, 4], ['Paras', 22, 22, 3], ['Parasect', 25, 25, 2],
+    ['Chansey', 26, 26, .8], ['Kangaskhan', 25, 25, .8], ['Scyther', 23, 25, .8], ['Pinsir', 23, 25, .8], ['Tauros', 21, 28, .8], ['Dratini', 15, 15, .8], ['Snorlax', 30, 30, .5], ['Lickitung', 15, 15, .6]] },
+  { leg: 5, name: 'Routes 15–12 · Lavender Town · Route 8', scene: 'tower', mons: [['Pidgey', 23, 28, 6], ['Pidgeotto', 25, 30, 3], ['Oddish', 22, 26, 4], ['Gloom', 26, 28, 2], ['Bellsprout', 22, 26, 4], ['Weepinbell', 26, 28, 2],
+    ['Venonat', 24, 28, 4], ['Ditto', 23, 28, 3], ['Gastly', 18, 25, 6], ['Haunter', 25, 30, 1], ['Cubone', 20, 25, 4], ['Abra', 15, 20, 3], ['Kadabra', 22, 25, 1], ['Machop', 15, 20, 4], ['Onix', 13, 17, 3],
+    ['Magnemite', 21, 24, 4], ['Voltorb', 21, 24, 4], ['Pikachu', 20, 24, 2], ['Electabuzz', 33, 36, .8], ['Raichu', 33, 33, .5], ['Lapras', 15, 15, .8], ['Hitmonlee', 30, 30, .6], ['Hitmonchan', 30, 30, .6],
+    ['Seaking', 25, 25, 2], ['Zapdos', 50, 50, .3]] },
+  { leg: 6, name: 'Cycling Road · Sea Routes 19–20 · Seafoam Islands', scene: 'sea', mons: [['Tentacool', 25, 32, 8], ['Tentacruel', 35, 35, 1], ['Seel', 30, 35, 5], ['Dewgong', 38, 38, 1], ['Psyduck', 30, 30, 4], ['Golduck', 38, 38, 1],
+    ['Slowpoke', 30, 30, 4], ['Slowbro', 37, 37, 1], ['Shellder', 30, 30, 4], ['Staryu', 30, 30, 4], ['Horsea', 30, 30, 4], ['Seadra', 35, 35, 1], ['Krabby', 30, 30, 4], ['Kingler', 37, 37, 1], ['Golbat', 30, 35, 3],
+    ['Grimer', 30, 34, 3], ['Muk', 38, 38, .8], ['Koffing', 30, 34, 3], ['Weezing', 38, 38, .8], ['Ponyta', 30, 34, 2], ['Rapidash', 38, 38, .8], ['Magmar', 34, 38, .8], ['Aerodactyl', 30, 30, .4], ['Articuno', 50, 50, .3]] },
+  { leg: 7, name: 'Sea Route 21 · Route 22 · Victory Road', scene: 'mountain', mons: [['Tangela', 28, 32, 6], ['Pidgeotto', 25, 30, 4], ['Raticate', 25, 30, 4], ['Tentacool', 25, 30, 4], ['Shellder', 30, 30, 3],
+    ['Nidorino', 30, 35, 3], ['Nidorina', 30, 35, 3], ['Arbok', 35, 38, 2], ['Sandslash', 35, 38, 2], ['Fearow', 38, 40, 2], ['Graveler', 40, 42, 3], ['Onix', 40, 45, 3], ['Machoke', 42, 42, 1], ['Marowak', 40, 42, 1],
+    ['Venomoth', 40, 40, 2], ['Golbat', 40, 40, 2], ['Ditto', 35, 35, 1], ['Moltres', 50, 50, .3], ['Mew', 30, 30, .15]] }
+];
+const expFor = lv => Math.pow(Math.max(1, lv), 3);                       // medium-fast growth: level n needs n³ experience
+const levelFor = exp => Math.max(1, Math.min(100, Math.floor(Math.cbrt(exp + .5))));
+const evoOf = sp => EVO[sp];
+// Every Pokémon is a starter, a wild encounter, or reachable by evolution (development check).
+function dexCoverage() {
+  const have = new Set(STARTERS); for (const r of ROUTES) for (const [sp] of r.mons) have.add(sp);
+  let grew = true; while (grew) { grew = false; for (const sp of [...have]) { const e = EVO[sp]; if (!e) continue; for (const nx of [].concat(e[0])) if (!have.has(nx)) { have.add(nx); grew = true; } } }
+  return DEX.map(d => d.name).filter(n => !have.has(n));
+}
+
+/* ---------- the Pokédex of a save slot ---------- */
+const isDexSave = sv => !!(sv && sv.type === 'dex');
+function dexEntry(sv, sp) { return sv.dex && sv.dex[sp]; }
+// Add (or improve) a Pokémon. Returns the entry.
+function dexAdd(sv, sp, level) {
+  sv.dex = sv.dex || {}; const e = sv.dex[sp];
+  if (e) { if (level > e.level && !e.capped) { e.level = level; e.exp = expFor(level); } return e; }
+  return (sv.dex[sp] = { species: sp, level, exp: expFor(level), capped: false, caughtAt: Date.now() });
+}
+// Gain experience; returns { from, to, evolved } for the summary.
+function dexGainExp(sv, sp, amount) {
+  const e = dexEntry(sv, sp); if (!e) return null;
+  const from = e.level, out = { sp, from, to: from, gain: amount, evolved: null };
+  if (e.capped) return out;                                             // at its evolution level: no more levels
+  e.exp += amount; e.level = levelFor(e.exp);
+  const evo = EVO[sp];
+  if (evo && e.level >= evo[1]) {
+    e.level = evo[1]; e.exp = expFor(evo[1]); e.capped = true;
+    let next = evo[0];
+    if (Array.isArray(next)) { const fresh = next.filter(n => !dexEntry(sv, n)); next = (fresh.length ? fresh : next)[Math.floor(Math.random() * (fresh.length || next.length))]; }
+    if (!dexEntry(sv, next)) { dexAdd(sv, next, evo[1]); out.evolved = next; }
+  }
+  out.to = e.level; return out;
+}
+
+/* ---------- styles ---------- */
+(function dexCss() {
+  const st = document.createElement('style');
+  st.textContent = `
+#dexOv,#starterOv{position:fixed;inset:0;z-index:85;display:none;align-items:center;justify-content:center;background:rgba(5,8,22,.78);backdrop-filter:blur(3px);padding:10px;font-family:var(--ui);color:#fff}
+#dexOv.show,#starterOv.show{display:flex}
+#dexOv .dx{width:min(980px,100%);max-height:100%;display:flex;flex-direction:column;border-radius:20px;background:linear-gradient(160deg,#c8202f,#8e1020);border:3px solid #2a0a10;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
+#dexOv .dx-top{display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(#e0303f,#b01c2b);border-bottom:3px solid #2a0a10}
+#dexOv .lens{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#bfe9ff,#2f8fe0 55%,#0b3a7a);border:3px solid #fff;box-shadow:0 0 12px #6fc3ff}
+#dexOv .dx-top h3{margin:0;font-family:var(--display);font-size:clamp(20px,3vw,30px);flex:1}
+#dexOv .dx-top small{display:block;font:700 12px var(--ui);color:#ffd3d8}
+#dexOv .dx-close{border:0;border-radius:10px;background:#2a0a10;color:#fff;font:900 16px var(--ui);width:36px;height:36px;cursor:pointer}
+#dexOv .dx-party{display:flex;gap:6px;padding:8px 12px;background:#2a0a10;align-items:center;flex-wrap:wrap}
+#dexOv .dx-party b{font:900 11px var(--ui);letter-spacing:.14em;color:#ffb3bb;margin-right:4px}
+#dexOv .dx-party .pm{width:46px;height:46px;border-radius:10px;background:#4a1320;display:flex;align-items:center;justify-content:center;position:relative}
+#dexOv .dx-party .pm img,#dexOv .dx-party .pm canvas{max-width:42px;max-height:42px;image-rendering:pixelated}
+#dexOv .dx-party .pm i{position:absolute;bottom:-3px;right:-3px;font:900 10px var(--ui);font-style:normal;background:#ffd84a;color:#2a1206;border-radius:6px;padding:0 3px}
+#dexOv .dx-hint{flex:1;text-align:right;font:600 11px var(--ui);color:#ffb3bb}
+#dexOv .dx-grid{flex:1;overflow:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;background:#f2f4f8}
+#dexOv .dm{position:relative;border-radius:12px;background:#fff;border:2px solid #d8dce6;color:#1a1f33;padding:4px 4px 6px;text-align:center;cursor:pointer;font:700 11px var(--ui)}
+#dexOv .dm.no{background:#e6e9f0;color:#9aa0b4;cursor:default}
+#dexOv .dm.party{border-color:#ffb627;box-shadow:0 0 0 2px #ffb627}
+#dexOv .dm .p{height:58px;display:flex;align-items:center;justify-content:center}
+#dexOv .dm .p img,#dexOv .dm .p canvas{max-height:56px;max-width:100%;image-rendering:pixelated}
+#dexOv .dm.no .p img,#dexOv .dm.no .p canvas{filter:brightness(0);opacity:.25}
+#dexOv .dm .num{position:absolute;top:3px;left:6px;font:800 9px var(--ui);color:#8a90a6}
+#dexOv .dm .lv{font:900 12px var(--ui);color:#c8202f}
+#dexOv .dm .bar{height:5px;border-radius:9px;background:#e1e5ee;margin:3px 6px 0;overflow:hidden}
+#dexOv .dm .bar i{display:block;height:100%;background:linear-gradient(90deg,#4aa6ff,#7ad7ff)}
+#dexOv .dm .tag{position:absolute;top:3px;right:4px;font:900 8px var(--ui);padding:1px 4px;border-radius:5px;background:#ffd84a;color:#2a1206}
+#dexOv .dm .tag.evo{background:#7ad7ff}
+#starterOv .sb{width:min(760px,100%);border-radius:22px;background:linear-gradient(160deg,#1d2766,#121838 60%);border:2px solid #ffd84a;padding:18px;text-align:center}
+#starterOv h3{margin:0 0 4px;font-family:var(--display);font-size:clamp(24px,3.4vw,36px);color:#ffd84a}
+#starterOv p{margin:0 0 12px;color:#c7cff0;font:600 14px var(--ui)}
+#starterOv .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#starterOv .st{border:3px solid rgba(255,255,255,.15);border-radius:18px;background:rgba(8,12,32,.6);padding:10px;cursor:pointer;color:#fff;font:800 16px var(--ui);transition:transform .15s}
+#starterOv .st:hover,#starterOv .st:focus{transform:translateY(-4px);border-color:var(--c)}
+#starterOv .st .p{height:110px;display:flex;align-items:center;justify-content:center}
+#starterOv .st .p img,#starterOv .st .p canvas{max-height:104px;image-rendering:pixelated}
+#starterOv .st small{display:block;font:700 12px var(--ui);color:#a9b6ff}
+#starterOv .st .own{display:block;font:800 11px var(--ui);color:#ffd84a;margin-top:3px}
+#storyOv .sy-exp{margin:8px auto 0;max-width:520px;text-align:left;background:rgba(8,12,32,.6);border-radius:12px;padding:8px 12px;font:700 13px var(--ui);color:#e6ebff}
+#storyOv .sy-exp div{display:flex;gap:8px;justify-content:space-between}
+#storyOv .sy-exp .ev{color:#7ad7ff}
+@media (max-height:560px){#dexOv .dx-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}#dexOv .dm .p{height:42px}#dexOv .dm .p img,#dexOv .dm .p canvas{max-height:40px}#starterOv .st .p{height:70px}#starterOv .st .p img,#starterOv .st .p canvas{max-height:66px}}`;
+  document.head.appendChild(st);
+  for (const id of ['dexOv', 'starterOv']) { const d = document.createElement('div'); d.id = id; d.setAttribute('role', 'dialog'); document.body.appendChild(d); }
+  addEventListener('keydown', e => { if (e.key === 'Escape') { $('dexOv').classList.remove('show'); } });
+})();
+
+/* ---------- the Pokédex pop-up (from the map and gym cards): all 151, levels, party ---------- */
+function openDex() {
+  const sv = STORY.save; if (!isDexSave(sv)) return;
+  const party = sv.team || [], owned = Object.keys(sv.dex || {}).length, ov = $('dexOv');
+  const pic = n => { try { const el = monPic(n); return el; } catch (e) { return document.createElement('span'); } };
+  ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${DEX.length} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
+    <div class="dx-party" id="dxParty"><b>PARTY</b></div><div class="dx-grid" id="dxGrid"></div></div>`;
+  ov.querySelector('.dx-close').onclick = () => { ov.classList.remove('show'); if (STORY.open) renderStory(); };
+  ov.onclick = e => { if (e.target === ov) ov.querySelector('.dx-close').click(); };
+  const pr = $('dxParty');
+  for (const n of party) { const e = dexEntry(sv, n), d = document.createElement('div'); d.className = 'pm'; d.title = `${n} · Lv ${e ? e.level : '?'}`; d.appendChild(pic(n)); d.insertAdjacentHTML('beforeend', `<i>${e ? e.level : ''}</i>`); pr.appendChild(d); }
+  pr.insertAdjacentHTML('beforeend', `<span class="dx-hint">${party.length >= 6 ? 'Party full' : ''}</span>`);
+  const grid = $('dxGrid');
+  for (const d of DEX) {
+    const e = dexEntry(sv, d.name), el = document.createElement(e ? 'button' : 'div'); el.className = 'dm' + (e ? '' : ' no') + (party.includes(d.name) ? ' party' : '');
+    if (e) el.type = 'button';
+    const next = e && e.exp - expFor(e.level), span = e && expFor(e.level + 1) - expFor(e.level), pct = e ? (e.capped ? 100 : Math.max(0, Math.min(100, next / span * 100))) : 0;
+    el.innerHTML = `<span class="num">#${String(d.id).padStart(3, '0')}</span>${e && party.includes(d.name) ? '<span class="tag">PARTY</span>' : e && e.capped ? '<span class="tag evo">EVOLVED</span>' : ''}<div class="p"></div>
+      <div>${e ? d.name : '???'}</div>${e ? `<div class="lv">Lv ${e.level}</div><div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div>` : ''}`;
+    el.querySelector('.p').appendChild(pic(d.name));
+    if (e) el.onclick = () => {
+      const t = sv.team = (sv.team || []).slice(), at = t.indexOf(d.name);
+      if (at >= 0) { if (t.length <= 1) { toastMsg('Your party needs at least one Pokémon'); return; } t.splice(at, 1); }
+      else { if (t.length >= 6) { toastMsg('Your party is full (6) — remove one first'); return; } t.push(d.name); }
+      saveStory(); const y = grid.scrollTop; openDex(); $('dxGrid').scrollTop = y;
+    };
+    grid.appendChild(el);
+  }
+  ov.classList.add('show');
+}
+
+/* ---------- choosing a starter (a new run) ---------- */
+function chooseStarter() {
+  return new Promise(res => {
+    const sv = STORY.save, ov = $('starterOv');
+    ov.innerHTML = `<div class="sb"><h3>Choose your starter</h3><p>It will be the only Pokémon in your party. Catch more on the routes between gyms!</p><div class="row">${STARTERS.map((n, i) => {
+      const e = isDexSave(sv) && dexEntry(sv, n); return `<button type="button" class="st" data-n="${n}" style="--c:${['#58d65a', '#ff7b2a', '#4aa6ff'][i]}"><div class="p"></div>${n}<small>${DEX_BY_NAME[n].types.join(' / ')} · Lv ${e ? e.level : 5}</small>${e ? '<span class="own">Already in your Pokédex</span>' : ''}</button>`; }).join('')}</div></div>`;
+    for (const b of ov.querySelectorAll('.st')) { b.querySelector('.p').appendChild(monPic(b.dataset.n)); b.onclick = () => { ov.classList.remove('show'); res(b.dataset.n); }; }
+    ov.classList.add('show'); setTimeout(() => ov.querySelector('.st').focus(), 50);
+  });
+}
+// A new run in the current slot: badges reset, a new starter; the Pokédex is kept.
+async function startDexRun() {
+  const old = STORY.save, keep = isDexSave(old) ? old.dex : {};
+  const starter = await chooseStarter();
+  STORY.save = { type: 'dex', dex: keep, runs: ((old && old.runs) || 0) + 1, trainer: TRSEL.A, team: [starter], badges: 0, wins: 0, losses: 0, ash: null, encountered: {}, startedAt: Date.now(), finishedAt: null };
+  dexAdd(STORY.save, starter, 5); saveStory();
+  openStoryScreen(); setTimeout(() => openGymCard(0), 500);
+}
+
+/* ---------- experience after each story battle ---------- */
+function awardExp() {
+  const sv = STORY.save; if (!isDexSave(sv) || !G || !G.sides) return [];
+  return G.sides.A.team.map(m => dexGainExp(sv, m.name, Math.round((m.dmgDealt || 0) * .8) + 200)).filter(Boolean);
+}
+function expSummaryHtml(list) {
+  if (!list.length) return '';
+  return `<div class="sy-exp">${list.map(r => `<div><span>${r.sp} +${r.gain} EXP</span><span>${r.from === r.to ? 'Lv ' + r.to : 'Lv ' + r.from + ' \u2192 ' + r.to}</span></div>${r.evolved ? `<div class="ev"><span>\u2728 ${r.sp} reached its evolution level \u2014 ${r.evolved} joined your Pok\u00E9dex!</span></div>` : ''}`).join('')}</div>`;
+}
+const _dexStoryResult = storyResult;
+storyResult = function (won) {
+  const gains = awardExp(); if (gains.length) saveStory();
+  const r = _dexStoryResult.apply(this, arguments);
+  if (gains.length) setTimeout(() => { const box = document.querySelector('#syModal .sy-cer'); if (box && !box.querySelector('.sy-exp')) { const btn = box.querySelector('button'); (btn ? btn.parentElement === box ? btn : btn.parentElement : box).insertAdjacentHTML('beforebegin', expSummaryHtml(gains)); } }, 60);
+  return r;
+};
+
+/* ---------- the story screen and panel know about Pokédex runs ---------- */
+(function dexStoryUi() {
+  const top = document.querySelector('#storyOv .sy-top'); if (!top) return;
+  const b = document.createElement('button'); b.className = 'sy-btn'; b.id = 'syDex'; b.type = 'button'; b.textContent = 'Pokédex'; b.style.display = 'none';
+  b.onclick = openDex; top.insertBefore(b, $('syMenu'));
+})();
+const _dexRenderStory = renderStory;
+renderStory = function () {
+  const r = _dexRenderStory.apply(this, arguments);
+  const sv = STORY.save, b = $('syDex'); if (b) b.style.display = isDexSave(sv) ? '' : 'none';
+  if (isDexSave(sv)) { const nx = $('syNext'); if (nx && !nx.querySelector('.dx-team')) nx.insertAdjacentHTML('beforeend', `<button class="sy-btn dx-team" type="button" style="width:100%;margin-top:6px" onclick="openDex()">Edit party (${sv.team.length}/6)</button>`); }
+  return r;
+};
+const _dexOpenGymCard = openGymCard;
+openGymCard = function (i) {
+  const r = _dexOpenGymCard.apply(this, arguments);
+  if (isDexSave(STORY.save)) { const acts = document.querySelector('#syModal .acts'); if (acts && !acts.querySelector('.dx-team')) acts.insertAdjacentHTML('beforeend', `<button class="sy-btn dx-team" type="button" onclick="openDex()">Party (${STORY.save.team.length}/6)</button>`); }
+  return r;
+};
+const _dexPanel = renderStoryPanel;
+renderStoryPanel = function () {
+  const r = _dexPanel.apply(this, arguments);
+  const sv = STORY.save, row = document.querySelector('#stStoryP .row'); if (!row) return r;
+  if (!sv) {                                                    // empty slot: choose which kind of journey
+    const nb = $('stStoryNew'); if (nb) { nb.textContent = 'Classic journey'; nb.title = 'Pick a full team of six and challenge every gym'; }
+    row.insertAdjacentHTML('afterbegin', '<button class="big" type="button" id="stStoryDexNew" title="Start with one starter and catch Pokémon on the routes">Pokédex Adventure</button>');
+    $('stStoryDexNew').onclick = startDexRun;
+  } else if (isDexSave(sv)) {                                   // Pokédex slot: continue, new run (keeps the Pokédex), Pokédex
+    const nb = $('stStoryNew'); if (nb) { nb.textContent = 'New run'; nb.title = 'Badges reset and you pick a new starter — your Pokédex is kept'; nb.onclick = () => { if (!confirm(`Start a new run in slot ${STORY.slot}? Badges reset and you choose a new starter. Your Pokédex (${Object.keys(sv.dex || {}).length} Pokémon) is kept.`)) return; startDexRun(); }; }
+    row.insertAdjacentHTML('beforeend', `<button class="big alt" type="button" id="stStoryDex">Pokédex (${Object.keys(sv.dex || {}).length})</button>`);
+    $('stStoryDex').onclick = openDex;
+  }
+  for (const s2 of document.querySelectorAll('#stStoryP .slot')) { const v = readSlot(+s2.dataset.slot); if (isDexSave(v)) { const sm = s2.querySelector('small'); if (sm) sm.textContent = `Pok\u00E9dex ${Object.keys(v.dex || {}).length} \u00B7 ${v.badges}/${GYMS.length} badges`; } }
+  return r;
+};
+syncOnlineUi();
+window.dexCoverage = dexCoverage;
+
+//# sourceURL=pokedex.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 23: ROUTE CATCH ENCOUNTERS (Pokédex Adventure)
+   One catch opportunity per route per run, on arrival at gyms 1–8.
+   Set up like a Gen 1 battle: the wild Pokémon on the far platform, your
+   trainer up close, route scenery behind. Gen 1 Safari Zone rules:
+   1 Safari Ball, 1 Bait, Run. Safari Ball: R1 = 0–150 must be ≤ the catch
+   rate, then R2 = 0–255 ≤ F where F = ⌊HPmax·255/12⌋ / ⌊HP/4⌋. Bait halves
+   the catch rate and quarters the flee chance while it eats (1–5 turns).
+   Each turn the Pokémon may flee: chance = 2·Speed / 256 (Speed at its level).
+   If the ball fails, it runs away.
+   ===================================================================== */
+(function safariModule() {
+// Gen 1 base Speed (Red/Blue) for the flee check.
+const SPEED1 = [45, 60, 80, 65, 80, 100, 43, 58, 78, 45, 30, 70, 50, 35, 75, 56, 71, 91, 72, 97, 70, 100, 55, 80, 90, 100, 40, 65, 41, 56, 76, 50, 65, 85, 35, 60, 65, 100, 20, 45, 55, 90, 30, 40, 50, 25, 30, 45, 90,
+  95, 120, 90, 115, 55, 85, 70, 95, 60, 95, 90, 90, 70, 90, 105, 120, 35, 45, 55, 40, 55, 70, 70, 100, 20, 35, 45, 90, 105, 15, 30, 45, 70, 60, 75, 100, 45, 70, 25, 50, 40, 70, 80, 95, 110, 70, 42, 67, 50, 75,
+  100, 140, 40, 55, 35, 45, 87, 76, 30, 35, 60, 25, 40, 50, 60, 90, 60, 85, 63, 68, 85, 115, 90, 105, 95, 105, 93, 85, 110, 80, 81, 60, 48, 55, 65, 130, 65, 40, 35, 55, 55, 80, 130, 30, 85, 100, 90, 50, 70, 80, 130, 100];
+const SAFARI = { busy: false };
+const r256 = () => Math.floor(Math.random() * 256), rIn = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+function pickWild(leg) {
+  const R = ROUTES[leg], tot = R.mons.reduce((s, m) => s + m[3], 0); let x = Math.random() * tot;
+  for (const [sp, lo, hi, w] of R.mons) { x -= w; if (x <= 0) return { sp, lv: rIn(lo, hi) }; }
+  const m = R.mons[0]; return { sp: m[0], lv: m[1] };
+}
+const wildSpeed = (sp, lv) => Math.floor((SPEED1[DEX_BY_NAME[sp].id - 1] + 8) * 2 * lv / 100) + 5;
+const wildHP = (sp, lv) => { const b = baseStats(DEX_BY_NAME[sp]).hp; return Math.floor((b + 8) * 2 * lv / 100) + lv + 10; };
+// One Safari Ball throw (Gen 1). Returns { caught, shakes }.
+function safariBall(rate, hp) {
+  const r1 = Math.floor(Math.random() * 151), F = Math.min(255, Math.floor(Math.floor(hp * 255 / 12) / Math.max(1, Math.floor(hp / 4))));
+  let W = Math.floor(Math.floor(rate * 100 / 150) * F / 255), shakes = W < 10 ? 0 : W < 30 ? 1 : W < 70 ? 2 : 3;
+  if (r1 > rate) return { caught: false, shakes };
+  return r256() <= F ? { caught: true, shakes: 3 } : { caught: false, shakes };
+}
+const SHAKE_MSG = ['You missed the POKéMON!', 'Darn! The POKéMON broke free!', 'Aww! It appeared to be caught!', 'Shoot! It was so close too!'];
+
+/* ---------- styles and the overlay ---------- */
+(function safariSetup() {
+  const st = document.createElement('style');
+  st.textContent = `
+#safariOv{position:fixed;inset:0;z-index:88;display:none;background:#000;font-family:'Press Start 2P',var(--ui);color:#111}
+#safariOv.show{display:block}
+#safariOv canvas{position:absolute;left:50%;top:0;transform:translateX(-50%);image-rendering:pixelated;image-rendering:crisp-edges}
+#safariOv .sf-box{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:min(1100px,calc(100% - 24px));display:flex;gap:10px;min-height:118px}
+#safariOv .sf-msg,#safariOv .sf-menu{background:#f8f8f0;border:5px solid #283048;border-radius:10px;box-shadow:inset 0 0 0 3px #a8b0c8,0 6px 0 rgba(0,0,0,.35)}
+#safariOv .sf-msg{flex:1;padding:14px 18px;font:800 clamp(14px,2vw,22px)/1.45 var(--ui);letter-spacing:.02em;white-space:pre-line}
+#safariOv .sf-menu{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;min-width:280px}
+#safariOv .sf-menu[hidden]{display:none}
+#safariOv .sf-menu button{border:0;background:transparent;font:900 clamp(14px,1.8vw,20px) var(--ui);text-align:left;padding:8px 10px 8px 26px;border-radius:8px;cursor:pointer;position:relative;color:#111}
+#safariOv .sf-menu button:hover:not(:disabled),#safariOv .sf-menu button:focus-visible{background:#e2e6f0}
+#safariOv .sf-menu button:hover:not(:disabled)::before,#safariOv .sf-menu button:focus-visible::before{content:'\\25B6';position:absolute;left:8px;font-size:.8em;top:50%;transform:translateY(-50%)}
+#safariOv .sf-menu button:disabled{color:#a0a6b8;cursor:default}
+#safariOv .sf-menu small{font:700 .7em var(--ui);color:#5a6078;margin-left:4px}
+#safariOv .sf-head{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(8,12,34,.75);color:#fff;border-radius:10px;padding:6px 14px;font:800 13px var(--ui);letter-spacing:.06em;white-space:nowrap}
+#safariOv{background:#0b0f24}
+#safariOv .sf-tag{position:absolute;top:13%;left:max(12px,calc(50% - 30vw));background:#f8f8f0;border:4px solid #283048;border-radius:8px;padding:6px 12px;font:900 clamp(13px,1.7vw,19px) var(--ui);min-width:150px}
+#safariOv .sf-tag small{display:block;font:800 .75em var(--ui);color:#5a6078}
+@media (max-height:560px){#safariOv .sf-box{min-height:84px;bottom:6px}#safariOv .sf-msg{padding:8px 12px}#safariOv .sf-menu{min-width:220px;padding:6px}#safariOv .sf-menu button{padding:5px 8px 5px 22px}}`;
+  document.head.appendChild(st);
+  const ov = document.createElement('div'); ov.id = 'safariOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Wild Pokémon encounter');
+  ov.innerHTML = '<canvas id="sfCv" width="320" height="180"></canvas><div class="sf-head" id="sfHead"></div><div class="sf-tag" id="sfTag"></div><div class="sf-box"><div class="sf-msg" id="sfMsg" aria-live="polite"></div><div class="sf-menu" id="sfMenu" hidden></div></div>';
+  document.body.appendChild(ov);
+  // The scene covers the screen; on short screens it shifts up (trimming sky) so the trainer and platforms stay above the text box.
+  const fit = () => { const c = $('sfCv'), box = ov.querySelector('.sf-box'), boxH = (box && box.offsetHeight) || 120, availH = innerHeight - boxH * .45;
+    let W = Math.round(Math.max(innerWidth, innerHeight * 16 / 9)), H = Math.round(W * 9 / 16);
+    if (H > availH * 1.08) { H = Math.round(availH); W = Math.round(H * 16 / 9); }          // short, wide screens: the whole scene fits above the text box
+    c.style.width = W + 'px'; c.style.height = H + 'px'; c.style.top = '0px'; };
+  addEventListener('resize', fit); window.__sfFit = fit;
+})();
+
+/* ---------- pixel helpers for the scenes (320×180) ---------- */
+const SX = { c: null };
+const P = (x, y, w, h, col) => { SX.c.fillStyle = col; SX.c.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+const Dk = (x, y, r, col) => { const c = SX.c; c.fillStyle = col; r = Math.max(1, Math.round(r)); for (let dy = -r; dy <= r; dy++) { const w = Math.round(Math.sqrt(r * r - dy * dy)); c.fillRect(Math.round(x - w), Math.round(y + dy), w * 2 + 1, 1); } };
+const El = (x, y, rx, ry, col) => { const c = SX.c; c.fillStyle = col; for (let dy = -ry; dy <= ry; dy++) { const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry)))); c.fillRect(Math.round(x - w), Math.round(y + dy), w * 2 + 1, 1); } };
+const Grad = (y0, y1, a, b) => { const c = SX.c, g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, a); g.addColorStop(1, b); c.fillStyle = g; c.fillRect(0, y0, 320, y1 - y0); };
+const Hills = (y, amp, freq, col, seed = 0) => { for (let x = 0; x < 320; x += 2) { const h = Math.sin(x * freq + seed) * amp + Math.sin(x * freq * 2.3 + seed * 2) * amp * .4; P(x, y - h, 2, 180, col); } };
+const Tri = (x, y, w, h, col) => { for (let i = 0; i < h; i++) { const ww = w * i / h; P(x - ww / 2, y - h + i, ww, 1, col); } };
+const rng = s => () => ((s = Math.imul(s ^ (s >>> 15), 2246822519) >>> 0) % 10000) / 10000;
+
+/* ---------- the eight route scenes ---------- */
+const SCENES = {
+  forest(t) {                                           // Route 1 · Viridian Forest
+    Grad(0, 80, '#9fe0ff', '#d8f5d0'); for (let i = 0; i < 4; i++) { SX.c.globalAlpha = .12; Tri(40 + i * 80 + Math.sin(t / 2000 + i) * 6, 90, 40, 90, '#fffbd0'); } SX.c.globalAlpha = 1;
+    Hills(64, 6, .05, '#2f6e3a', 1); Hills(72, 5, .07, '#3c8a44', 3);
+    const r = rng(7); for (let i = 0; i < 9; i++) { const x = r() * 330 - 5, h = 24 + r() * 14; P(x - 2, 76 - h * .4, 4, h * .45, '#5a3b1f'); Dk(x, 76 - h * .55, 10 + r() * 6, '#2a6a32'); Dk(x - 4, 76 - h * .6, 7, '#3d8f42'); }
+    Grad(78, 180, '#6cc65a', '#3f9a3e'); for (let i = 0; i < 60; i++) { const x = (i * 37) % 320, y = 84 + (i * 53) % 90, s = Math.sin(t / 300 + i) * 1.5; P(x + s, y, 1, 4, '#2f7a32'); P(x + 2 + s, y + 1, 1, 3, '#57b04a'); }
+    for (let i = 0; i < 10; i++) { const a = Math.sin(t / 400 + i * 1.7); if (a > .3) P(40 + (i * 29) % 260 + Math.sin(t / 900 + i) * 8, 60 + (i * 17) % 50 + Math.cos(t / 700 + i) * 5, 1, 1, '#fffba0'); }
+    for (let i = 0; i < 5; i++) { const y = ((t / 30 + i * 41) % 200) - 10, x = (i * 71 + Math.sin(t / 500 + i) * 14) % 320; P(x, y, 2, 1, '#e0a030'); }
+  },
+  cave(t) {                                             // Mt. Moon
+    Grad(0, 180, '#1a1424', '#3a2f3e'); for (let i = 0; i < 16; i++) { const x = i * 21 + 6, h = 10 + (i * 7) % 18; Tri(x, h + 2, 10, h, '#2b2234'); Tri(x, h, 6, h - 3, '#3a2f48'); }
+    Hills(70, 8, .04, '#2e2538', 2); Hills(82, 5, .09, '#3c3048', 5);
+    for (let i = 0; i < 6; i++) { const x = 20 + i * 52, y = 60 + (i % 3) * 8, g = .5 + .5 * Math.sin(t / 500 + i); SX.c.globalAlpha = .25 * g; Dk(x, y, 8, '#b8a0ff'); SX.c.globalAlpha = 1; Tri(x, y + 4, 6, 9, '#a088ff'); P(x - 1, y - 2, 2, 2, '#ffffff'); }
+    Grad(84, 180, '#4a3c50', '#2a2230'); for (let i = 0; i < 18; i++) { const x = (i * 41) % 320, y = 92 + (i * 29) % 80; El(x, y, 4 + (i % 3), 2, '#3a2e40'); P(x - 2, y - 2, 3, 1, '#5a4a62'); }
+    for (let i = 0; i < 4; i++) { const y = (t / 4 + i * 60) % 120; P(30 + i * 80, y, 1, 3, '#8fc8ff'); }
+    for (let i = 0; i < 2; i++) { const x = (t / 12 + i * 160) % 360 - 20, y = 30 + Math.sin(t / 200 + i) * 8, f = Math.sin(t / 60) > 0; P(x - 4, y, 3, f ? 1 : 2, '#1a1028'); P(x + 2, y, 3, f ? 1 : 2, '#1a1028'); P(x - 1, y, 3, 2, '#6a4a8a'); }
+  },
+  meadow(t) {                                           // Route 5 · Route 6
+    Grad(0, 80, '#6cc3ff', '#d6f0ff'); for (let i = 0; i < 4; i++) { const x = ((t / 90 + i * 95) % 400) - 40; El(x, 18 + i * 9, 18, 5, '#ffffff'); El(x + 10, 15 + i * 9, 12, 5, '#ffffff'); }
+    for (let i = 0; i < 6; i++) P(250 + i * 9, 54 - (i % 3) * 7, 7, 20 + (i % 3) * 7, '#9aa8c8');
+    Hills(70, 7, .03, '#7fcf6a', 1); Hills(80, 5, .05, '#69bd58', 4); Grad(82, 180, '#7ed46a', '#58b04e');
+    const cols = ['#ff7aa8', '#ffe066', '#ffffff', '#b78cff', '#ff9a4a']; for (let i = 0; i < 70; i++) { const x = (i * 43) % 320, y = 90 + (i * 31) % 85; P(x, y, 2, 2, cols[i % 5]); P(x, y + 2, 1, 2, '#3f8f3c'); }
+    for (let i = 0; i < 18; i++) P(i * 18, 86, 2, 8, '#a87848'); P(0, 88, 320, 1, '#c89868');
+    for (let i = 0; i < 3; i++) { const x = 60 + i * 90 + Math.sin(t / 700 + i) * 24, y = 70 + Math.cos(t / 500 + i * 2) * 12, f = Math.sin(t / 80 + i) > 0; P(x - (f ? 3 : 2), y, f ? 3 : 2, 2, ['#ffffff', '#ffe066', '#7ad7ff'][i]); P(x + 1, y, f ? 3 : 2, 2, ['#ffffff', '#ffe066', '#7ad7ff'][i]); }
+  },
+  city(t) {                                             // Route 6 · Route 7 outskirts at dusk
+    Grad(0, 80, '#3a2f6e', '#ff9a6a'); Dk(250, 52, 14, '#ffd27a');
+    const r = rng(11); for (let i = 0; i < 16; i++) { const x = i * 21, w = 16 + r() * 8, h = 22 + r() * 34; P(x, 78 - h, w, h, '#2a2440'); for (let wy = 0; wy < h - 6; wy += 6) for (let wx = 3; wx < w - 3; wx += 5) if (r() > .4) P(x + wx, 78 - h + 4 + wy, 2, 3, Math.sin(t / 800 + wx + wy + i) > -.6 ? '#ffd86a' : '#5a5070'); }
+    Grad(78, 180, '#4c4a5a', '#2e2c38'); P(0, 96, 320, 14, '#3a3846'); for (let x = (t / 8) % 30; x < 320; x += 30) P(x, 102, 14, 2, '#e8e0a0');
+    for (let i = 0; i < 5; i++) { const x = 30 + i * 64; P(x, 70, 2, 26, '#202030'); SX.c.globalAlpha = .3 + .1 * Math.sin(t / 300 + i); Dk(x + 1, 70, 7, '#ffe8a0'); SX.c.globalAlpha = 1; P(x - 1, 68, 4, 3, '#fff4c0'); }
+    const cx = (t / 5) % 420 - 50; P(cx, 98, 18, 6, '#d84040'); P(cx + 3, 95, 11, 4, '#f06060'); P(cx + 16, 99, 2, 2, '#ffe880');
+    for (let i = 0; i < 20; i++) Dk(i * 17 + 5, 112, 7, '#2f6a3a');
+  },
+  safari(t) {                                           // Safari Zone
+    Grad(0, 85, '#ffb46a', '#fff0b0'); Dk(60, 40, 16, '#fff6d0');
+    Hills(66, 8, .025, '#c8925a', 2); Hills(76, 4, .06, '#b88850', 5);
+    for (const [x, s] of [[40, 1], [150, .8], [270, 1.1]]) { P(x - 1, 76 - 22 * s, 3, 22 * s, '#5a3a1f'); El(x, 76 - 24 * s, 22 * s, 5 * s, '#4a7a2a'); El(x - 6, 76 - 27 * s, 12 * s, 4 * s, '#5c9234'); }
+    Grad(78, 180, '#e0c070', '#b89048'); for (let i = 0; i < 90; i++) { const x = (i * 23) % 320, y = 86 + (i * 37) % 90, s = Math.sin(t / 350 + i * .5) * 2; P(x + s, y - 6, 1, 7, '#c8a048'); P(x + 2 + s * .7, y - 4, 1, 5, '#f0d080'); }
+    for (const [x, y] of [[20, 110], [290, 120], [200, 150]]) { El(x, y, 9, 5, '#8a8070'); El(x - 2, y - 2, 5, 3, '#a8a090'); }
+    for (let i = 0; i < 12; i++) P(i * 28, 84, 3, 10, '#7a5030'); P(0, 86, 320, 2, '#9a6a40'); P(0, 90, 320, 1, '#9a6a40');
+  },
+  tower(t) {                                            // Lavender Town · Pokémon Tower
+    Grad(0, 85, '#140c2a', '#4a3070'); for (let i = 0; i < 30; i++) if (Math.sin(t / 600 + i * 3) > -.3) P((i * 61) % 320, (i * 23) % 60, 1, 1, '#e8e0ff');
+    Dk(70, 30, 12, '#fff8e0'); Dk(66, 27, 3, '#e8e0c0');
+    P(205, 18, 38, 62, '#1c1430'); Tri(224, 20, 46, 16, '#2a1e46'); for (let y = 26; y < 76; y += 10) { P(212, y, 6, 5, Math.sin(t / 700 + y) > 0 ? '#c08cff' : '#4a3a70'); P(230, y, 6, 5, '#4a3a70'); }
+    Hills(80, 3, .05, '#2a2040', 3); Grad(82, 180, '#3a3050', '#1c1828');
+    for (let i = 0; i < 8; i++) { const x = 20 + i * 38, y = 96 + (i % 2) * 16; P(x, y, 10, 13, '#7a7490'); Dk(x + 5, y, 5, '#7a7490'); P(x + 4, y + 3, 2, 6, '#5a5470'); P(x + 2, y + 5, 6, 2, '#5a5470'); }
+    for (let i = 0; i < 3; i++) { SX.c.globalAlpha = .18; El(((t / 40 + i * 120) % 440) - 60, 92 + i * 14, 70, 6, '#c8c0e8'); } SX.c.globalAlpha = 1;
+    for (let i = 0; i < 3; i++) { const x = 40 + i * 110 + Math.sin(t / 800 + i) * 18, y = 60 + Math.sin(t / 400 + i * 2) * 10; SX.c.globalAlpha = .5 + .3 * Math.sin(t / 250 + i); Dk(x, y, 3, '#a8f0ff'); P(x - 1, y + 3, 2, 3, '#a8f0ff'); SX.c.globalAlpha = 1; }
+  },
+  sea(t) {                                              // Sea Routes 19–20 · Seafoam Islands
+    Grad(0, 70, '#7cc8ff', '#e0f4ff'); for (let i = 0; i < 3; i++) { const x = ((t / 120 + i * 120) % 420) - 50; El(x, 16 + i * 10, 16, 4, '#ffffff'); }
+    for (const [x, w] of [[60, 50], [250, 40]]) { Tri(x, 70, w, 16, '#b8e4f0'); Tri(x + 4, 70, w * .5, 12, '#ffffff'); }
+    Grad(70, 180, '#3a9ae0', '#1a5aa8');
+    for (let y = 74; y < 180; y += 7) for (let x = ((t / 20 + y * 3) % 24) - 24; x < 320; x += 24) P(x, y + Math.sin(t / 300 + x * .1) * 1.5, 10, 1, y % 2 ? '#7cc8ff' : '#5ab0f0');
+    for (let i = 0; i < 12; i++) if (Math.sin(t / 200 + i * 5) > .6) P((i * 53) % 320, 80 + (i * 29) % 90, 2, 1, '#ffffff');
+    for (let i = 0; i < 2; i++) { const x = ((t / 15 + i * 170) % 380) - 30, y = 34 + i * 10 + Math.sin(t / 300 + i) * 3, f = Math.sin(t / 120 + i) > 0; P(x - 4, y - (f ? 1 : 0), 4, 1, '#ffffff'); P(x, y, 1, 1, '#ffffff'); P(x + 1, y - (f ? 1 : 0), 4, 1, '#ffffff'); }
+  },
+  mountain(t) {                                         // Route 21 · Route 22 · Victory Road
+    Grad(0, 90, '#8ab8ff', '#ffe0c0');
+    for (const [x, w, h, c] of [[60, 140, 70, '#7a7a9a'], [180, 160, 84, '#6a6a8c'], [290, 120, 64, '#7a7a9a']]) { Tri(x, 92, w, h, c); Tri(x, 92 - h + 22, w * 22 / h, 22, '#f4f8ff'); }
+    P(150, 40, 20, 10, '#d8d0b0'); Tri(160, 40, 24, 8, '#c84040');
+    Grad(86, 180, '#9a8a70', '#6a5a48'); for (let i = 0; i < 10; i++) { const x = (i * 37) % 320, y = 96 + (i * 41) % 80; El(x, y, 8 + (i % 3) * 3, 5, '#7a6a58'); El(x - 2, y - 2, 4 + (i % 3), 2, '#a89880'); }
+    for (let i = 0; i < 9; i++) { const y = 20 + i * 15, x = (t / 3 + i * 50) % 380 - 40; SX.c.globalAlpha = .45; P(x, y, 26, 1, '#ffffff'); SX.c.globalAlpha = 1; }
+  }
+};
+// Battle platforms: grass, rock or sand depending on the scene.
+function platform(x, y, rx, ry, scene) {
+  const pal = { forest: ['#3f8a3a', '#7fd06a'], meadow: ['#4a9a40', '#9ae07a'], safari: ['#9a7840', '#e8c880'], cave: ['#3a2e44', '#6a5a78'], city: ['#4a4a58', '#8a8aa0'],
+    tower: ['#2a2440', '#5a5078'], sea: ['#c8b080', '#f0e0b0'], mountain: ['#6a5a48', '#b8a888'] }[scene] || ['#3f8a3a', '#7fd06a'];
+  El(x, y + 2, rx + 2, ry + 2, 'rgba(0,0,0,.25)'); El(x, y, rx, ry, pal[0]); El(x, y - 1, rx - 3, ry - 3, pal[1]);
+}
+
+/* ---------- the encounter ---------- */
+function safariEncounter(leg) {
+  return new Promise(resolve => {
+    const sv = STORY.save, R = ROUTES[leg], w = pickWild(leg), ov = $('safariOv'), cv = $('sfCv'), msgEl = $('sfMsg'), menu = $('sfMenu');
+    SX.c = cv.getContext('2d'); SX.c.imageSmoothingEnabled = false;
+    const mon = document.createElement('canvas'); mon.width = mon.height = 96; try { drawSpriteTo(mon, w.sp, {}); } catch (e) { }
+    const tr = new Image(); tr.src = portraitUrl(sv.trainer);
+    const S = { t0: performance.now(), phase: 'intro', mon: { x: 0, a: 1, white: 0, scale: 1, bob: 0, gone: false }, ball: null, bait: null, stars: 0, balls: 1, baits: 1, eat: 0,
+      rate: CATCH_RATE[w.sp] || 45, hp: wildHP(w.sp, w.lv), spd: wildSpeed(w.sp, w.lv), done: false };
+    $('sfHead').textContent = `${R.name.toUpperCase()} \u00B7 ROUTE ENCOUNTER`;
+    $('sfTag').innerHTML = `${w.sp.toUpperCase()}<small>:L${w.lv}${dexEntry(sv, w.sp) ? ' \u00B7 \u25CF in Pok\u00E9dex' : ''}</small>`;
+    ov.classList.add('show'); menu.hidden = true; requestAnimationFrame(() => window.__sfFit && window.__sfFit());
+    let typer = null;
+    const say = (text, ms = 22) => new Promise(r => { clearInterval(typer); let k = 0; msgEl.textContent = ''; typer = setInterval(() => { msgEl.textContent = text.slice(0, ++k); if (k >= text.length) { clearInterval(typer); setTimeout(r, 650); } }, ms); });
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const anim = (key, ms) => new Promise(r => { S[key] = { t0: performance.now(), ms }; setTimeout(r, ms); });
+    // drawing
+    const frame = now => {
+      if (!ov.classList.contains('show')) return;
+      const t = now - S.t0, c = SX.c; c.clearRect(0, 0, 320, 180);
+      (SCENES[R.scene] || SCENES.forest)(t);
+      const slide = Math.min(1, t / 700), farX = 232 + (1 - slide) * -260, nearX = 74 + (1 - slide) * 260;
+      platform(farX, 92, 50, 11, R.scene); platform(nearX, 168, 76, 15, R.scene);
+      // the wild Pokémon on the far platform
+      if (!S.mon.gone) {
+        const h = 54 * S.mon.scale, bob = S.mon.bob ? Math.abs(Math.sin(t / 120)) * 3 : 0, mx = farX + S.mon.x;
+        c.save(); c.globalAlpha = S.mon.a; c.drawImage(mon, Math.round(mx - h / 2), Math.round(92 - h + 4 - bob), Math.round(h), Math.round(h));
+        if (S.mon.white > 0) { c.globalCompositeOperation = 'source-atop'; c.globalAlpha = S.mon.white * S.mon.a; } c.restore();
+        if (S.mon.white > 0) { c.save(); c.globalAlpha = S.mon.white; const tc = document.createElement('canvas'); tc.width = tc.height = 96; const tx = tc.getContext('2d'); tx.drawImage(mon, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ffffff'; tx.fillRect(0, 0, 96, 96); c.drawImage(tc, Math.round(mx - h / 2), Math.round(92 - h + 4), Math.round(h), Math.round(h)); c.restore(); }
+        if (S.eat > 0 && S.mon.bob) { const k = (t / 400) % 1; P(mx + 18, 92 - 46 - k * 10, 2, 2, '#ff7aa8'); P(mx + 20, 92 - 48 - k * 10, 2, 2, '#ff7aa8'); }
+      }
+      // your trainer, up close
+      if (tr.complete && tr.naturalWidth) { const h = 110, wv = h * tr.naturalWidth / tr.naturalHeight; c.drawImage(tr, Math.round(nearX - wv / 2), Math.round(168 - h + 8), Math.round(wv), Math.round(h)); }
+      // thrown bait
+      if (S.baitA) { const k = Math.min(1, (now - S.baitA.t0) / S.baitA.ms), x = nearX + 20 + (farX - 18 - nearX - 20) * k, y = 110 - Math.sin(k * Math.PI) * 60 + (92 - 110) * k; Dk(x, y, 3, '#a8703a'); P(x - 1, y - 1, 1, 1, '#e0b070'); }
+      if (S.baitDown) { Dk(farX - 18, 94, 3, '#a8703a'); }
+      // the Safari Ball: arc, drop, wobble, click
+      if (S.ballA) { const k = Math.min(1, (now - S.ballA.t0) / S.ballA.ms), x = nearX + 24 + (farX - nearX - 24) * k, y = 104 - Math.sin(k * Math.PI) * 70 + (66 - 104) * k; drawBall(x, y, k * 12); }
+      if (S.ballAt) { const b = S.ballAt, wob = S.wobA ? Math.sin(Math.min(1, (now - S.wobA.t0) / S.wobA.ms) * Math.PI * 2) * .5 : 0, dropK = S.dropA ? Math.min(1, (now - S.dropA.t0) / S.dropA.ms) : 1; drawBall(farX, 66 + (88 - 66) * dropK - Math.abs(Math.sin(dropK * Math.PI * 2)) * 6 * (1 - dropK), wob); }
+      if (S.burstA) { const k = Math.min(1, (now - S.burstA.t0) / S.burstA.ms); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, d = k * 26; P(farX + Math.cos(a) * d, 76 + Math.sin(a) * d * .6, 2, 2, i % 2 ? '#ffffff' : '#ffe066'); } }
+      if (S.starsA) { const k = Math.min(1, (now - S.starsA.t0) / S.starsA.ms); for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + (i - 1) * .7, d = 8 + k * 16; const sx = farX + Math.cos(a) * d, sy = 84 + Math.sin(a) * d; P(sx - 2, sy, 5, 1, '#ffe066'); P(sx, sy - 2, 1, 5, '#ffe066'); } }
+      requestAnimationFrame(frame);
+    };
+    function drawBall(x, y, rot) {
+      const c = SX.c; c.save(); c.translate(Math.round(x), Math.round(y)); c.rotate(rot);
+      c.fillStyle = '#283048'; c.beginPath(); c.arc(0, 0, 6, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#6aa84a'; c.beginPath(); c.arc(0, 0, 5, Math.PI, 0); c.fill();                 // Safari Ball: green top
+      c.fillStyle = '#f0f0e8'; c.beginPath(); c.arc(0, 0, 5, 0, Math.PI); c.fill();
+      c.fillStyle = '#283048'; c.fillRect(-5, -1, 10, 2); c.fillStyle = '#ffffff'; c.fillRect(-1, -1, 2, 2); c.fillStyle = '#4a8a2a'; c.fillRect(-3, -4, 2, 2); c.fillRect(1, -4, 2, 2); c.restore();
+    }
+    requestAnimationFrame(frame);
+    try { if (typeof playCry === 'function') setTimeout(() => playCry(w.sp), 650); } catch (e) { }
+    // turn logic (Gen 1 Safari)
+    const fleeCheck = () => { let X = S.spd * 2; if (S.eat > 0) { X = Math.floor(X / 4); S.eat--; if (S.eat <= 0) S.mon.bob = false; } return X > 255 || r256() < X; };
+    const finish = async (caught, text) => {
+      menu.hidden = true; sv.encountered = sv.encountered || {}; sv.encountered[leg] = { sp: w.sp, lv: w.lv, caught };
+      if (caught) {
+        const isNew = !dexEntry(sv, w.sp); dexAdd(sv, w.sp, w.lv); saveStory();
+        await say(`All right! ${w.sp.toUpperCase()} was caught!`); await say(isNew ? `New POKéDEX data will be added for ${w.sp.toUpperCase()}!` : `${w.sp.toUpperCase()}'s POKéDEX entry was updated.`);
+        const inParty = sv.team.includes(w.sp);
+        msgEl.textContent = `${w.sp.toUpperCase()} (Lv ${dexEntry(sv, w.sp).level}) is in your POKéDEX.` + (inParty ? '' : sv.team.length >= 6 ? '\nYour party is full \u2014 change it from the POKéDEX.' : '\nAdd it to your party?');
+        menu.innerHTML = (inParty || sv.team.length >= 6 ? '' : '<button type="button" data-a="add">ADD TO PARTY</button>') + '<button type="button" data-a="ok">CONTINUE</button>'; menu.hidden = false;
+        await new Promise(r => { for (const b of menu.querySelectorAll('button')) b.onclick = () => { if (b.dataset.a === 'add') { sv.team.push(w.sp); saveStory(); toastMsg(`${w.sp} joined your party!`); } r(); }; menu.querySelector('button').focus(); });
+      } else { saveStory(); await say(text); await wait(300); }
+      ov.classList.remove('show'); clearInterval(typer); resolve({ caught, sp: w.sp, lv: w.lv });
+    };
+    const showMenu = () => {
+      menu.innerHTML = `<button type="button" data-a="ball" ${S.balls ? '' : 'disabled'}>BALL<small>\u00D7${S.balls}</small></button><button type="button" data-a="bait" ${S.baits ? '' : 'disabled'}>BAIT<small>\u00D7${S.baits}</small></button><button type="button" data-a="run">RUN</button>`;
+      menu.hidden = false; msgEl.textContent = `What will ${trainerTitle(sv.trainer).toUpperCase()} do?`;
+      for (const b of menu.querySelectorAll('button')) b.onclick = () => act(b.dataset.a);
+      const first = menu.querySelector('button:not(:disabled)'); if (first) first.focus();
+    };
+    const act = async a => {
+      menu.hidden = true;
+      if (a === 'run') return finish(false, 'Got away safely!');
+      if (a === 'bait') {
+        S.baits--; await say(`${trainerTitle(sv.trainer).toUpperCase()} threw some BAIT.`); await anim('baitA', 600); S.baitA = null; S.baitDown = true;
+        S.rate = Math.max(1, Math.floor(S.rate / 2)); S.eat = rIn(1, 5); S.mon.bob = true;
+        await say(`Wild ${w.sp.toUpperCase()} is eating!`);
+        if (fleeCheck()) { S.mon.flee = true; await fleeAnim(); return finish(false, `Wild ${w.sp.toUpperCase()} ran away!`); }
+        return showMenu();
+      }
+      if (a === 'ball') {
+        S.balls--; await say(`${trainerTitle(sv.trainer).toUpperCase()} used SAFARI BALL!`, 18);
+        await anim('ballA', 650); S.ballA = null;
+        for (let k = 0; k <= 10; k++) { S.mon.white = Math.min(1, k / 4); S.mon.scale = 1 - k / 10; await wait(28); }
+        S.mon.gone = true; S.ballAt = true; await anim('dropA', 450);
+        const res = safariBall(S.rate, S.hp);
+        for (let i = 0; i < res.shakes; i++) { await wait(260); await anim('wobA', 420); }
+        if (res.caught) { await wait(200); await anim('starsA', 600); return finish(true); }
+        await wait(220); S.ballAt = false; await anim('burstA', 300); S.burstA = null; S.mon.gone = false; S.mon.scale = 1;
+        for (let k = 0; k <= 6; k++) { S.mon.white = 1 - k / 6; await wait(30); }
+        await say(SHAKE_MSG[res.shakes]);
+        await fleeAnim(); return finish(false, `Wild ${w.sp.toUpperCase()} ran away!`);
+      }
+    };
+    const fleeAnim = async () => { for (let k = 0; k <= 16; k++) { S.mon.x = k * 9; S.mon.a = 1 - k / 16; await wait(26); } S.mon.gone = true; };
+    (async () => { await wait(750); await say(`Wild ${w.sp.toUpperCase()} appeared!`); showMenu(); })();
+  });
+}
+
+/* ---------- when it happens: on arrival at gyms 1–8, once per route per run ---------- */
+const _sfOpenGymCard = openGymCard;
+openGymCard = function (i) {
+  const sv = STORY.save;
+  if (isDexSave(sv) && i === sv.badges && i < ROUTES.length && !(sv.encountered || {})[i] && !SAFARI.busy) {
+    SAFARI.busy = true; closeModal();
+    safariEncounter(i).then(() => { SAFARI.busy = false; renderStory(); _sfOpenGymCard(i); });
+    return;
+  }
+  return _sfOpenGymCard.apply(this, arguments);
+};
+window.safariBall = safariBall; window.pickWild = pickWild; window.safariEncounter = safariEncounter;
+
+})();
+
+//# sourceURL=safari.js
 </script>
 <script>
 'use strict';

@@ -136,7 +136,9 @@ const showOverlay = (id, on) => { const e = $(id); if (e) e.classList.toggle('sh
 let introSkip = null, autosaveT = 0;
 function resetScene() { cancelAll(); buildScars(); crowdState.length = 0; for (const k in groupState) delete groupState[k]; trainerWalk.A = trainerWalk.B = 1; slide.t = -9999; bigText.t = -9999; }
 function chooseStage() { const v = $('stageSel').value; return v === 'random' ? pickBy(STAGE_ORDER, Math.random) : v; }
+const filledTeam = t => { const f = (t || []).filter(Boolean); return f.length ? f : [DEX[0].name]; };   // empty slots ("No Pokémon") are skipped
 async function startBattle(picksA, picksB, stageId) {
+  picksA = filledTeam(picksA); picksB = filledTeam(picksB);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
@@ -350,7 +352,7 @@ function queueMove(i) {
   if (!tryCast('A', i)) { sd.queued = i; sd.queuedT = 600; }
 }
 function buildPickers() {
-  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join(''); root.appendChild(sel); } }
+  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join(''); root.appendChild(sel); } }
 }
 function setPickers(a, b) { a.forEach((n, i) => { if ($('pickA' + i)) $('pickA' + i).value = n; }); b.forEach((n, i) => { if ($('pickB' + i)) $('pickB' + i).value = n; }); }
 const readPickers = S => Array.from({ length: 6 }, (_, i) => $(`pick${S}${i}`).value);

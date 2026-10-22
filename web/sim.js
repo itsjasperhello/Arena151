@@ -128,7 +128,7 @@ function applyHit(S, mv, u, opts = {}) {
   if (opts.floor) dmg = Math.max(dmg, Math.round(t.max * opts.floor * (eff < 1 ? .5 : 1)));
   if (opts.cap) dmg = Math.min(dmg, Math.round(t.max * opts.cap));
   if (dmg >= t.hp && t.hp > t.max * .25 && !ts.plotUsed && Math.random() < .12) { ts.plotUsed = true; dmg = t.hp - 1; VFX.plotArmor(fs); logLine(`${t.name} hung on with 1 HP!`, 't'); }
-  dmg = Math.min(dmg, t.hp); t.hp -= dmg;
+  dmg = Math.min(dmg, t.hp); t.hp -= dmg; u.dmgDealt = (u.dmgDealt || 0) + dmg;
   if (!opts.z) { const us = side(S); us.zCharge = Math.min(100, (us.zCharge || 0) + dmg / t.max * 85); ts.zCharge = Math.min(100, (ts.zCharge || 0) + dmg / t.max * 45); }
   if (opts.combo) VFX.combo(fs, opts.combo);
   if (crit || eff > 1 || t.hp <= 0) VFX.crowd(t.hp <= 0 ? 2 : 1);

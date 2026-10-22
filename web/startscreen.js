@@ -52,6 +52,8 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
 #startOv .st-team{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 #startOv .st-mon{position:relative;color:#fff;font-family:var(--ui);border-radius:14px;padding:6px 4px 5px;background:rgba(8,12,32,.55);border:1px solid rgba(255,255,255,.1);cursor:pointer;text-align:center;transition:transform .12s,border-color .12s}
 #startOv .st-mon:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.35)}
+#startOv .st-mon.none{border-style:dashed;border-color:rgba(255,255,255,.25);background:rgba(8,12,32,.3);color:#9aa3c7}
+#startOv .plus{font:900 30px var(--ui);color:rgba(255,255,255,.35);margin:auto}
 #startOv .st-mon .pic{height:62px;display:flex;align-items:flex-end;justify-content:center}
 #startOv .st-mon img,#startOv .st-mon canvas{max-height:62px;max-width:100%;image-rendering:pixelated}
 #startOv .red .st-mon img,#startOv .red .st-mon canvas{transform:scaleX(-1)}
@@ -171,7 +173,8 @@ function renderStartTeams() {
     const box = $('stTeam' + S); box.replaceChildren();
     stTeam(S).forEach((name, i) => {
       const b = document.createElement('button'); b.className = 'st-mon'; b.type = 'button'; b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: ${name}. Change`);
-      b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${name}</div><div class="ty">${typeChips(name)}</div>`);
+      if (!name) { b.classList.add('none'); b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: no Pokémon. Add one`); b.innerHTML = '<div class="pic"><span class="plus">+</span></div><div class="nm">No Pokémon</div>'; }
+      else { b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${name}</div><div class="ty">${typeChips(name)}</div>`); }
       b.onclick = () => openMonPicker(S, i); box.appendChild(b);
     });
   }
@@ -209,7 +212,14 @@ function renderStartArenas() {
 /* ---------- Pokémon picker ---------- */
 function openMonPicker(S, i) {
   START.slot = { S, i }; const grid = $('stGridPk');
-  if (!grid.childElementCount) for (const d of DEX) {
+  if (!grid.childElementCount) {
+    const none = document.createElement('button'); none.type = 'button'; none.className = 'none'; none.dataset.q = 'no pokemon none empty';
+    none.innerHTML = '<div class="pic"><span class="plus">\u2715</span></div>No Pok\u00E9mon<small>leave this slot empty</small>';
+    none.onclick = () => { const { S, i } = START.slot, team = readPickers(S); if (team.filter(Boolean).length <= 1 && team[i]) { toastMsg('A team needs at least one Pok\u00E9mon'); return; }
+      team[i] = ''; setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
+    grid.appendChild(none);
+  }
+  if (grid.childElementCount <= 1) for (const d of DEX) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.q = `${d.name} ${String(d.id).padStart(3, '0')} ${d.types.join(' ')}`.toLowerCase();
     b.appendChild(monPic(d.name)); b.insertAdjacentHTML('beforeend', `${d.name}<small>#${String(d.id).padStart(3, '0')} · ${d.types.join('/')}</small>`);
     b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name; setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };

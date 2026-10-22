@@ -584,7 +584,7 @@ function openStoryScreen() {
 }
 function beginJourney(fresh) {
   if (fresh || !STORY.save) {
-    STORY.save = { trainer: TRSEL.A, team: readPickers('A'), badges: 0, wins: 0, losses: 0, startedAt: Date.now(), finishedAt: null };
+    STORY.save = { trainer: TRSEL.A, team: readPickers('A').filter(Boolean), badges: 0, wins: 0, losses: 0, startedAt: Date.now(), finishedAt: null };
     saveStory();
   }
   openStoryScreen();

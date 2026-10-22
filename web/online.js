@@ -50,7 +50,7 @@ function netConnect() {
   return urls.reduce((chain, url, i) => chain.catch(() => tryUrl(url, i === urls.length - 1)), Promise.reject())
     .catch(() => { netStatus('No answer from ' + urls.join(' or ') + '. Is the server running and reachable?', 'err'); return Promise.reject(); });
 }
-function myInfo() { return { trainer: trainerTitle(TRSEL.A), trainerFile: TRSEL.A, team: readPickers('A') }; }
+function myInfo() { return { trainer: trainerTitle(TRSEL.A), trainerFile: TRSEL.A, team: readPickers('A').filter(Boolean) }; }
 async function hostGame() { try { await netConnect(); } catch (e) { return; } netSend({ t: 'host', ...myInfo(), arena: START.arena, timeLimit: +$('stTime').value || 0 }); netStatus('Creating a game…'); }
 async function joinGame() {
   const code = $('olCode').value.trim().toUpperCase(); if (code.length !== 4) { netStatus('Enter the 4-letter code from the host.', 'err'); return; }
