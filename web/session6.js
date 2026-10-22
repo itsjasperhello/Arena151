@@ -29,7 +29,12 @@ function discoverTrainers() {
   const found = (files || []).map(f => (String(f).match(/^(.+)_trainer\.png$/i) || [])[1]).filter(Boolean);
   return [...new Set(found.length ? found : BUNDLED_TRAINERS)].sort((a, b) => a.localeCompare(b));
 }
-const TRAINERS = discoverTrainers();
+// Route trainers (story mode only) are kept out of the start screen's trainer list.
+const ROUTE_TRAINER_KEYS = ['bugcatcher', 'youngster', 'lass', 'engineer', 'gentleman', 'hiker', 'beauty', 'biker', 'swimmer', 'psychic',
+  'cooltrainermale', 'cooltrainerm', 'cooltrainerboy', 'acetrainermale', 'acetrainerm', 'cooltrainerfemale', 'cooltrainerf', 'cooltrainergirl', 'acetrainerfemale', 'acetrainerf'];
+const trainerKey = n => String(n).toLowerCase().replace(/[^a-z]/g, '');
+const ALL_TRAINERS = discoverTrainers();
+const TRAINERS = ALL_TRAINERS.filter(n => !ROUTE_TRAINER_KEYS.includes(trainerKey(n)));
 const TR_KEY = 'arena151.trainers';
 const TRSEL = Object.assign({ A: 'Ash', B: 'Gary', flip: {} }, (() => { try { return JSON.parse(localStorage.getItem(TR_KEY)) || {}; } catch (e) { return {}; } })());
 for (const [S, fallback] of [['A', 0], ['B', 1]]) if (!TRAINERS.includes(TRSEL[S])) TRSEL[S] = TRAINERS[fallback % TRAINERS.length];
