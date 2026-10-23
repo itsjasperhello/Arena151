@@ -53,6 +53,10 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
 #startOv .st-mon{position:relative;color:#fff;font-family:var(--ui);border-radius:14px;padding:6px 4px 5px;background:rgba(8,12,32,.55);border:1px solid rgba(255,255,255,.1);cursor:pointer;text-align:center;transition:transform .12s,border-color .12s}
 #startOv .st-mon:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.35)}
 #startOv .st-mon.none{border-style:dashed;border-color:rgba(255,255,255,.25);background:rgba(8,12,32,.3);color:#9aa3c7}
+#stPick .st-shiny{display:block;margin:0 0 8px auto;border:2px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(8,12,32,.5);color:#fff;font:800 13px var(--ui);padding:6px 12px;cursor:pointer}
+#stPick .st-shiny.on{border-color:#ffd84a;background:rgba(255,216,74,.18);color:#ffe680}
+.pic.shiny{position:relative}
+.pic.shiny::after{content:'\u2728';position:absolute;top:-2px;right:-2px;font-size:13px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
 #startOv .plus{font:900 30px var(--ui);color:rgba(255,255,255,.35);margin:auto}
 #startOv .st-mon .pic{height:62px;display:flex;align-items:flex-end;justify-content:center}
 #startOv .st-mon img,#startOv .st-mon canvas{max-height:62px;max-width:100%;image-rendering:pixelated}
@@ -161,10 +165,12 @@ function monPic(name) {
   const wrap = document.createElement('div'); wrap.className = 'pic';
   const fallback = () => { const c = document.createElement('canvas'); c.width = 56; c.height = 56; try { drawSpriteTo(c, name, {}); } catch (e) { } wrap.replaceChildren(c); };
   const img = new Image(); img.alt = name; img.loading = 'lazy'; img.decoding = 'async'; let tried = 0;
-  img.onerror = () => { if (tried++ === 0) img.src = spriteUrl(spriteSlug(name) + '.png'); else fallback(); };
-  img.src = spriteUrl(spriteSlug(name) + '.gif'); wrap.appendChild(img); return wrap;
+  const shiny = pickShiny(name), urls = (shiny ? [spriteSlug(name) + '_shiny.gif'] : []).concat([spriteSlug(name) + '.gif', spriteSlug(name) + '.png']);
+  if (shiny) wrap.classList.add('shiny');
+  img.onerror = () => { tried++; if (tried < urls.length) img.src = spriteUrl(urls[tried]); else fallback(); };
+  img.src = spriteUrl(urls[0]); wrap.appendChild(img); return wrap;
 }
-const typeChips = name => (DEX_BY_NAME[name].types).map(t => `<i style="background:${TYPE_COLOR[t]}">${t}</i>`).join('');
+const typeChips = name => (DEX_BY_NAME[pickBase(name)].types).map(t => `<i style="background:${TYPE_COLOR[t]}">${t}</i>`).join('');
 
 /* ---------- rendering the panels ---------- */
 function stTeam(S) { return readPickers(S); }
@@ -174,7 +180,7 @@ function renderStartTeams() {
     stTeam(S).forEach((name, i) => {
       const b = document.createElement('button'); b.className = 'st-mon'; b.type = 'button'; b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: ${name}. Change`);
       if (!name) { b.classList.add('none'); b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: no Pokémon. Add one`); b.innerHTML = '<div class="pic"><span class="plus">+</span></div><div class="nm">No Pokémon</div>'; }
-      else { b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${name}</div><div class="ty">${typeChips(name)}</div>`); }
+      else { b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${pickLabel(name)}</div><div class="ty">${typeChips(name)}</div>`); }
       b.onclick = () => openMonPicker(S, i); box.appendChild(b);
     });
   }
@@ -219,10 +225,16 @@ function openMonPicker(S, i) {
       team[i] = ''; setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
     grid.appendChild(none);
   }
+  if (!$('stShiny')) {                                      // the Shiny switch: picks from the grid become shiny
+    const sw = document.createElement('button'); sw.type = 'button'; sw.id = 'stShiny'; sw.className = 'st-shiny';
+    const sync = () => { sw.textContent = START.shiny ? '\u2728 Shiny: ON' : '\u2728 Shiny: OFF'; sw.setAttribute('aria-pressed', String(!!START.shiny)); sw.classList.toggle('on', !!START.shiny); };
+    sw.onclick = () => { START.shiny = !START.shiny; sync(); for (const b of grid.querySelectorAll('button[data-n]')) { const pic = b.querySelector('.pic'); if (pic) pic.replaceWith(monPic(b.dataset.n + (START.shiny ? '|shiny' : ''))); } };
+    grid.parentNode.insertBefore(sw, grid); sync();
+  }
   if (grid.childElementCount <= 1) for (const d of DEX) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.q = `${d.name} ${String(d.id).padStart(3, '0')} ${d.types.join(' ')}`.toLowerCase();
-    b.appendChild(monPic(d.name)); b.insertAdjacentHTML('beforeend', `${d.name}<small>#${String(d.id).padStart(3, '0')} · ${d.types.join('/')}</small>`);
-    b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name; setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
+    b.dataset.n = d.name; b.appendChild(monPic(d.name + (START.shiny ? '|shiny' : ''))); b.insertAdjacentHTML('beforeend', `${d.name}<small>#${String(d.id).padStart(3, '0')} · ${d.types.join('/')}</small>`);
+    b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name + (START.shiny ? '|shiny' : ''); setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
     grid.appendChild(b);
   }
   $('stSearch').value = ''; filterPicker(''); $('stPick').classList.add('show'); setTimeout(() => $('stSearch').focus(), 30);

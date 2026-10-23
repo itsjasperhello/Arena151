@@ -65,7 +65,7 @@ function __pick(S, i) {
 function __autoPick(S) { return __pick(S, bestSwitchFor(S)); }
 function __state() { return { phase: G ? G.phase : 'none', waiting: G ? __waiting() : [], ended: __ended }; }
 function __forfeit(loser) { if (G && G.phase !== 'over') { G.decision = 'Opponent disconnected.'; endBattle(other(loser), 'FORFEIT'); } }
-function __validTeam(t) { return Array.isArray(t) && t.length >= 1 && t.length <= 6 && t.every(n => DEX.some(d => d.name === n)); }   // 1–6 Pokémon
+function __validTeam(t) { return Array.isArray(t) && t.length >= 1 && t.length <= 6 && t.every(n => { const [b, v] = String(n).split('|'); return DEX.some(d => d.name === b) && (v === undefined || v === 'shiny'); }); }   // 1–6 Pokémon
 function __teamHp(S) { return side(S).team.reduce((s, m) => s + Math.max(0, m.hp), 0); }
 
 // Test only (ARENA_TEST): fill a side's Z gauge.

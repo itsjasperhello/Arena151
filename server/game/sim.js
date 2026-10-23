@@ -16,8 +16,9 @@ function cooldownOf(mv) {
 }
 // Shared recovery after any attack, so a Pokémon cannot chain all four moves back to back.
 function recoveryOf(mv) { return mv.cat === 'X' ? 1000 : mv.pri > 0 ? 900 : 1100 + mv.pow * 6; }
-function makeBattleMon(name) {
-  const m = makeMon(name); if (!m) return null;
+function makeBattleMon(pick) {
+  const name = String(pick).split('|')[0], m = makeMon(name); if (!m) return null;
+  m.pick = String(pick); m.shiny = String(pick).split('|')[1] === 'shiny';   // shiny: a different look, the same Pokémon
   // Arena balance: pull extreme stats toward the middle so fragile Pokémon survive several hits
   // while strong ones still feel strong. Base stats keep their shape; the spread is 65% as wide.
   const AVG = { hp: 140, atk: 90, def: 90, spa: 90, spd: 90, spe: 90 };

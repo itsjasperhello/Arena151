@@ -14,6 +14,7 @@ async function pausableSleep(ms) { let left = ms, last = performance.now(); whil
 
 // Plays one Pokémon's cry and resolves when it has finished (or straight away if there is no file).
 function playCry(name) {
+  name = pickBase(name);
   const file = spriteSlug(name) + '.mp3', vol = (window.SETTINGS && SETTINGS.sfxVol != null) ? SETTINGS.sfxVol : .7;
   if (CRY_MISSING.has(file) || vol === 0) return Promise.resolve(false);
   if (location.protocol !== 'file:' && typeof loadBuffer === 'function' && audioCtx()) {             // Web Audio: mixes with other apps

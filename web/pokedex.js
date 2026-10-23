@@ -85,11 +85,12 @@ function dexGainExp(sv, sp, amount) {
   const from = e.level, out = { sp, from, to: from, gain: amount, evolved: null };
   if (e.capped) return out;                                             // at its evolution level: no more levels
   e.exp += amount; e.level = levelFor(e.exp);
-  const evo = EVO[sp];
+  const evo = EVO[pickBase(sp)], suffix = pickShiny(sp) ? '|shiny' : '';    // a shiny evolves into the shiny form
   if (evo && e.level >= evo[1]) {
     e.level = evo[1]; e.exp = expFor(evo[1]); e.capped = true;
     let next = evo[0];
-    if (Array.isArray(next)) { const fresh = next.filter(n => !dexEntry(sv, n)); next = (fresh.length ? fresh : next)[Math.floor(Math.random() * (fresh.length || next.length))]; }
+    if (Array.isArray(next)) { const fresh = next.filter(n => !dexEntry(sv, n + suffix)); next = (fresh.length ? fresh : next)[Math.floor(Math.random() * (fresh.length || next.length))]; }
+    next += suffix;
     if (!dexEntry(sv, next)) { dexAdd(sv, next, evo[1]); out.evolved = next; }
   }
   out.to = e.level; return out;
@@ -116,6 +117,7 @@ function dexGainExp(sv, sp, amount) {
 #dexOv .dx-grid{flex:1;overflow:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;background:#f2f4f8}
 #dexOv .dm{position:relative;border-radius:12px;background:#fff;border:2px solid #d8dce6;color:#1a1f33;padding:4px 4px 6px;text-align:center;cursor:pointer;font:700 11px var(--ui)}
 #dexOv .dm.no{background:#e6e9f0;color:#9aa0b4;cursor:default}
+#dexOv .dm.sh{background:linear-gradient(160deg,#fff8d8,#fff);border-color:#ffd84a}
 #dexOv .dm.party{border-color:#ffb627;box-shadow:0 0 0 2px #ffb627}
 #dexOv .dm .p{height:58px;display:flex;align-items:center;justify-content:center}
 #dexOv .dm .p img,#dexOv .dm .p canvas{max-height:56px;max-width:100%;image-rendering:pixelated}
@@ -148,31 +150,32 @@ function dexGainExp(sv, sp, amount) {
 /* ---------- the Pokédex pop-up (from the map and gym cards): all 151, levels, party ---------- */
 function openDex() {
   const sv = STORY.save; if (!isDexSave(sv)) return;
-  const party = sv.team || [], owned = Object.keys(sv.dex || {}).length, ov = $('dexOv');
+  const party = sv.team || [], owned = new Set(Object.keys(sv.dex || {}).map(pickBase)).size, shinies = Object.keys(sv.dex || {}).filter(pickShiny).length, ov = $('dexOv');
   const pic = n => { try { const el = monPic(n); return el; } catch (e) { return document.createElement('span'); } };
-  ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${DEX.length} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
+  ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${DEX.length}${shinies ? ` · \u2728 ${shinies} shiny` : ''} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
     <div class="dx-party" id="dxParty"><b>PARTY</b></div><div class="dx-grid" id="dxGrid"></div></div>`;
   ov.querySelector('.dx-close').onclick = () => { ov.classList.remove('show'); if (STORY.open) renderStory(); };
   ov.onclick = e => { if (e.target === ov) ov.querySelector('.dx-close').click(); };
   const pr = $('dxParty');
-  for (const n of party) { const e = dexEntry(sv, n), d = document.createElement('div'); d.className = 'pm'; d.title = `${n} · Lv ${e ? e.level : '?'}`; d.appendChild(pic(n)); d.insertAdjacentHTML('beforeend', `<i>${e ? e.level : ''}</i>`); pr.appendChild(d); }
+  for (const n of party) { const e = dexEntry(sv, n), d = document.createElement('div'); d.className = 'pm'; d.title = `${pickLabel(n)} · Lv ${e ? e.level : '?'}`; d.appendChild(pic(n)); d.insertAdjacentHTML('beforeend', `<i>${e ? e.level : ''}</i>`); pr.appendChild(d); }
   pr.insertAdjacentHTML('beforeend', `<span class="dx-hint">${party.length >= 6 ? 'Party full' : ''}</span>`);
   const grid = $('dxGrid');
-  for (const d of DEX) {
-    const e = dexEntry(sv, d.name), el = document.createElement(e ? 'button' : 'div'); el.className = 'dm' + (e ? '' : ' no') + (party.includes(d.name) ? ' party' : '');
+  const card = (d, key) => {                                    // one card per form: the regular one, and the shiny one when caught
+    const e = dexEntry(sv, key), shiny = pickShiny(key), el = document.createElement(e ? 'button' : 'div'); el.className = 'dm' + (e ? '' : ' no') + (party.includes(key) ? ' party' : '') + (shiny ? ' sh' : '');
     if (e) el.type = 'button';
     const next = e && e.exp - expFor(e.level), span = e && expFor(e.level + 1) - expFor(e.level), pct = e ? (e.capped ? 100 : Math.max(0, Math.min(100, next / span * 100))) : 0;
-    el.innerHTML = `<span class="num">#${String(d.id).padStart(3, '0')}</span>${e && party.includes(d.name) ? '<span class="tag">PARTY</span>' : e && e.capped ? '<span class="tag evo">EVOLVED</span>' : ''}<div class="p"></div>
-      <div>${e ? d.name : '???'}</div>${e ? `<div class="lv">Lv ${e.level}</div><div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div>` : ''}`;
-    el.querySelector('.p').appendChild(pic(d.name));
+    el.innerHTML = `<span class="num">#${String(d.id).padStart(3, '0')}${shiny ? ' \u2728' : ''}</span>${e && party.includes(key) ? '<span class="tag">PARTY</span>' : e && e.capped ? '<span class="tag evo">EVOLVED</span>' : ''}<div class="p"></div>
+      <div>${e ? pickLabel(key) : '???'}</div>${e ? `<div class="lv">Lv ${e.level}</div><div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div>` : ''}`;
+    el.querySelector('.p').appendChild(pic(key));
     if (e) el.onclick = () => {
-      const t = sv.team = (sv.team || []).slice(), at = t.indexOf(d.name);
+      const t = sv.team = (sv.team || []).slice(), at = t.indexOf(key);
       if (at >= 0) { if (t.length <= 1) { toastMsg('Your party needs at least one Pokémon'); return; } t.splice(at, 1); }
-      else { if (t.length >= 6) { toastMsg('Your party is full (6) — remove one first'); return; } t.push(d.name); }
+      else { if (t.length >= 6) { toastMsg('Your party is full (6) — remove one first'); return; } t.push(key); }
       saveStory(); const y = grid.scrollTop; openDex(); $('dxGrid').scrollTop = y;
     };
     grid.appendChild(el);
-  }
+  };
+  for (const d of DEX) { card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
   ov.classList.add('show');
 }
 
@@ -198,11 +201,11 @@ async function startDexRun() {
 /* ---------- experience after each story battle ---------- */
 function awardExp() {
   const sv = STORY.save; if (!isDexSave(sv) || !G || !G.sides) return [];
-  return G.sides.A.team.map(m => dexGainExp(sv, m.name, Math.round((m.dmgDealt || 0) * .8) + 200)).filter(Boolean);
+  return G.sides.A.team.map(m => dexGainExp(sv, m.pick || m.name, Math.round((m.dmgDealt || 0) * .8) + 200)).filter(Boolean);
 }
 function expSummaryHtml(list) {
   if (!list.length) return '';
-  return `<div class="sy-exp">${list.map(r => `<div><span>${r.sp} +${r.gain} EXP</span><span>${r.from === r.to ? 'Lv ' + r.to : 'Lv ' + r.from + ' \u2192 ' + r.to}</span></div>${r.evolved ? `<div class="ev"><span>\u2728 ${r.sp} reached its evolution level \u2014 ${r.evolved} joined your Pok\u00E9dex!</span></div>` : ''}`).join('')}</div>`;
+  return `<div class="sy-exp">${list.map(r => `<div><span>${pickLabel(r.sp)} +${r.gain} EXP</span><span>${r.from === r.to ? 'Lv ' + r.to : 'Lv ' + r.from + ' \u2192 ' + r.to}</span></div>${r.evolved ? `<div class="ev"><span>\u2728 ${pickLabel(r.sp)} reached its evolution level \u2014 ${pickLabel(r.evolved)} joined your Pok\u00E9dex!</span></div>` : ''}`).join('')}</div>`;
 }
 const _dexStoryResult = storyResult;
 storyResult = function (won) {

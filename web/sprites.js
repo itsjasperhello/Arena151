@@ -390,7 +390,23 @@ function generateSprite(d, frame = 0, opts = {}) {
 const SPRITE_CACHE = {};
 const CUSTOM = {}, CUSTOM_MEGA = {};          // name → { front: anim, back: anim | null }
 const FILE_MODE = location.protocol === 'file:';   // file:// pages cannot read file bytes; the browser animates the GIF instead
+/* Team picks may carry a variant: "Pikachu|shiny". Shiny art: <slug>_shiny.gif (front) and <slug>_shiny (1).gif (back),
+   loaded the first time a shiny is needed; until then (or if there is none) the normal sprite is used. */
+const pickBase = n => String(n).split('|')[0];
+const pickShiny = n => String(n).split('|')[1] === 'shiny';
+const pickLabel = n => pickBase(n) + (pickShiny(n) ? ' \u2728' : '');
+const CUSTOM_SHINY = {}, SHINY_LOADS = {};
+function loadShiny(name) {
+  name = pickBase(name);
+  if (!SHINY_LOADS[name]) SHINY_LOADS[name] = (async () => {
+    const slug = spriteSlug(name), front = await loadAnim(slug + '_shiny'); if (!front) return false;
+    CUSTOM_SHINY[name] = { front, back: await loadAnim(slug + '_shiny (1)') };
+    delete SPRITE_CACHE[name + '#S']; if (typeof onSpritesChanged === 'function') onSpritesChanged(); return true;
+  })();
+  return SHINY_LOADS[name];
+}
 function spriteSlug(name) {
+  name = pickBase(name);
   return name.toLowerCase().replace('♀', '-f').replace('♂', '-m').replace(/[’'.]/g, '').replace(/\s+/g, '-');
 }
 const spriteUrl = file => 'sprites/' + encodeURIComponent(file);
@@ -482,10 +498,13 @@ function frameFx(src, w, h, kind, color) {
   if (kind === 'gray') { _sx.filter = 'grayscale(1) brightness(.7)'; _sx.drawImage(src, 0, 0); _sx.filter = 'none'; return _scr; }
   _sx.drawImage(src, 0, 0); _sx.globalCompositeOperation = 'source-in'; _sx.fillStyle = color; _sx.fillRect(0, 0, w, h); _sx.globalCompositeOperation = 'source-over'; return _scr;
 }
-function spriteOf(name, mega = false) {
-  const key = name + (mega ? '#M' : '');
+function spriteOf(name, mega = false, shiny = false) {
+  if (String(name).includes('|')) { shiny = shiny || pickShiny(name); name = pickBase(name); }
+  if (shiny && !mega) { if (!CUSTOM_SHINY[name]) { loadShiny(name); return spriteOf(name, false, false); } }
+  else shiny = false;
+  const key = name + (mega ? '#M' : '') + (shiny ? '#S' : '');
   if (SPRITE_CACHE[key]) return SPRITE_CACHE[key];
-  const d = DEX_BY_NAME[name], pack = mega ? (CUSTOM_MEGA[name] || CUSTOM[name]) : CUSTOM[name];
+  const d = DEX_BY_NAME[name], pack = shiny ? CUSTOM_SHINY[name] : mega ? (CUSTOM_MEGA[name] || CUSTOM[name]) : CUSTOM[name];
   let sp;
   if (pack) {
     const f = ensureAnim(pack.front), first = f.frames[0];
@@ -498,11 +517,11 @@ function spriteOf(name, mega = false) {
   }
   sp.size = sp.w; SPRITE_CACHE[key] = sp; return sp;
 }
-function tintOf(name, color, f = 0, mega = false) { const sp = spriteOf(name, mega), k = color + f; if (!sp.tints[k]) sp.tints[k] = variant(sp.frames[f], 'tint', color); return sp.tints[k]; }
+function tintOf(name, color, f = 0, mega = false, shiny = false) { const sp = spriteOf(name, mega, shiny), k = color + f; if (!sp.tints[k]) sp.tints[k] = variant(sp.frames[f], 'tint', color); return sp.tints[k]; }
 // Draws a sprite into a small UI canvas (portraits, roster cards, VS screen, results) using the front view.
 // Custom art is copied 1:1 and the canvas is resized to match, so CSS scales it crisply.
 function drawSpriteTo(canvas, name, opts = {}) {
-  const sp = spriteOf(name, opts.mega), src = opts.gray ? sp.gray : sp.frames[0];
+  const sp = spriteOf(name, opts.mega, opts.shiny), src = opts.gray ? sp.gray : sp.frames[0];
   const r = opts.portrait ? sp.crop : sp.card;
   if (sp.custom) { canvas.width = r.s; canvas.height = r.s; }
   const c = canvas.getContext('2d'); c.imageSmoothingEnabled = false; c.clearRect(0, 0, canvas.width, canvas.height);

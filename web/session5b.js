@@ -6,7 +6,7 @@
 const QOL_KEY = 'arena151.qol';
 const QOL = Object.assign({ last: null, presets: [null, null, null, null] }, (() => { try { return JSON.parse(localStorage.getItem(QOL_KEY)) || {}; } catch (e) { return {}; } })());
 const saveQol = () => { try { localStorage.setItem(QOL_KEY, JSON.stringify(QOL)); } catch (e) { } };
-const validTeam = t => Array.isArray(t) && t.length >= 1 && t.length <= 6 && t.every(n => n === '' || DEX_BY_NAME[n]) && t.some(Boolean);   // 1–6 Pokémon; '' = an empty slot
+const validTeam = t => Array.isArray(t) && t.length >= 1 && t.length <= 6 && t.every(n => n === '' || (DEX_BY_NAME[pickBase(n)] && (!String(n).includes('|') || pickShiny(n)))) && t.some(Boolean);   // 1–6 Pokémon; '' = an empty slot
 
 /* ---------- remember the last teams and arena ---------- */
 const _startBattle = startBattle;

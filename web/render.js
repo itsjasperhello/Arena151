@@ -184,7 +184,7 @@ function drawCrowd() {
 }
 function actorLook(S) {
   const sd = side(S), m = act(S); if (!m || sd.state === 'out' || sd.state === 'wait') return null;
-  const megaNow = m.mega || (sd.state === 'mega' && sd.stateT > 750), sp = spriteOf(m.name, megaNow);
+  const megaNow = m.mega || (sd.state === 'mega' && sd.stateT > 750), sp = spriteOf(m.name, megaNow, m.shiny);
   let scale = 1, alpha = 1, white = 0, gray = false, sink = 0;
   if (sd.state === 'entering') { const t = sd.stateT; if (t < 320) return null; const q = (t - 320) / 440; scale = Ease.outBack(clamp(q, 0, 1)); white = 1 - clamp(q * 1.4, 0, 1); }
   if (sd.state === 'leaving') { const q = sd.stateT / 360; scale = 1 - q; white = Math.min(1, q * 3); }

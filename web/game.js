@@ -19,7 +19,7 @@ function updateHUD(force) {
     if ($('chips' + S).innerHTML !== chips) $('chips' + S).innerHTML = chips;
     const bar = $('bar' + S); bar.style.width = (f * 100) + '%'; bar.style.backgroundColor = hpColor(f);
     $('hp' + S).textContent = `${m.hp}`;
-    const port = $('portrait' + S), pk = m.name + (m.mega ? '#M' : '') + (spriteOf(m.name, m.mega).custom ? 'C' : ''); if (port.dataset.mon !== pk || force) { drawSpriteTo(port, m.name, { portrait: true, mega: m.mega, faceRight: S === 'A', bg: mix(TYPE_COLOR[m.types[0]], '#20284a', .55) }); port.dataset.mon = pk; }
+    const port = $('portrait' + S), pk = m.name + (m.mega ? '#M' : '') + (m.shiny ? '#S' : '') + (spriteOf(m.name, m.mega, m.shiny).custom ? 'C' : ''); if (port.dataset.mon !== pk || force) { drawSpriteTo(port, m.name, { portrait: true, mega: m.mega, shiny: m.shiny, faceRight: S === 'A', bg: mix(TYPE_COLOR[m.types[0]], '#20284a', .55) }); port.dataset.mon = pk; }
     $('port' + S).classList.toggle('fnt', m.hp <= 0);
     const toks = (S === 'B' ? `<span class="team-tag">${trainerLabel('B')}</span>` : '') +
       sd.team.map((t, i) => `<span class="tok ${t.hp <= 0 ? 'fnt' : ''} ${t.status ? 'st' : ''} ${i === sd.active ? 'active' : ''}" title="${t.name} ${t.hp}/${t.max}"></span>`).join('') +
@@ -352,7 +352,7 @@ function queueMove(i) {
   if (!tryCast('A', i)) { sd.queued = i; sd.queuedT = 600; }
 }
 function buildPickers() {
-  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join(''); root.appendChild(sel); } }
+  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join('') + DEX.map(d => `<option value="${d.name}|shiny">${d.name} \u2728</option>`).join(''); root.appendChild(sel); } }
 }
 function setPickers(a, b) { a.forEach((n, i) => { if ($('pickA' + i)) $('pickA' + i).value = n; }); b.forEach((n, i) => { if ($('pickB' + i)) $('pickB' + i).value = n; }); }
 const readPickers = S => Array.from({ length: 6 }, (_, i) => $(`pick${S}${i}`).value);
