@@ -192,10 +192,13 @@ function chooseStarter() {
 // A new run in the current slot: badges reset, a new starter; the Pokédex is kept.
 async function startDexRun() {
   const old = STORY.save, keep = isDexSave(old) ? old.dex : {};
-  const starter = await chooseStarter();
+  const chosen = await chooseStarter(), shiny = Math.random() < .25, starter = chosen + (shiny ? '|shiny' : '');   // 1 in 4 starters are shiny (their own Pokédex entry)
+  if (shiny) loadShiny(chosen);
   STORY.save = { type: 'dex', dex: keep, runs: ((old && old.runs) || 0) + 1, trainer: TRSEL.A, team: [starter], badges: 0, wins: 0, losses: 0, ash: null, encountered: {}, startedAt: Date.now(), finishedAt: null };
   dexAdd(STORY.save, starter, 5); saveStory();
-  openStoryScreen(); setTimeout(() => openGymCard(0), 500);
+  openStoryScreen();
+  if (shiny) { toastMsg(`\u2728 Lucky! Your ${chosen} is shiny!`); try { confetti('#ffd84a'); } catch (e) { } }
+  setTimeout(() => openGymCard(0), shiny ? 1200 : 500);
 }
 
 /* ---------- experience after each story battle ---------- */
