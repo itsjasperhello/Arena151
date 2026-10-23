@@ -158,10 +158,12 @@ setInterval(() => {                         // reconnect grace: forfeit (or clos
 }, 500);
 
 /* ---------- connections ---------- */
+const accounts = require('./accounts');                  // sign-in accounts and cloud saves (/api/...)
 const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/api/')) { accounts.handle(req, res, VERSION); return; }
   if (req.url === '/health' || req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-    res.end(JSON.stringify({ ok: true, game: 'Arena 151', version: VERSION, rooms: rooms.size, tournaments: tours.size, players: wss.clients.size,
+    res.end(JSON.stringify({ ok: true, game: 'Arena 151', version: VERSION, rooms: rooms.size, tournaments: tours.size, players: wss.clients.size, accounts: accounts.userCount(),
       workers: pool.map(w => ({ id: w.id, games: w.load, avgTickMs: w.stats.avgTickMs, p99TickMs: w.stats.p99TickMs })) }));
   } else { res.writeHead(404); res.end(); }
 });

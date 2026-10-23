@@ -11,6 +11,9 @@ services:
       - TRUST_PROXY=1
       # Battle worker threads. Leave unset to use one per CPU core (up to 8).
       # - WORKERS=8
+    volumes:
+      # Accounts and cloud saves (a SQLite database). Back up this folder to keep everyone's progress.
+      - ./data:/app/data
 
   # The desktop game in a browser, on port 8253: http://<this PC>:8253 (online play goes through the same port).
   web:
