@@ -203,15 +203,42 @@ const musicFileFor = () => {
   if (STAGE.music) { const own = STAGE.music + '.mp3'; return MUSIC.missing.has(own) ? STAGE.musicFallback + '.mp3' : own; }   // story stages: own track, else a borrowed one
   return STAGE.name.replace(/\s+/g, '_') + '.mp3';
 };
+/* A looping track played through Web Audio, with the same small interface as an <audio> element.
+   <audio> on Android takes exclusive audio focus and pauses other apps (a YouTube picture-in-picture,
+   a podcast); Web Audio mixes with them. Falls back to <audio> where tracks can't be fetched (file:// pages). */
+const AUDIO_BUFS = new Map();
+function loadBuffer(url) {
+  if (!AUDIO_BUFS.has(url)) AUDIO_BUFS.set(url, fetch(url).then(r => { if (!r.ok) throw new Error('missing'); return r.arrayBuffer(); }).then(b => new Promise((res, rej) => audioCtx().decodeAudioData(b, res, rej))));
+  return AUDIO_BUFS.get(url);
+}
+function makeTrack(url) {
+  if (location.protocol === 'file:' || !audioCtx()) return new Audio(url);
+  const ctx = audioCtx(), gain = ctx.createGain(), errs = []; gain.gain.value = 0; gain.connect(ctx.destination);
+  let buf = null, src = null, startedAt = 0, offset = 0, dead = false, vol = 0;
+  const start = () => { if (!buf || src || dead) return; src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(gain); src.start(0, offset % buf.duration); startedAt = ctx.currentTime - offset; };
+  const stop = () => { if (!src) return; offset = (ctx.currentTime - startedAt) % (buf ? buf.duration : 1); try { src.stop(); } catch (e) { } src.disconnect(); src = null; };
+  const t = { loop: true, preload: 'auto', paused: false,
+    get volume() { return vol; }, set volume(v) { vol = v; gain.gain.value = v; },
+    play() { t.paused = false; if (ctx.state === 'suspended') ctx.resume(); start(); return Promise.resolve(); },
+    pause() { t.paused = true; stop(); },
+    set src(v) { if (v === '') { dead = true; stop(); gain.disconnect(); } }, get src() { return url; },
+    addEventListener(ev, fn) { if (ev === 'error') errs.push(fn); } };
+  loadBuffer(url).then(b => { buf = b; if (!t.paused) start(); }).catch(() => { dead = true; errs.forEach(f => f()); });
+  return t;
+}
 const musicTargetVol = () => .7 * ((window.SETTINGS && SETTINGS.musicVol != null) ? SETTINGS.musicVol : .5);
+// Browsers only allow audio after a tap or key press; the phone apps allow it straight away.
+let AUDIO_GESTURE = !!(window.AndroidApp && !window.DesktopApp) || !!window.IOSApp;
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, () => { AUDIO_GESTURE = true; }, { passive: true, capture: true }));
 function musicTick() {
+  if (!AUDIO_GESTURE && !MUSIC.el) return;
   const want = musicFileFor(), quiet = document.hidden || (typeof clock !== 'undefined' && clock.paused && G && G.phase === 'battle');
   if (want !== MUSIC.file) {                                  // fade the old track out, then start the new one
     if (MUSIC.el && MUSIC.vol > .01) { MUSIC.vol = Math.max(0, MUSIC.vol - .06); MUSIC.el.volume = MUSIC.vol; return; }
     if (MUSIC.el) { MUSIC.el.pause(); MUSIC.el.src = ''; MUSIC.el = null; }
     MUSIC.file = want; MUSIC.vol = 0;
     if (MUSIC.missing.has(want)) return;
-    const el = new Audio('music/' + encodeURIComponent(want)); el.loop = true; el.volume = 0; el.preload = 'auto';
+    const el = makeTrack('music/' + encodeURIComponent(want)); el.loop = true; el.volume = 0; el.preload = 'auto';
     el.addEventListener('error', () => { MUSIC.missing.add(want); if (MUSIC.el === el) MUSIC.el = null; });
     MUSIC.el = el; el.play().catch(() => { });
     return;

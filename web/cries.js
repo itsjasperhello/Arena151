@@ -16,6 +16,14 @@ async function pausableSleep(ms) { let left = ms, last = performance.now(); whil
 function playCry(name) {
   const file = spriteSlug(name) + '.mp3', vol = (window.SETTINGS && SETTINGS.sfxVol != null) ? SETTINGS.sfxVol : .7;
   if (CRY_MISSING.has(file) || vol === 0) return Promise.resolve(false);
+  if (location.protocol !== 'file:' && typeof loadBuffer === 'function' && audioCtx()) {             // Web Audio: mixes with other apps
+    const ctx = audioCtx(); if (ctx.state === 'suspended') ctx.resume();
+    return loadBuffer('cry/' + encodeURIComponent(file)).then(buf => new Promise(res => {
+      const src = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = Math.min(1, vol * 1.1); src.buffer = buf; src.connect(g); g.connect(ctx.destination);
+      let done = false; const end = () => { if (done) return; done = true; clearTimeout(cap); try { src.stop(); } catch (e) { } res(true); };
+      const cap = setTimeout(end, 4500); src.onended = end; src.start();
+    })).catch(() => { CRY_MISSING.add(file); return false; });
+  }
   return new Promise(res => {
     const a = new Audio('cry/' + encodeURIComponent(file)); a.volume = Math.min(1, vol * 1.1);
     let done = false; const end = ok => { if (done) return; done = true; clearTimeout(cap); a.pause(); res(ok); };

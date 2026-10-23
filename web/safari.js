@@ -18,8 +18,8 @@ const SAFARI = { busy: false };
 const r256 = () => Math.floor(Math.random() * 256), rIn = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 function pickWild(leg) {
   const R = ROUTES[leg], tot = R.mons.reduce((s, m) => s + m[3], 0); let x = Math.random() * tot;
-  for (const [sp, lo, hi, w] of R.mons) { x -= w; if (x <= 0) return { sp, lv: rIn(lo, hi) }; }
-  const m = R.mons[0]; return { sp: m[0], lv: m[1] };
+  for (const [sp, lo, hi, w] of R.mons) { x -= w; if (x <= 0) return { sp, lv: rIn(lo, hi), rare: w < 1 }; }
+  const m = R.mons[0]; return { sp: m[0], lv: m[1], rare: m[3] < 1 };
 }
 const wildSpeed = (sp, lv) => Math.floor((SPEED1[DEX_BY_NAME[sp].id - 1] + 8) * 2 * lv / 100) + 5;
 const wildHP = (sp, lv) => { const b = baseStats(DEX_BY_NAME[sp]).hp; return Math.floor((b + 8) * 2 * lv / 100) + lv + 10; };
@@ -29,6 +29,15 @@ function safariBall(rate, hp) {
   let W = Math.floor(Math.floor(rate * 100 / 150) * F / 255), shakes = W < 10 ? 0 : W < 30 ? 1 : W < 70 ? 2 : 3;
   if (r1 > rate) return { caught: false, shakes };
   return r256() <= F ? { caught: true, shakes: 3 } : { caught: false, shakes };
+}
+/* Catch odds used in route encounters: the Gen 1 Safari Ball odds at very low HP ((rate + 1) / 151),
+   with at least 50% for ordinary Pokémon, 25% for rare ones (rare spawns or catch rate under 45),
+   10% for legendaries; never above 95%. Wobbles follow the odds. */
+function catchChance(rate, rare) { let p = Math.min(1, (rate + 1) / 151); p = rate <= 3 ? Math.max(p, .1) : rare ? Math.max(p, .25) : Math.max(p, .5); return Math.min(.95, p); }
+function safariCatch(rate, rare) {
+  const p = catchChance(rate, rare), caught = Math.random() < p;
+  const shakes = caught ? 3 : Math.max(0, (p > .7 ? 3 : p > .4 ? 2 : p > .15 ? 1 : 0) - (Math.random() < .35 ? 1 : 0));
+  return { caught, shakes, p };
 }
 const SHAKE_MSG = ['You missed the POKéMON!', 'Darn! The POKéMON broke free!', 'Aww! It appeared to be caught!', 'Shoot! It was so close too!'];
 
@@ -244,7 +253,7 @@ function safariEncounter(leg) {
     SX.c = cv.getContext('2d'); SX.c.imageSmoothingEnabled = false;
     const mon = document.createElement('canvas'); mon.width = mon.height = 96; try { drawSpriteTo(mon, w.sp, {}); } catch (e) { }
     const tr = new Image(); tr.src = portraitUrl(sv.trainer);
-    const S = { t0: performance.now(), mon: { x: 0, a: 1, white: 0, scale: 1, bob: false, gone: false }, balls: 1, baits: 1, eat: 0, rate: CATCH_RATE[w.sp] || 45, hp: wildHP(w.sp, w.lv), spd: wildSpeed(w.sp, w.lv) };
+    const S = { t0: performance.now(), mon: { x: 0, a: 1, white: 0, scale: 1, bob: false, gone: false }, balls: 1, baits: 1, eat: 0, rate: CATCH_RATE[w.sp] || 45, rare: w.rare || (CATCH_RATE[w.sp] || 45) < 45, hp: wildHP(w.sp, w.lv), spd: wildSpeed(w.sp, w.lv) };
     $('sfHead').textContent = `${R.name.toUpperCase()} \u00B7 ROUTE ENCOUNTER`;
     $('sfTag').innerHTML = `${w.sp.toUpperCase()}<small>:L${w.lv}${dexEntry(sv, w.sp) ? ' \u00B7 \u25CF in Pok\u00E9dex' : ''}</small>`;
     ov.classList.add('show'); menu.hidden = true; requestAnimationFrame(() => window.__sfFit && window.__sfFit());
@@ -345,7 +354,7 @@ function safariEncounter(leg) {
       await anim('ballA', 430); S.ballA = null;
       for (let k = 0; k <= 10; k++) { S.mon.white = Math.min(1, k / 4); S.mon.scale = 1 - k / 10; await wait(16); }
       S.mon.gone = true; S.ballAt = true; await anim('dropA', 300);
-      const res = safariBall(S.rate, S.hp);
+      const res = safariCatch(S.rate, S.rare);
       for (let i = 0; i < res.shakes; i++) { await wait(140); await anim('wobA', 300); }
       if (res.caught) { S.caught = true; await wait(120); await anim('starsA', 420); return finish(true); }
       await wait(120); S.ballAt = false; await anim('burstA', 220); S.burstA = null; S.mon.gone = false; S.mon.scale = 1;
@@ -383,5 +392,34 @@ draw = function () { const so = $('storyOv'), sf = $('safariOv'); if ((sf && sf.
 function syncEnc() { const b = $('syEnc'), sv = STORY.save; if (!b) return; b.style.display = isDexSave(sv) ? '' : 'none'; if (isDexSave(sv)) { b.textContent = sv.encountersOff ? 'Encounters: OFF' : 'Encounters: ON'; b.setAttribute('aria-pressed', String(!sv.encountersOff)); b.title = 'Wild Pok\u00E9mon encounters when you challenge a gym (this save only)'; } }
 const _sfRenderStory = renderStory;
 renderStory = function () { const r = _sfRenderStory.apply(this, arguments); syncEnc(); return r; };
-window.safariBall = safariBall; window.pickWild = pickWild; window.safariEncounter = safariEncounter;
+/* Export / import the selected story slot (useful in a browser, to back up, or to move a save to another device). */
+function exportStorySlot() {
+  const n = STORY.slot, data = readSlot(n); if (!data) { toastMsg('This slot is empty'); return; }
+  const text = JSON.stringify({ app: 'Arena 151', kind: 'story-save', version: APP_VERSION, slot: n, exportedAt: new Date().toISOString(), data }, null, 2), name = `arena151-story-slot${n}-${new Date().toISOString().slice(0, 10)}.json`;
+  if (window.AndroidApp && AndroidApp.saveFile && !window.DesktopApp) { const where = AndroidApp.saveFile(name, text); toastMsg(where ? `Saved to ${where}` : 'Story save exported'); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toastMsg('Story save downloaded');
+}
+function importStorySlot() {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.onchange = () => { const f = inp.files && inp.files[0]; if (!f) return; const rd = new FileReader();
+    rd.onload = () => { let o; try { o = JSON.parse(rd.result); } catch (e) { toastMsg('That file is not a story save'); return; }
+      const data = o && o.kind === 'story-save' ? o.data : (o && o.badges != null && o.team ? o : null);
+      if (!data || !Array.isArray(data.team) || typeof data.badges !== 'number') { toastMsg('That file is not a story save'); return; }
+      if (readSlot(STORY.slot) && !confirm(`Replace the journey in slot ${STORY.slot} with the imported save?`)) return;
+      try { localStorage.setItem(slotKey(STORY.slot), JSON.stringify(data)); } catch (e) { toastMsg('Could not store the save'); return; }
+      loadStory(); renderStoryPanel(); toastMsg(`Imported into slot ${STORY.slot}`); };
+    rd.readAsText(f); };
+  inp.click();
+}
+const _sfPanel = renderStoryPanel;
+renderStoryPanel = function () {
+  const r = _sfPanel.apply(this, arguments), p = $('stStoryP'); if (!p || p.querySelector('.st-io')) return r;
+  const io = document.createElement('div'); io.className = 'row st-io';
+  io.innerHTML = `${STORY.save ? '<button class="big alt" type="button" id="stStoryExport" title="Download this slot as a file">Export save</button>' : ''}<button class="big alt" type="button" id="stStoryImport" title="Load a story save file into this slot">Import save</button>`;
+  p.appendChild(io);
+  if ($('stStoryExport')) $('stStoryExport').onclick = exportStorySlot; $('stStoryImport').onclick = importStorySlot;
+  return r;
+};
+window.safariBall = safariBall; window.catchChance = catchChance; window.safariCatch = safariCatch; window.exportStorySlot = exportStorySlot; window.pickWild = pickWild; window.safariEncounter = safariEncounter;
 })();
