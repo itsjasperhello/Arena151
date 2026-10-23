@@ -6129,6 +6129,13 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
 #startOv .st-mon{position:relative;color:#fff;font-family:var(--ui);border-radius:14px;padding:6px 4px 5px;background:rgba(8,12,32,.55);border:1px solid rgba(255,255,255,.1);cursor:pointer;text-align:center;transition:transform .12s,border-color .12s}
 #startOv .st-mon:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.35)}
 #startOv .st-mon.none{border-style:dashed;border-color:rgba(255,255,255,.25);background:rgba(8,12,32,.3);color:#9aa3c7}
+#startOv .st-slot{position:relative;display:flex;min-width:0}
+#startOv .st-slot>.st-mon{flex:1;width:100%;min-width:0}
+#startOv .st-shy{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(8,12,32,.7);font-size:13px;line-height:1;cursor:pointer;padding:0;filter:grayscale(1) brightness(.75);z-index:1}
+#startOv .st-shy:hover{filter:grayscale(.4);border-color:#ffd84a}
+#startOv .st-shy:not(.on){opacity:.85}
+#startOv .st-shy.on{filter:none;border-color:#ffd84a;background:rgba(255,216,74,.25);box-shadow:0 0 8px rgba(255,216,74,.6)}
+@media (max-height:560px){#startOv .st-shy{width:20px;height:20px;font-size:10px;top:2px;right:2px}}
 #stPick .st-shiny{display:block;margin:0 0 8px auto;border:2px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(8,12,32,.5);color:#fff;font:800 13px var(--ui);padding:6px 12px;cursor:pointer}
 #stPick .st-shiny.on{border-color:#ffd84a;background:rgba(255,216,74,.18);color:#ffe680}
 .pic.shiny{position:relative}
@@ -6257,7 +6264,16 @@ function renderStartTeams() {
       const b = document.createElement('button'); b.className = 'st-mon'; b.type = 'button'; b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: ${name}. Change`);
       if (!name) { b.classList.add('none'); b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: no Pokémon. Add one`); b.innerHTML = '<div class="pic"><span class="plus">+</span></div><div class="nm">No Pokémon</div>'; }
       else { b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${pickLabel(name)}</div><div class="ty">${typeChips(name)}</div>`); }
-      b.onclick = () => openMonPicker(S, i); box.appendChild(b);
+      b.onclick = () => openMonPicker(S, i);
+      // Each Pokémon on its own: the ✨ button switches just this slot between its regular and shiny form.
+      const slot = document.createElement('div'); slot.className = 'st-slot'; slot.appendChild(b);
+      if (name) {
+        const on = pickShiny(name), sh = document.createElement('button'); sh.type = 'button'; sh.className = 'st-shy' + (on ? ' on' : ''); sh.textContent = '\u2728';
+        sh.setAttribute('aria-pressed', String(on)); sh.setAttribute('aria-label', `${pickBase(name)}: ${on ? 'shiny' : 'regular'} form. Switch`); sh.title = on ? 'Shiny \u2014 tap for the regular form' : 'Regular \u2014 tap for the shiny form';
+        sh.onclick = e => { e.stopPropagation(); const team = readPickers(S); team[i] = pickBase(team[i]) + (on ? '' : '|shiny'); setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); renderStartTeams(); };
+        slot.appendChild(sh);
+      }
+      box.appendChild(slot);
     });
   }
 }
@@ -6293,7 +6309,7 @@ function renderStartArenas() {
 
 /* ---------- Pokémon picker ---------- */
 function openMonPicker(S, i) {
-  START.slot = { S, i }; const grid = $('stGridPk');
+  START.slot = { S, i }; START.shiny = pickShiny(readPickers(S)[i] || ''); const grid = $('stGridPk');
   if (!grid.childElementCount) {
     const none = document.createElement('button'); none.type = 'button'; none.className = 'none'; none.dataset.q = 'no pokemon none empty';
     none.innerHTML = '<div class="pic"><span class="plus">\u2715</span></div>No Pok\u00E9mon<small>leave this slot empty</small>';
@@ -6303,9 +6319,8 @@ function openMonPicker(S, i) {
   }
   if (!$('stShiny')) {                                      // the Shiny switch: picks from the grid become shiny
     const sw = document.createElement('button'); sw.type = 'button'; sw.id = 'stShiny'; sw.className = 'st-shiny';
-    const sync = () => { sw.textContent = START.shiny ? '\u2728 Shiny: ON' : '\u2728 Shiny: OFF'; sw.setAttribute('aria-pressed', String(!!START.shiny)); sw.classList.toggle('on', !!START.shiny); };
-    sw.onclick = () => { START.shiny = !START.shiny; sync(); for (const b of grid.querySelectorAll('button[data-n]')) { const pic = b.querySelector('.pic'); if (pic) pic.replaceWith(monPic(b.dataset.n + (START.shiny ? '|shiny' : ''))); } };
-    grid.parentNode.insertBefore(sw, grid); sync();
+    sw.onclick = () => { START.shiny = !START.shiny; syncShinyPicker(); };
+    grid.parentNode.insertBefore(sw, grid);
   }
   if (grid.childElementCount <= 1) for (const d of DEX) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.q = `${d.name} ${String(d.id).padStart(3, '0')} ${d.types.join(' ')}`.toLowerCase();
@@ -6313,6 +6328,7 @@ function openMonPicker(S, i) {
     b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name + (START.shiny ? '|shiny' : ''); setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
     grid.appendChild(b);
   }
+  syncShinyPicker();
   $('stSearch').value = ''; filterPicker(''); $('stPick').classList.add('show'); setTimeout(() => $('stSearch').focus(), 30);
 }
 function closeMonPicker() { $('stPick').classList.remove('show'); }
@@ -6425,6 +6441,13 @@ renderAiLevels();
   };
   syncSettingsLevels();
 })();
+
+// The chooser's Shiny switch and its pictures follow the form being picked (it opens in the edited slot's form).
+function syncShinyPicker() {
+  const sw = $('stShiny'), grid = $('stGridPk'); if (!sw || !grid) return;
+  sw.textContent = START.shiny ? '\u2728 Shiny: ON' : '\u2728 Shiny: OFF'; sw.setAttribute('aria-pressed', String(!!START.shiny)); sw.classList.toggle('on', !!START.shiny);
+  for (const b of grid.querySelectorAll('button[data-n]')) { const want = b.dataset.n + (START.shiny ? '|shiny' : ''); if (b.dataset.shown !== want) { const pic = b.querySelector('.pic'); if (pic) pic.replaceWith(monPic(want)); b.dataset.shown = want; } }
+}
 
 //# sourceURL=startscreen.js
 </script>
@@ -8333,8 +8356,12 @@ function safariEncounter(leg) {
     const sv = STORY.save, R = ROUTES[leg], w = pickWild(leg); w.shiny = Math.random() < .25; w.key = w.sp + (w.shiny ? '|shiny' : '');
     const ov = $('safariOv'), cv = $('sfCv'), msgEl = $('sfMsg'), menu = $('sfMenu'), hz = HZ[R.scene] || 124, scene = SCENES[R.scene] || SCENES.forest;
     SX.c = cv.getContext('2d'); SX.c.imageSmoothingEnabled = false;
-    const mon = document.createElement('canvas'); mon.width = mon.height = 96; const paint = () => { try { drawSpriteTo(mon, w.key, {}); } catch (e) { } }; paint();
-    if (w.shiny) loadShiny(w.sp).then(ok => { if (ok) { paint(); whiteRefresh(); } });
+    // The same animated front sprite as in battle: <name>.gif, or <name>_shiny.gif for a shiny (switches in as soon as it has loaded).
+    if (w.shiny) loadShiny(w.sp);
+    const monFrame = t => { const sp = spriteOf(w.sp, false, w.shiny), r = sp.card || { x: 0, y: 0, s: sp.w };
+      if (sp.custom && sp.front) { const a = ensureAnim(sp.front); return { img: a.frames[animFrameIndex(a, t)], r }; }
+      return { img: sp.frames[Math.floor(t / 350) % sp.frames.length], r }; };
+    const flashC = document.createElement('canvas'), flashX = flashC.getContext('2d');
     const tr = new Image(); tr.src = portraitUrl(sv.trainer);
     const S = { t0: performance.now(), mon: { x: 0, a: 1, white: 0, scale: 1, bob: false, gone: false, hit: 0 }, balls: 3, baits: 2, rocks: 2, turns: 3, eat: 0, angry: 0, rate: CATCH_RATE[w.sp] || 45, rare: w.rare || (CATCH_RATE[w.sp] || 45) < 45, hp: wildHP(w.sp, w.lv), spd: wildSpeed(w.sp, w.lv) };
     $('sfHead').textContent = `${R.name.toUpperCase()} \u00B7 ROUTE ENCOUNTER`;
@@ -8362,9 +8389,7 @@ function safariEncounter(leg) {
     const mk = () => { const k = document.createElement('canvas'); k.width = W; k.height = H; const x = k.getContext('2d'); x.imageSmoothingEnabled = false; return [k, x]; };
     const [backC, backX] = mk(), [nearC, nearX2] = mk(), [vigC, vigX] = mk(), mainC = SX.c, propsSorted = scene.props.slice().sort((a, b) => a[1] - b[1]);
     SX.c = vigX; vignette(R.scene === 'tower' || R.scene === 'cave' ? .55 : .32); SX.c = mainC;
-    const whiteMon = document.createElement('canvas'); whiteMon.width = whiteMon.height = 96;
-    function whiteRefresh() { const tx = whiteMon.getContext('2d'); tx.clearRect(0, 0, 96, 96); tx.globalCompositeOperation = 'source-over'; tx.drawImage(mon, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ffffff'; tx.fillRect(0, 0, 96, 96); }
-    whiteRefresh();
+
     let cacheT = -1e9;
     const refreshLayers = t => {
       SX.c = backX; backX.clearRect(0, 0, W, H); scene.back(t); for (const p of propsSorted) if (p[1] <= FAR.y) prop(p[2], p[0], p[1], hz, t);
@@ -8381,8 +8406,10 @@ function safariEncounter(leg) {
       if (!S.mon.gone) {
         const h = 82 * S.mon.scale, bob = S.mon.bob ? Math.abs(Math.sin(t / 120)) * 4 : 0, mx = farX + S.mon.x + (S.mon.hit > now ? Math.sin(now / 25) * 5 : 0);
         Alpha(S.mon.a * .35, () => El(mx, FAR.y + 2, h * .32, 4, '#000'));
-        c.save(); c.globalAlpha = S.mon.a; c.drawImage(mon, Math.round(mx - h / 2), Math.round(FAR.y - h + 6 - bob), Math.round(h), Math.round(h)); c.restore();
-        if (S.mon.white > 0) Alpha(S.mon.white * S.mon.a, () => c.drawImage(whiteMon, Math.round(mx - h / 2), Math.round(FAR.y - h + 6), Math.round(h), Math.round(h)));
+        const fr = monFrame(t), dx = Math.round(mx - h / 2), dy = Math.round(FAR.y - h + 6 - bob);
+        c.save(); c.globalAlpha = S.mon.a; c.drawImage(fr.img, fr.r.x, fr.r.y, fr.r.s, fr.r.s, dx, dy, Math.round(h), Math.round(h)); c.restore();
+        if (S.mon.white > 0) { const s2 = fr.r.s; if (flashC.width !== s2) { flashC.width = flashC.height = s2; } flashX.globalCompositeOperation = 'source-over'; flashX.clearRect(0, 0, s2, s2); flashX.drawImage(fr.img, fr.r.x, fr.r.y, s2, s2, 0, 0, s2, s2);
+          flashX.globalCompositeOperation = 'source-in'; flashX.fillStyle = '#ffffff'; flashX.fillRect(0, 0, s2, s2); Alpha(S.mon.white * S.mon.a, () => c.drawImage(flashC, dx, dy, Math.round(h), Math.round(h))); }
         if (S.eat > 0 && S.mon.bob) { const k = (t / 450) % 1; Alpha(1 - k, () => { P(mx + 26, FAR.y - 70 - k * 14, 3, 3, '#ff7aa8'); P(mx + 29, FAR.y - 73 - k * 14, 3, 3, '#ff7aa8'); P(mx + 32, FAR.y - 70 - k * 14, 3, 3, '#ff7aa8'); }); }
       }
       if (w.shiny && !S.mon.gone && t > 450 && t < 1500) { const k = (t - 450) / 1050; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + k * 3, d = 18 + k * 34, sx = farX + Math.cos(a) * d, sy = FAR.y - 40 + Math.sin(a) * d * .7; Alpha(1 - k, () => { P(sx - 4, sy, 9, 2, i % 2 ? '#ffe066' : '#ffffff'); P(sx, sy - 4, 2, 9, i % 2 ? '#ffe066' : '#ffffff'); }); } }

@@ -53,6 +53,13 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
 #startOv .st-mon{position:relative;color:#fff;font-family:var(--ui);border-radius:14px;padding:6px 4px 5px;background:rgba(8,12,32,.55);border:1px solid rgba(255,255,255,.1);cursor:pointer;text-align:center;transition:transform .12s,border-color .12s}
 #startOv .st-mon:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.35)}
 #startOv .st-mon.none{border-style:dashed;border-color:rgba(255,255,255,.25);background:rgba(8,12,32,.3);color:#9aa3c7}
+#startOv .st-slot{position:relative;display:flex;min-width:0}
+#startOv .st-slot>.st-mon{flex:1;width:100%;min-width:0}
+#startOv .st-shy{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(8,12,32,.7);font-size:13px;line-height:1;cursor:pointer;padding:0;filter:grayscale(1) brightness(.75);z-index:1}
+#startOv .st-shy:hover{filter:grayscale(.4);border-color:#ffd84a}
+#startOv .st-shy:not(.on){opacity:.85}
+#startOv .st-shy.on{filter:none;border-color:#ffd84a;background:rgba(255,216,74,.25);box-shadow:0 0 8px rgba(255,216,74,.6)}
+@media (max-height:560px){#startOv .st-shy{width:20px;height:20px;font-size:10px;top:2px;right:2px}}
 #stPick .st-shiny{display:block;margin:0 0 8px auto;border:2px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(8,12,32,.5);color:#fff;font:800 13px var(--ui);padding:6px 12px;cursor:pointer}
 #stPick .st-shiny.on{border-color:#ffd84a;background:rgba(255,216,74,.18);color:#ffe680}
 .pic.shiny{position:relative}
@@ -181,7 +188,16 @@ function renderStartTeams() {
       const b = document.createElement('button'); b.className = 'st-mon'; b.type = 'button'; b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: ${name}. Change`);
       if (!name) { b.classList.add('none'); b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: no Pokémon. Add one`); b.innerHTML = '<div class="pic"><span class="plus">+</span></div><div class="nm">No Pokémon</div>'; }
       else { b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${pickLabel(name)}</div><div class="ty">${typeChips(name)}</div>`); }
-      b.onclick = () => openMonPicker(S, i); box.appendChild(b);
+      b.onclick = () => openMonPicker(S, i);
+      // Each Pokémon on its own: the ✨ button switches just this slot between its regular and shiny form.
+      const slot = document.createElement('div'); slot.className = 'st-slot'; slot.appendChild(b);
+      if (name) {
+        const on = pickShiny(name), sh = document.createElement('button'); sh.type = 'button'; sh.className = 'st-shy' + (on ? ' on' : ''); sh.textContent = '\u2728';
+        sh.setAttribute('aria-pressed', String(on)); sh.setAttribute('aria-label', `${pickBase(name)}: ${on ? 'shiny' : 'regular'} form. Switch`); sh.title = on ? 'Shiny \u2014 tap for the regular form' : 'Regular \u2014 tap for the shiny form';
+        sh.onclick = e => { e.stopPropagation(); const team = readPickers(S); team[i] = pickBase(team[i]) + (on ? '' : '|shiny'); setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); renderStartTeams(); };
+        slot.appendChild(sh);
+      }
+      box.appendChild(slot);
     });
   }
 }
@@ -217,7 +233,7 @@ function renderStartArenas() {
 
 /* ---------- Pokémon picker ---------- */
 function openMonPicker(S, i) {
-  START.slot = { S, i }; const grid = $('stGridPk');
+  START.slot = { S, i }; START.shiny = pickShiny(readPickers(S)[i] || ''); const grid = $('stGridPk');
   if (!grid.childElementCount) {
     const none = document.createElement('button'); none.type = 'button'; none.className = 'none'; none.dataset.q = 'no pokemon none empty';
     none.innerHTML = '<div class="pic"><span class="plus">\u2715</span></div>No Pok\u00E9mon<small>leave this slot empty</small>';
@@ -227,9 +243,8 @@ function openMonPicker(S, i) {
   }
   if (!$('stShiny')) {                                      // the Shiny switch: picks from the grid become shiny
     const sw = document.createElement('button'); sw.type = 'button'; sw.id = 'stShiny'; sw.className = 'st-shiny';
-    const sync = () => { sw.textContent = START.shiny ? '\u2728 Shiny: ON' : '\u2728 Shiny: OFF'; sw.setAttribute('aria-pressed', String(!!START.shiny)); sw.classList.toggle('on', !!START.shiny); };
-    sw.onclick = () => { START.shiny = !START.shiny; sync(); for (const b of grid.querySelectorAll('button[data-n]')) { const pic = b.querySelector('.pic'); if (pic) pic.replaceWith(monPic(b.dataset.n + (START.shiny ? '|shiny' : ''))); } };
-    grid.parentNode.insertBefore(sw, grid); sync();
+    sw.onclick = () => { START.shiny = !START.shiny; syncShinyPicker(); };
+    grid.parentNode.insertBefore(sw, grid);
   }
   if (grid.childElementCount <= 1) for (const d of DEX) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.q = `${d.name} ${String(d.id).padStart(3, '0')} ${d.types.join(' ')}`.toLowerCase();
@@ -237,6 +252,7 @@ function openMonPicker(S, i) {
     b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name + (START.shiny ? '|shiny' : ''); setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
     grid.appendChild(b);
   }
+  syncShinyPicker();
   $('stSearch').value = ''; filterPicker(''); $('stPick').classList.add('show'); setTimeout(() => $('stSearch').focus(), 30);
 }
 function closeMonPicker() { $('stPick').classList.remove('show'); }
@@ -349,3 +365,10 @@ renderAiLevels();
   };
   syncSettingsLevels();
 })();
+
+// The chooser's Shiny switch and its pictures follow the form being picked (it opens in the edited slot's form).
+function syncShinyPicker() {
+  const sw = $('stShiny'), grid = $('stGridPk'); if (!sw || !grid) return;
+  sw.textContent = START.shiny ? '\u2728 Shiny: ON' : '\u2728 Shiny: OFF'; sw.setAttribute('aria-pressed', String(!!START.shiny)); sw.classList.toggle('on', !!START.shiny);
+  for (const b of grid.querySelectorAll('button[data-n]')) { const want = b.dataset.n + (START.shiny ? '|shiny' : ''); if (b.dataset.shown !== want) { const pic = b.querySelector('.pic'); if (pic) pic.replaceWith(monPic(want)); b.dataset.shown = want; } }
+}

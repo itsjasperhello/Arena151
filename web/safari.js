@@ -252,8 +252,12 @@ function safariEncounter(leg) {
     const sv = STORY.save, R = ROUTES[leg], w = pickWild(leg); w.shiny = Math.random() < .25; w.key = w.sp + (w.shiny ? '|shiny' : '');
     const ov = $('safariOv'), cv = $('sfCv'), msgEl = $('sfMsg'), menu = $('sfMenu'), hz = HZ[R.scene] || 124, scene = SCENES[R.scene] || SCENES.forest;
     SX.c = cv.getContext('2d'); SX.c.imageSmoothingEnabled = false;
-    const mon = document.createElement('canvas'); mon.width = mon.height = 96; const paint = () => { try { drawSpriteTo(mon, w.key, {}); } catch (e) { } }; paint();
-    if (w.shiny) loadShiny(w.sp).then(ok => { if (ok) { paint(); whiteRefresh(); } });
+    // The same animated front sprite as in battle: <name>.gif, or <name>_shiny.gif for a shiny (switches in as soon as it has loaded).
+    if (w.shiny) loadShiny(w.sp);
+    const monFrame = t => { const sp = spriteOf(w.sp, false, w.shiny), r = sp.card || { x: 0, y: 0, s: sp.w };
+      if (sp.custom && sp.front) { const a = ensureAnim(sp.front); return { img: a.frames[animFrameIndex(a, t)], r }; }
+      return { img: sp.frames[Math.floor(t / 350) % sp.frames.length], r }; };
+    const flashC = document.createElement('canvas'), flashX = flashC.getContext('2d');
     const tr = new Image(); tr.src = portraitUrl(sv.trainer);
     const S = { t0: performance.now(), mon: { x: 0, a: 1, white: 0, scale: 1, bob: false, gone: false, hit: 0 }, balls: 3, baits: 2, rocks: 2, turns: 3, eat: 0, angry: 0, rate: CATCH_RATE[w.sp] || 45, rare: w.rare || (CATCH_RATE[w.sp] || 45) < 45, hp: wildHP(w.sp, w.lv), spd: wildSpeed(w.sp, w.lv) };
     $('sfHead').textContent = `${R.name.toUpperCase()} \u00B7 ROUTE ENCOUNTER`;
@@ -281,9 +285,7 @@ function safariEncounter(leg) {
     const mk = () => { const k = document.createElement('canvas'); k.width = W; k.height = H; const x = k.getContext('2d'); x.imageSmoothingEnabled = false; return [k, x]; };
     const [backC, backX] = mk(), [nearC, nearX2] = mk(), [vigC, vigX] = mk(), mainC = SX.c, propsSorted = scene.props.slice().sort((a, b) => a[1] - b[1]);
     SX.c = vigX; vignette(R.scene === 'tower' || R.scene === 'cave' ? .55 : .32); SX.c = mainC;
-    const whiteMon = document.createElement('canvas'); whiteMon.width = whiteMon.height = 96;
-    function whiteRefresh() { const tx = whiteMon.getContext('2d'); tx.clearRect(0, 0, 96, 96); tx.globalCompositeOperation = 'source-over'; tx.drawImage(mon, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ffffff'; tx.fillRect(0, 0, 96, 96); }
-    whiteRefresh();
+
     let cacheT = -1e9;
     const refreshLayers = t => {
       SX.c = backX; backX.clearRect(0, 0, W, H); scene.back(t); for (const p of propsSorted) if (p[1] <= FAR.y) prop(p[2], p[0], p[1], hz, t);
@@ -300,8 +302,10 @@ function safariEncounter(leg) {
       if (!S.mon.gone) {
         const h = 82 * S.mon.scale, bob = S.mon.bob ? Math.abs(Math.sin(t / 120)) * 4 : 0, mx = farX + S.mon.x + (S.mon.hit > now ? Math.sin(now / 25) * 5 : 0);
         Alpha(S.mon.a * .35, () => El(mx, FAR.y + 2, h * .32, 4, '#000'));
-        c.save(); c.globalAlpha = S.mon.a; c.drawImage(mon, Math.round(mx - h / 2), Math.round(FAR.y - h + 6 - bob), Math.round(h), Math.round(h)); c.restore();
-        if (S.mon.white > 0) Alpha(S.mon.white * S.mon.a, () => c.drawImage(whiteMon, Math.round(mx - h / 2), Math.round(FAR.y - h + 6), Math.round(h), Math.round(h)));
+        const fr = monFrame(t), dx = Math.round(mx - h / 2), dy = Math.round(FAR.y - h + 6 - bob);
+        c.save(); c.globalAlpha = S.mon.a; c.drawImage(fr.img, fr.r.x, fr.r.y, fr.r.s, fr.r.s, dx, dy, Math.round(h), Math.round(h)); c.restore();
+        if (S.mon.white > 0) { const s2 = fr.r.s; if (flashC.width !== s2) { flashC.width = flashC.height = s2; } flashX.globalCompositeOperation = 'source-over'; flashX.clearRect(0, 0, s2, s2); flashX.drawImage(fr.img, fr.r.x, fr.r.y, s2, s2, 0, 0, s2, s2);
+          flashX.globalCompositeOperation = 'source-in'; flashX.fillStyle = '#ffffff'; flashX.fillRect(0, 0, s2, s2); Alpha(S.mon.white * S.mon.a, () => c.drawImage(flashC, dx, dy, Math.round(h), Math.round(h))); }
         if (S.eat > 0 && S.mon.bob) { const k = (t / 450) % 1; Alpha(1 - k, () => { P(mx + 26, FAR.y - 70 - k * 14, 3, 3, '#ff7aa8'); P(mx + 29, FAR.y - 73 - k * 14, 3, 3, '#ff7aa8'); P(mx + 32, FAR.y - 70 - k * 14, 3, 3, '#ff7aa8'); }); }
       }
       if (w.shiny && !S.mon.gone && t > 450 && t < 1500) { const k = (t - 450) / 1050; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + k * 3, d = 18 + k * 34, sx = farX + Math.cos(a) * d, sy = FAR.y - 40 + Math.sin(a) * d * .7; Alpha(1 - k, () => { P(sx - 4, sy, 9, 2, i % 2 ? '#ffe066' : '#ffffff'); P(sx, sy - 4, 2, 9, i % 2 ? '#ffe066' : '#ffffff'); }); } }
