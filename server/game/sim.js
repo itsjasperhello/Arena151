@@ -37,7 +37,7 @@ function newSide(key, picks) {
 function newBattle(picksA, picksB, opts = {}) {
   return {
     picks: { A: picksA.slice(), B: picksB.slice() }, sides: { A: newSide('A', picksA), B: newSide('B', picksB) },
-    shots: [], marks: [], waves: [], beams: [], time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
+    shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
   };
@@ -161,6 +161,7 @@ function missAt(x, y, S) { VFX.missAt(x, y); logLine(`${act(S).name}'s attack mi
 
 /* ---------- casting ---------- */
 function tryCast(S, idx) {
+  if (G.clash && inClash(S)) { if (!controlledByAI(S)) G.clash.mash[S] = (G.clash.mash[S] || 0) + 1; return !controlledByAI(S); }   // a button press during a beam lock pushes the beam
   const sd = side(S), m = act(S), mv = MOVES[m.moves[idx]];
   if (!mv || sd.state !== 'idle' || sd.cast || sd.stun > 0 || sd.gcd > 0 || m.cd[idx] > 0) return false;
   if (m.status === 'slp' || m.status === 'frz') return false;
@@ -222,11 +223,20 @@ function updateCast(S, dt) {
     }
     case 'beam': {
       if (c.phase === 'go') { if (c.t < 360) return; // charge
+        // Beam clash, part 1: if the rival is also charging a beam and will fire within a moment, hold fire so both beams leave together.
+        if (!c.hold) c.hold = 0;
+        if (beamRivalSoon(S, c, CLASH.sync - c.hold)) { if (c.hold === 0) VFX.beamHold(S, mv); c.hold += dt; return; }
         const from = { x: sd.x + sd.face * 18, y: sd.y - 32 }, ang = Math.atan2(c.aim.y - 32 - from.y, c.aim.x - from.x);
-        G.beams.push({ owner: S, mv, x: from.x, y: from.y, ang, t: 0, life: 520, w: mv.pow >= 110 ? 26 : 18 });
+        const b = { owner: S, mv, u: m, x: from.x, y: from.y, ang, t: 0, life: 520, w: mv.pow >= 110 ? 26 : 18, pend: false, grace: CLASH.grace, cl: 0, clip: 0 };
         const px = t.x - from.x, py = (t.y - 32) - from.y, along = px * Math.cos(ang) + py * Math.sin(ang), perp = Math.abs(-px * Math.sin(ang) + py * Math.cos(ang));
-        if (present(fs) && along > 0 && perp < 44) c.landed = applyHit(S, mv, m); else missAt(t.x, t.y - 50, S);
+        G.beams.push(b); c._beam = b;
+        if (present(fs) && along > 0 && perp < 44) {
+          b.pend = true;                           // damage lands after a short grace so a beam fired back can still meet it
+          const rival = G.clash ? null : G.beams.find(o => o !== b && o.owner === fs && o.pend && !o.cl);
+          if (rival) startClash(rival, b);
+        } else missAt(t.x, t.y - 50, S);
         c.phase = 'fire'; c.t = 0; return; }
+      if (c._beam && c._beam.cl) return;           // locked in a clash (or surging out of one): the cast stays alive until it is settled
       if (c.t > 380) end(); return;
     }
     case 'projectile': case 'drain': case 'hex': case 'powder': case 'burst': case 'stars': case 'leaves': case 'wind': case 'multi': {
@@ -309,7 +319,131 @@ function updateWorld(dt) {
     if (!w.hit && present(fs)) { const d = Math.hypot(t.x - w.x, (t.y - w.y) * 1.6); if (Math.abs(d - w.r) < 34 || d < w.r) { w.hit = true; applyHit(w.owner, w.mv, w.u); } }
     if (w.r >= w.maxR) { if (!w.hit) missAt(t.x, t.y - 40, w.owner); G.waves.splice(i, 1); }
   }
-  for (let i = G.beams.length - 1; i >= 0; i--) { const b = G.beams[i]; b.t += dt; if (b.t >= b.life) G.beams.splice(i, 1); }
+  updateClash(dt);
+  for (let i = G.beams.length - 1; i >= 0; i--) {
+    const b = G.beams[i];
+    if (b.cl) continue;                                           // clash beams are driven by updateClash
+    b.t += dt;
+    if (b.pend) { b.grace -= dt; if (b.grace <= 0) landBeam(b); }
+    if (b.t >= b.life) { if (b.pend) landBeam(b); G.beams.splice(i, 1); }
+  }
+}
+/* =====================================================================
+   Beam clashes (Priori Incantatem style)
+   When both Pokémon fire beams at each other at about the same moment, the beams meet and lock.
+   The meeting point surges back and forth: the stronger beam (and a player's button-mashing)
+   pushes it toward the weaker Pokémon. If one side gets pushed back far enough its beam is
+   overwhelmed and the winner's beam blasts through; if the struggle runs too long, or the
+   beams are evenly matched, they cancel in a huge explosion that hurts both.
+   Everything here is plain numbers on G.clash and on the two beams, so the server can stream it.
+   ===================================================================== */
+const CLASH = {
+  grace: 140,        // ms a fired beam waits before its damage lands, so a beam fired back in that time can still meet it
+  sync: 340,         // ms a charged beam will hold fire for a rival beam that is about to fire
+  minMs: 1800,       // the lock lasts at least this long
+  fullMs: 4300,      // energy reaches 100% here: the struggle can no longer be decided by pushing, it ends
+  winAt: .1,         // the meeting point has to get this close to a Pokémon for it to lose (0 = at the Pokémon, .5 = middle)
+  drawBand: .3,      // at full energy, a meeting point within .5 ± this band ends in the cancel explosion
+  surgeScale: 1.2, powerScale: .9, mashPush: .09, damping: 2.2
+};
+const beamMight = b => {
+  const m = b.u, mv = b.mv, atk = mv.cat === 'P' ? m.stats.atk * stageMult(m.stages.atk) : m.stats.spa * stageMult(m.stages.spa);
+  return Math.max(1, mv.pow * (atk / 90) * (m.types.includes(mv.type) ? 1.25 : 1) * (.8 + .2 * m.hp / m.max));
+};
+const inClash = S => !!(G.clash && G.clash._b[S] && !G.clash.over);
+// Is the rival about to fire a beam of its own (so this beam should wait for it)?
+function beamRivalSoon(S, c, window) {
+  if (window <= 0 || !c.accOk || G.clash) return false;
+  const fs = other(S), oc = side(fs).cast;
+  if (!oc || oc.mv.anim !== 'beam' || oc._beam || !oc.accOk || !present(fs) || (oc.phase !== 'wind' && oc.phase !== 'go')) return false;
+  const left = (oc.phase === 'wind' ? WINDUP(oc.mv) - oc.t + 360 : 360 - oc.t);
+  return left > 0 && left <= window;           // when the rival is ready too, nobody waits: both fire
+}
+function landBeam(b) {
+  if (!b.pend) return; b.pend = false;
+  const sd = side(b.owner), landed = applyHit(b.owner, b.mv, b.u);
+  if (sd.cast && sd.cast._beam === b) sd.cast.landed = landed;
+}
+function startClash(b1, b2) {
+  const bA = b1.owner === 'A' ? b1 : b2, bB = b1.owner === 'A' ? b2 : b1;
+  const cl = { t: 0, p: .5, v: 0, e: 0, over: false, mash: { A: 0, B: 0 }, surgeT: 450, surge: 0, aiT: { A: 0, B: 0 }, nA: 0, nB: 0,
+    mA: beamMight(bA), mB: beamMight(bB), x: 0, y: 0, k: 0, _b: { A: bA, B: bB } };
+  for (const b of [bA, bB]) { b.pend = false; b.cl = 1; b.t = b.life * .45; }
+  G.clash = cl; placeClash(cl); G.lastDmgT = G.time;
+  VFX.clashStart(cl.x, cl.y, 'A', bA.mv, 'B', bB.mv);
+  logLine(`${bA.u.name}'s ${bA.mv.name} and ${bB.u.name}'s ${bB.mv.name} collide! Beam struggle!`, 't');
+}
+// aim both beams at the meeting point
+function placeClash(cl) {
+  const bA = cl._b.A, bB = cl._b.B, sA = side('A'), sB = side('B');
+  bA.x = sA.x + sA.face * 18; bA.y = sA.y - 32; bB.x = sB.x + sB.face * 18; bB.y = sB.y - 32;
+  cl.x = bA.x + (bB.x - bA.x) * cl.p; cl.y = bA.y + (bB.y - bA.y) * cl.p;
+  for (const b of [bA, bB]) { b.ang = Math.atan2(cl.y - b.y, cl.x - b.x); b.clip = Math.hypot(cl.x - b.x, cl.y - b.y); b.t = b.life * .45; }
+}
+function clashBroken(S) {
+  const sd = side(S), m = act(S), c = sd.cast;
+  return !c || c._beam !== G.clash._b[S] || sd.state !== 'idle' || sd.stun > 0 || m.hp <= 0 || m.status === 'slp' || m.status === 'frz';
+}
+function updateClash(dt) {
+  for (const b of G.beams.slice()) if (b.cl >= 2) driveBeamAfterClash(b, dt);   // beams retracting or surging after a clash was settled
+  const cl = G.clash; if (!cl) return;
+  const k = dt / 1000;
+  if (G.phase !== 'battle') { endClash('draw', null); return; }
+  const brokeA = clashBroken('A'), brokeB = clashBroken('B');
+  if (brokeA || brokeB) { endClash(brokeA && brokeB ? 'draw' : 'win', brokeA && brokeB ? null : brokeA ? 'B' : 'A'); return; }
+  cl.t += dt; cl.e = Math.min(1, cl.t / CLASH.fullMs);
+  // players push by pressing move buttons; the AI "mashes" at a rate set by its level
+  for (const S of ['A', 'B']) if (controlledByAI(S)) { cl.aiT[S] -= dt; if (cl.aiT[S] <= 0) { cl.aiT[S] = 1000 / aiK(S, 2.2, 4.2, 7.5) * (.6 + Math.random() * .8); cl.mash[S]++; } }
+  const push = cl.mash.A - cl.mash.B; cl.mash.A = cl.mash.B = 0;
+  cl.surgeT -= dt; if (cl.surgeT <= 0) { cl.surgeT = 420 + Math.random() * 520; cl.surge = (Math.random() < .5 ? -1 : 1) * (.45 + Math.random() * .65) * (.7 + cl.e * .8); }
+  cl.surge *= Math.pow(.18, k);
+  const lead = (cl.mA - cl.mB) / (cl.mA + cl.mB);                                      // -1 … 1: who has the stronger beam
+  const acc = lead * CLASH.powerScale + cl.surge * CLASH.surgeScale;
+  cl.v += acc * k * 2.2 + push * CLASH.mashPush; cl.v *= Math.max(0, 1 - CLASH.damping * k); cl.v = clamp(cl.v, -1.4, 1.4);   // each button press is a small shove
+  cl.p = clamp(cl.p + cl.v * k, 0, 1);
+  placeClash(cl); G.lastDmgT = G.time;
+  if (cl.t > CLASH.minMs) {
+    if (cl.p >= 1 - CLASH.winAt) return endClash('win', 'A');
+    if (cl.p <= CLASH.winAt) return endClash('win', 'B');
+  }
+  if (cl.e >= 1) {
+    if (Math.abs(cl.p - .5) <= CLASH.drawBand) endClash('draw', null);
+    else endClash('win', cl.p > .5 ? 'A' : 'B');
+  }
+}
+function endClash(kind, win) {
+  const cl = G.clash; if (!cl || cl.over) return; cl.over = true; G.clash = null;
+  const bA = cl._b.A, bB = cl._b.B, x = cl.x, y = cl.y;
+  if (kind === 'draw') {
+    VFX.clashEnd(x, y, 'draw', '', '', bA.mv, bB.mv);
+    logLine(`The beams cancel out in a huge explosion!`, 't');
+    for (const b of [bA, bB]) { b.cl = 0; b.pend = false; b.t = b.life; const sd = side(b.owner); const a = Math.atan2(sd.y - y, sd.x - x); sd.kbx += Math.cos(a) * 520; sd.kby += Math.sin(a) * 520; sd.hit = 350; if (sd.cast && sd.cast._beam === b) { sd.cast.landed = false; sd.cast.t = 9999; sd.cast._beam = null; } }
+    G.beams = G.beams.filter(b => b !== bA && b !== bB);
+    if (G.phase === 'battle') for (const S of ['A', 'B']) { const b = S === 'A' ? bA : bB; applyHit(S, b.mv, b.u, { scale: .3 }); }   // the blast hurts both a little
+    G.hudDirty = true; return;
+  }
+  const wb = cl._b[win], lb = cl._b[other(win)];
+  VFX.clashEnd(x, y, 'win', win, other(win), wb.mv, lb.mv);
+  logLine(`${wb.u.name}'s ${wb.mv.name} overpowers ${lb.u.name}'s ${lb.mv.name}!`, 't');
+  lb.cl = 2; lb.pend = false; lb.from = Math.hypot(x - lb.x, y - lb.y);      // loser's beam is driven back into its owner
+  wb.cl = 3; wb.pend = false;                                               // winner's beam surges through to the loser
+  const lsd = side(lb.owner); if (lsd.cast && lsd.cast._beam === lb) { lsd.cast.landed = false; }
+}
+function driveBeamAfterClash(b, dt) {
+  const k = dt / 1000, sd = side(b.owner), foe = side(other(b.owner));
+  b.x = sd.x + sd.face * 18; b.y = sd.y - 32;
+  if (b.cl === 2) {                                   // retreating
+    b.clip -= 2600 * k; b.t = b.life * .45;
+    if (b.clip <= 0) { b.cl = 0; b.t = b.life; }
+  } else if (b.cl === 3) {                            // surging at the loser
+    const tx = foe.x, ty = foe.y - 32, dd = Math.hypot(tx - b.x, ty - b.y);
+    b.ang = Math.atan2(ty - b.y, tx - b.x); b.clip = Math.min(dd, b.clip + 2800 * k); b.t = b.life * .45;
+    if (b.clip >= dd - 4) {
+      b.cl = 0; b.t = b.life * .45; b.clip = 0;
+      const landed = applyHit(b.owner, b.mv, b.u, { scale: 1.3 }); if (sd.cast && sd.cast._beam === b) sd.cast.landed = landed;   // an overpowered hit
+      VFX.clashBreak(b.owner, b.mv);
+    }
+  }
 }
 const groupState = {};
 function groupHit(p) {
@@ -520,7 +654,7 @@ function megaEvolve(S) { return zMove(S); }
 
 /* ---------- Dodge: a quick dash in the direction you are moving, with a brief moment of invulnerability ---------- */
 const DODGE_CD = 1400, DODGE_IFRAMES = 280;
-function canDodge(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && sd.state === 'idle' && !(sd.dodgeCd > 0) && sd.stun <= 0 && m && m.hp > 0 && m.status !== 'slp' && m.status !== 'frz'; }
+function canDodge(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && !(G.clash && inClash(S)) && sd.state === 'idle' && !(sd.dodgeCd > 0) && sd.stun <= 0 && m && m.hp > 0 && m.status !== 'slp' && m.status !== 'frz'; }
 function dodge(S, dx, dy) {
   if (!canDodge(S)) return false;
   const sd = side(S); dx = +dx || 0; dy = +dy || 0; let l = Math.hypot(dx, dy);
@@ -571,6 +705,7 @@ function decideByHp(reason) {
   return Math.abs(a - b) < .001 ? 'draw' : a > b ? 'A' : 'B';
 }
 function endBattle(w, big) {
+  if (G.clash) { G.clash.over = true; G.clash = null; } G.beams = G.beams.filter(b => !b.cl);   // a beam lock never outlives the battle
   if (G.phase === 'over') return;
   G.phase = 'over'; G.winner = w; G.shots.length = G.marks.length = G.waves.length = 0;
   logLine(w === 'draw' ? 'The battle ended in a draw!' : `${TEAM_NAME[w]} wins the battle!`, 't');

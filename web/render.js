@@ -77,7 +77,7 @@ const MOVE_FX = {
   Normal: { col: '#ffffff', core: '#ffffff', scar: 'trail' }, Dark: { col: '#6a5a7a', core: '#d9cde8', scar: 'crack' }
 };
 const fxOf = mv => MOVE_FX[mv.type] || MOVE_FX.Normal;
-const head = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 }; };
+const head = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 * bodyScaleOf(S) }; };
 function spark(x, y, o = {}) { parts.push({ x, y, vx: o.vx ?? (Math.random() - .5) * 120, vy: o.vy ?? (Math.random() - .5) * 120, g: o.g ?? 0, life: o.life ?? 500, t: 0, color: o.color || '#fff', size: o.size || 1, shape: o.shape || 'sq', add: !!o.add }); }
 function burstAt(x, y, color, n = 16, spd = 260, size = 1) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = spd * (.35 + Math.random() * .8); spark(x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, g: 260, life: 320 + Math.random() * 320, color: Math.random() < .3 ? '#ffffff' : color, size: size + (Math.random() < .3 ? 1 : 0) }); } }
 function floatText(x, y, text, o = {}) {
@@ -190,6 +190,7 @@ function actorLook(S) {
   if (sd.state === 'leaving') { const q = sd.stateT / 360; scale = 1 - q; white = Math.min(1, q * 3); }
   if (sd.state === 'fainting') { const q = sd.stateT / 1100; gray = q > .25; if (q < .25) white = Math.floor(q * 24) % 2 ? .9 : 0; sink = q > .25 ? (q - .25) / .75 : 0; alpha = 1 - Math.max(0, (q - .4) / .6); }
   if (sd.state === 'mega') { const q = sd.stateT / 1500; white = q < .5 ? (Math.floor(q * 30) % 2 ? .9 : .2) : Math.max(0, 1 - (q - .5) * 3); }
+  scale *= sizeScaleOf(m.name, megaNow);          // size class from the official height (visual only)
   return { sd, m, sp, megaNow, scale, alpha, white, gray, sink };
 }
 // footprint size in art pixels: generated art is 1:1, custom art is 2 sprite pixels per art pixel
@@ -210,7 +211,7 @@ function drawActorSprite(S) {
   const { sd, m, sp, megaNow, scale, alpha, white, gray, sink } = L, c = sctx;
   const st = m.status, frozen = st === 'frz', asleep = st === 'slp', moving = Math.hypot(sd.vx, sd.vy) > 40;
   const hopArt = (sd.hop > 0 ? Math.sin(sd.hop * Math.PI) * 6 * (sd.hopK || 1) : 0) + (moving && !sp.custom ? Math.floor(sd.walk / 16) % 2 : 0);
-  const sx = (ax(sd.x) - OX) * cam.pz, sy = (ay(sd.y) - OY) * cam.pz;
+  const sx = (ax(sd.x) - OX) * cam.pz + clashJitter(S), sy = (ay(sd.y) - OY) * cam.pz;
   const flashOn = sd.hit > 0 && Math.floor(sd.hit / 55) % 2 === 0;
   if (sp.custom) {
     // Front or back view: show the back while heading up the screen (away from the camera).
@@ -275,7 +276,18 @@ function drawShot(p) {
   aDisc(i, j, r, f.col); aDisc(i - 1, j - 1, Math.max(1, r - 2), f.core);
 }
 function drawBeam(b) {
-  const R = MFX[b.mv.name]; if (R && R.beam) { try { R.beam(b); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
+  if (b.cl) {   // locked in a beam clash (1), driven back (2) or surging through (3): draw the move's own beam, cut off at the meeting point
+    if (!(b.clip > 0)) return;
+    b.t = b.life * .45;
+    const i0 = ax(b.x) - OX, j0 = ay(b.y) - OY;
+    bctx.save(); bctx.translate(i0, j0); bctx.rotate(b.ang); bctx.beginPath(); bctx.rect(-24, -70, b.clip / 2 + 24, 140); bctx.clip(); bctx.rotate(-b.ang); bctx.translate(-i0, -j0);
+    const R = MFX[b.mv.name]; try { if (R && R.beam) R.beam(b); else drawBeamDefault(b); } catch (e) { console.error(e); }
+    bctx.restore(); bctx.globalAlpha = 1; return;
+  }
+  drawBeamDefault(b);
+}
+function drawBeamDefault(b) {
+  const R = MFX[b.mv.name]; if (!b.cl && R && R.beam) { try { R.beam(b); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
   const f = fxOf(b.mv), q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1;
   const n = Math.round(450 * grow), i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, di = Math.cos(b.ang), dj = Math.sin(b.ang), w = Math.round(b.w / 2 * (1 + Math.sin(clock.t / 25) * .12));
   bctx.globalCompositeOperation = 'lighter';
@@ -352,7 +364,7 @@ function draw(dt) {
   for (const S of order) drawActorSprite(S);
   // effects layer above the sprites
   bctx = fctx; bctx.clearRect(0, 0, fbuf.width, fbuf.height);
-  if (G) { for (const p of G.shots) drawShot(p); for (const bm of G.beams) drawBeam(bm); }
+  if (G) { for (const p of G.shots) drawShot(p); for (const bm of G.beams) drawBeam(bm); drawClash(); }
   drawEnts(false);
   drawWorldFx();
   drawAmbient(dt);
@@ -375,6 +387,7 @@ function draw(dt) {
     if (f.kind === 'call') { c.save(); c.globalAlpha = q > .8 ? (1 - q) / .2 : 1; textAt(c, f.text, toScreenX(f.x), toScreenY(f.y), Math.round(15 * zs), '#ff6b8a', '#2a0a14', { italic: true, align: f.align }); c.restore(); }
   }
   const unit = DH / 560;
+  drawClashMeter(c, DW, DH, unit);
   if (banner.text && clock.t - banner.t < 1500) { const q = (clock.t - banner.t) / 1500; c.save(); c.globalAlpha = q > .8 ? (1 - q) / .2 : 1; textAt(c, banner.text, DW / 2, DH * .3 - Math.min(1, q * 6) * 6 * unit, Math.round(19 * unit), banner.color, '#2a1206', { italic: true }); c.restore(); }
   if (bigText.text && clock.t - bigText.t < bigText.life) {
     const q = (clock.t - bigText.t) / bigText.life, sc = q < .15 ? Ease.outBack(q / .15) : 1, fs = Math.min(DW / (bigText.text.length > 14 ? 16 : 7), 76 * unit);

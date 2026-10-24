@@ -80,7 +80,8 @@ const BEAM = (ramp, wm = 1, wob = 0, spray) => b => {
   beamPx(ax(b.x) - OX, ay(b.y) - OY, b.ang, len, w, ramp, fade, wob);
   if (spray && q < .8) spray(b, len * 2);
 };
-const beamEnd = (b, wl) => ({ x: b.x + Math.cos(b.ang) * Math.min(wl, 300), y: b.y + Math.sin(b.ang) * Math.min(wl, 300) });
+const bcap = b => (b.cl ? Math.max(1, b.clip) : 300);   // during a clash the beam only reaches the meeting point
+const beamEnd = (b, wl) => ({ x: b.x + Math.cos(b.ang) * Math.min(wl, 300, bcap(b)), y: b.y + Math.sin(b.ang) * Math.min(wl, 300, bcap(b)) });
 
 /* =====================================================================
    NORMAL
@@ -105,7 +106,7 @@ def('Splash', { exec: S => { const f = footOf(S); for (let k = 0; k < 3; k++) se
    FIRE
    ===================================================================== */
 def('Ember', { charge: CH.rise('fire', 8), shot: SHOT.fireball(3), impact: S => { const h = headOf(S); emit(h.x, h.y + 10, 16, { speed: [40, 160], life: [300, 600], ramp: 'fire', size: [1, 2], g: 100, add: true }); addScar('scorch', footOf(S).x, footOf(S).y); } });
-def('Flamethrower', { charge: CH.orb('fire', 5, 320), beam: BEAM('fire', 1.1, 3, (b, wl) => { for (let k = 0; k < 4; k++) { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: Math.cos(b.ang) * 120 + (Math.random() - .5) * 80, vy: Math.sin(b.ang) * 120 - 40, life: [250, 500][k % 2], ramp: 'fire', size: 3, size2: 1, add: true }); } }),
+def('Flamethrower', { charge: CH.orb('fire', 5, 320), beam: BEAM('fire', 1.1, 3, (b, wl) => { for (let k = 0; k < 4; k++) { const d = Math.random() * Math.min(wl, 300, bcap(b)); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: Math.cos(b.ang) * 120 + (Math.random() - .5) * 80, vy: Math.sin(b.ang) * 120 - 40, life: [250, 500][k % 2], ramp: 'fire', size: 3, size2: 1, add: true }); } }),
   impact: S => { IMP.explode('fire', 16)(S); const h = headOf(S); ent(1000, q => { if (Math.random() < .5) P(h.x + (Math.random() - .5) * 30, h.y + 30, { vy: -80, life: 500, ramp: 'fire', size: 2, size2: 1, add: true }); }); addScar('scorch', footOf(S).x, footOf(S).y); } });
 def('Fire Blast', { charge: S => { dim(.4, 1400); CH.orb('fire', 7, 300)(S); CH.rise('fire', 20)(S); },
   shot: SHOT.fireball(5),
@@ -177,7 +178,7 @@ def('Ice Punch', { charge: both(CH.fist('#bff4ff', 1), CH.gather('ice', 10, 30, 
 def('Aurora Beam', { charge: CH.gather('aurora', 18, 46, 'star'), beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .18), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
     const cols = ['#ff9ad8', '#c89aff', '#9ad0ff', '#9affd8', '#fff09a']; for (let k = 0; k < len; k++) for (let s = -4; s <= 4; s++) { const idx = ((((s + 4) >> 1) + Math.floor((k - clock.t / 20) / 6)) % 5 + 5) % 5, o = s + Math.sin(k / 8 - clock.t / 60) * 2; PX(i0 + ca * k - sa * o, j0 + sa * k + ca * o, cols[idx], fade * (s === 0 ? 1 : .8)); } bctx.globalAlpha = 1; },
   impact: both(IMP.sparkle('aurora', 22), IMP.shatter(8)) });
-def('Ice Beam', { charge: CH.gather('ice', 18, 46, 'star'), beam: BEAM('ice', 1, 1, (b, wl) => { const d = Math.random() * Math.min(wl, 300); const x = b.x + Math.cos(b.ang) * d, y = b.y + Math.sin(b.ang) * d; P(x, y, { life: 500, ramp: 'ice', shape: 'shard', size: 2, rot: Math.random() * 6.28 }); }),
+def('Ice Beam', { charge: CH.gather('ice', 18, 46, 'star'), beam: BEAM('ice', 1, 1, (b, wl) => { const d = Math.random() * Math.min(wl, 300, bcap(b)); const x = b.x + Math.cos(b.ang) * d, y = b.y + Math.sin(b.ang) * d; P(x, y, { life: 500, ramp: 'ice', shape: 'shard', size: 2, rot: Math.random() * 6.28 }); }),
   impact: S => { IMP.shatter(20)(S); const f = footOf(S); ent(1400, q => { const a = 1 - Math.max(0, q - .7) * 3.3; for (let k = 0; k < 7; k++) { const ang = k / 7 * 6.28; spikePx(bx(f.x + Math.cos(ang) * 16), by(f.y + Math.sin(ang) * 7), 6 + (k % 3) * 4, 2, RAMP.ice, a * Math.min(1, q * 6)); } }, { under: true }); } });
 def('Blizzard', { charge: S => { dim(.45, 1600, '20,30,48'); CH.gather('ice', 24, 70, 'star')(S); },
   exec: S => { for (let k = 0; k < 60; k++) setTimeoutGame(k * 12, () => { const sd = side(S); P(sd.x + (Math.random() - .5) * 600, -40, { vx: rnd2(200, 400) * sd.face, vy: rnd2(200, 380), life: 1200, ramp: 'ice', shape: Math.random() < .5 ? 'star' : 'sq', size: rnd2(1, 3) | 0 }); }); },
@@ -276,7 +277,7 @@ def('Confuse Ray', { shot: SHOT.confuse(), impact: S => { const h = headOf(S); e
 /* =====================================================================
    DRAGON
    ===================================================================== */
-def('Dragon Breath', { charge: CH.orb('dragon', 5, 300), beam: BEAM(['#ffffff', '#e8fff0', '#a8ffd0', '#7d6bff', '#4a3ad0', '#24187a'], 1.2, 3, (b, wl) => { for (let k = 0; k < 3; k++) { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: (Math.random() - .5) * 120, vy: -60, life: 400, ramp: k % 2 ? 'dragon' : ['#ffffff', '#c8ffe0', '#5ee08a', '#2a8a5a'], size: 2, size2: 1, add: true }); } }),
+def('Dragon Breath', { charge: CH.orb('dragon', 5, 300), beam: BEAM(['#ffffff', '#e8fff0', '#a8ffd0', '#7d6bff', '#4a3ad0', '#24187a'], 1.2, 3, (b, wl) => { for (let k = 0; k < 3; k++) { const d = Math.random() * Math.min(wl, 300, bcap(b)); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: (Math.random() - .5) * 120, vy: -60, life: 400, ramp: k % 2 ? 'dragon' : ['#ffffff', '#c8ffe0', '#5ee08a', '#2a8a5a'], size: 2, size2: 1, add: true }); } }),
   impact: both(IMP.explode('dragon', 16), IMP.zap(3, '#a8ffd0')) });
 def('Dragon Claw', { charge: S => ent(300, q => glow(bx(headOf(S).x + side(S).face * 12), by(headOf(S).y + 8), 12, '#7d6bff', .7)), dash: DASH.engulf('dragon', 2), impact: both(IMP.claws('#a99bff', 3, 44, 3), IMP.burst('dragon', 18, [100, 260])) });
 def('Dragon Pulse', { charge: S => { CH.gather('dragon', 20, 54)(S); dim(.35, 1100, '10,6,30'); }, beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
@@ -290,7 +291,7 @@ def('Dragon Dance', { exec: S => { const sd = side(S); ent(1000, q => { for (let
    STEEL
    ===================================================================== */
 def('Metal Claw', { charge: S => ent(260, q => { const h = headOf(S); PX(bx(h.x + side(S).face * 14), by(h.y + 4), '#ffffff'); glow(bx(h.x + side(S).face * 14), by(h.y + 4), 6, '#ffffff', .6 * (1 - q)); }), impact: both(IMP.claws('#e2ecf6', 3, 32, 2), IMP.sparkle('steel', 10)) });
-def('Flash Cannon', { charge: S => { CH.orb('steel', 6, 320)(S); dim(.3, 1000); }, beam: BEAM('steel', 1.3, 0, (b, wl) => { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { life: 300, color: '#ffffff', shape: 'star', size: 2, add: true }); }),
+def('Flash Cannon', { charge: S => { CH.orb('steel', 6, 320)(S); dim(.3, 1000); }, beam: BEAM('steel', 1.3, 0, (b, wl) => { const d = Math.random() * Math.min(wl, 300, bcap(b)); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { life: 300, color: '#ffffff', shape: 'star', size: 2, add: true }); }),
   exec: S => screenFlash('#ffffff', .4), impact: both(IMP.explode('steel', 20), IMP.sparkle('steel', 16)) });
 def('Iron Tail', { charge: S => ent(300, q => { const sd = side(S); glow(bx(sd.x - sd.face * 14), by(sd.y - 20), 10, '#ffffff', .6); }), impact: S => { const h = headOf(S); ent(380, q => { for (let k = 0; k < 40 * Math.min(1, q * 3); k++) { const a = Math.PI * (1.1 + k / 40 * .9), r = 26; aRect(bx(h.x + Math.cos(a) * r), by(h.y + 30 + Math.sin(a) * r), 3, 3, k > 34 ? '#ffffff' : '#cad8e6', 1 - Math.max(0, q - .6) * 2.5); } }); setTimeoutGame(140, () => { IMP.pow('#ffffff', 22)(S); IMP.sparkle('steel', 14)(S); VFX.shake(10, 300); }); } });
 def('Iron Defense', { exec: S => { const sd = side(S); ent(900, q => { const i = bx(sd.x), j = by(sd.y - 30); for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28 + q * 2; aLine(i + Math.cos(a) * 22, j + Math.sin(a) * 26, i + Math.cos(a + 1.05) * 22, j + Math.sin(a + 1.05) * 26, '#e2ecf6', 1 - q, 2); } aRect(i - 20 + q * 40, j - 30, 3, 60, '#ffffff', .7 * (1 - q)); }); IMP.sparkle('steel', 14)(S); } });

@@ -175,5 +175,5 @@ function powStar(i, j, r, col, q) {   // comic-book impact star
 }
 function speedLines(x, y, ang, n, len, col) { for (let k = 0; k < n; k++) { const o = (Math.random() - .5) * 40, ca = Math.cos(ang), sa = Math.sin(ang); P(x - sa * o, y + ca * o, { vx: -ca * rnd2(200, 400), vy: -sa * rnd2(200, 400), life: 180, color: col, shape: 'sq', size: 1 }); } }
 function crackBurst(x, y, n = 5, len = 26) { for (let k = 0; k < n; k++) addScar('crack', x + (Math.random() - .5) * len, y + (Math.random() - .5) * len * .5); }
-const headOf = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 }; };
+const headOf = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 * bodyScaleOf(S) }; };
 const footOf = S => { const sd = side(S); return { x: sd.x, y: sd.y }; };

@@ -15,7 +15,8 @@ function __enc(v, d) {
   if (v.name && MOVES[v.name] === v) return { __mv: v.name };
   if (d > 5) return null;
   if (Array.isArray(v)) return v.map(x => __enc(x, d + 1));
-  const o = {}; for (const k in v) { if (k === 'u') continue; const e = __enc(v[k], d + 1); if (e !== undefined) o[k] = e; } return o;
+  const o = {}; for (const k in v) { if (k === 'u' || k[0] === '_') continue;   // 'u' and '_…' keys are back-references used only by the game logic
+      const e = __enc(v[k], d + 1); if (e !== undefined) o[k] = e; } return o;
 }
 function __init(teamA, teamB, names, arena, timeLimit) {
   TEAM_NAME.A = names.A; TEAM_NAME.B = names.B;
@@ -25,7 +26,7 @@ function __init(teamA, teamB, names, arena, timeLimit) {
   __events = []; __needPick = false; __ended = null;
   return id;
 }
-function __tagIds() { for (const arr of [G.shots, G.beams, G.marks, G.waves]) for (const o of arr) if (!o.id) o.id = ++__id; }
+function __tagIds() { for (const arr of [G.shots, G.beams, G.marks, G.waves, G.clash ? [G.clash] : []]) for (const o of arr) if (!o.id) o.id = ++__id; }
 function __step(dt) { clock.t += dt; simStep(dt); __tagIds(); }
 function __spawn(S) { spawnIn(S, side(S).active || 0); __tagIds(); }
 function __startBattle() { G.phase = 'battle'; G.lastDmgT = G.time; }
@@ -37,7 +38,7 @@ function __snapshot(full) {          // full: every Pokémon (keyframes); otherw
     teams[S] = sd.team.map((m, i) => (full !== false || i === sd.active) ? __enc(m, 1) : null);
   }
   return { ph: G.phase, time: G.time, el: G.elapsed, ot: G.overtime || 0, lastDmgT: G.lastDmgT, sides, teams,
-    shots: __enc(G.shots, 0), beams: __enc(G.beams, 0), marks: __enc(G.marks, 0), waves: __enc(G.waves, 0) };
+    shots: __enc(G.shots, 0), beams: __enc(G.beams, 0), marks: __enc(G.marks, 0), waves: __enc(G.waves, 0), clash: G.clash ? __enc(G.clash, 0) : null };
 }
 // Player input (server-side coordinates already).
 function __input(S, m) {

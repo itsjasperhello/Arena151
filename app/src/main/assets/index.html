@@ -2265,7 +2265,7 @@ function newSide(key, picks) {
 function newBattle(picksA, picksB, opts = {}) {
   return {
     picks: { A: picksA.slice(), B: picksB.slice() }, sides: { A: newSide('A', picksA), B: newSide('B', picksB) },
-    shots: [], marks: [], waves: [], beams: [], time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
+    shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
   };
@@ -2389,6 +2389,7 @@ function missAt(x, y, S) { VFX.missAt(x, y); logLine(`${act(S).name}'s attack mi
 
 /* ---------- casting ---------- */
 function tryCast(S, idx) {
+  if (G.clash && inClash(S)) { if (!controlledByAI(S)) G.clash.mash[S] = (G.clash.mash[S] || 0) + 1; return !controlledByAI(S); }   // a button press during a beam lock pushes the beam
   const sd = side(S), m = act(S), mv = MOVES[m.moves[idx]];
   if (!mv || sd.state !== 'idle' || sd.cast || sd.stun > 0 || sd.gcd > 0 || m.cd[idx] > 0) return false;
   if (m.status === 'slp' || m.status === 'frz') return false;
@@ -2450,11 +2451,20 @@ function updateCast(S, dt) {
     }
     case 'beam': {
       if (c.phase === 'go') { if (c.t < 360) return; // charge
+        // Beam clash, part 1: if the rival is also charging a beam and will fire within a moment, hold fire so both beams leave together.
+        if (!c.hold) c.hold = 0;
+        if (beamRivalSoon(S, c, CLASH.sync - c.hold)) { if (c.hold === 0) VFX.beamHold(S, mv); c.hold += dt; return; }
         const from = { x: sd.x + sd.face * 18, y: sd.y - 32 }, ang = Math.atan2(c.aim.y - 32 - from.y, c.aim.x - from.x);
-        G.beams.push({ owner: S, mv, x: from.x, y: from.y, ang, t: 0, life: 520, w: mv.pow >= 110 ? 26 : 18 });
+        const b = { owner: S, mv, u: m, x: from.x, y: from.y, ang, t: 0, life: 520, w: mv.pow >= 110 ? 26 : 18, pend: false, grace: CLASH.grace, cl: 0, clip: 0 };
         const px = t.x - from.x, py = (t.y - 32) - from.y, along = px * Math.cos(ang) + py * Math.sin(ang), perp = Math.abs(-px * Math.sin(ang) + py * Math.cos(ang));
-        if (present(fs) && along > 0 && perp < 44) c.landed = applyHit(S, mv, m); else missAt(t.x, t.y - 50, S);
+        G.beams.push(b); c._beam = b;
+        if (present(fs) && along > 0 && perp < 44) {
+          b.pend = true;                           // damage lands after a short grace so a beam fired back can still meet it
+          const rival = G.clash ? null : G.beams.find(o => o !== b && o.owner === fs && o.pend && !o.cl);
+          if (rival) startClash(rival, b);
+        } else missAt(t.x, t.y - 50, S);
         c.phase = 'fire'; c.t = 0; return; }
+      if (c._beam && c._beam.cl) return;           // locked in a clash (or surging out of one): the cast stays alive until it is settled
       if (c.t > 380) end(); return;
     }
     case 'projectile': case 'drain': case 'hex': case 'powder': case 'burst': case 'stars': case 'leaves': case 'wind': case 'multi': {
@@ -2537,7 +2547,131 @@ function updateWorld(dt) {
     if (!w.hit && present(fs)) { const d = Math.hypot(t.x - w.x, (t.y - w.y) * 1.6); if (Math.abs(d - w.r) < 34 || d < w.r) { w.hit = true; applyHit(w.owner, w.mv, w.u); } }
     if (w.r >= w.maxR) { if (!w.hit) missAt(t.x, t.y - 40, w.owner); G.waves.splice(i, 1); }
   }
-  for (let i = G.beams.length - 1; i >= 0; i--) { const b = G.beams[i]; b.t += dt; if (b.t >= b.life) G.beams.splice(i, 1); }
+  updateClash(dt);
+  for (let i = G.beams.length - 1; i >= 0; i--) {
+    const b = G.beams[i];
+    if (b.cl) continue;                                           // clash beams are driven by updateClash
+    b.t += dt;
+    if (b.pend) { b.grace -= dt; if (b.grace <= 0) landBeam(b); }
+    if (b.t >= b.life) { if (b.pend) landBeam(b); G.beams.splice(i, 1); }
+  }
+}
+/* =====================================================================
+   Beam clashes (Priori Incantatem style)
+   When both Pokémon fire beams at each other at about the same moment, the beams meet and lock.
+   The meeting point surges back and forth: the stronger beam (and a player's button-mashing)
+   pushes it toward the weaker Pokémon. If one side gets pushed back far enough its beam is
+   overwhelmed and the winner's beam blasts through; if the struggle runs too long, or the
+   beams are evenly matched, they cancel in a huge explosion that hurts both.
+   Everything here is plain numbers on G.clash and on the two beams, so the server can stream it.
+   ===================================================================== */
+const CLASH = {
+  grace: 140,        // ms a fired beam waits before its damage lands, so a beam fired back in that time can still meet it
+  sync: 340,         // ms a charged beam will hold fire for a rival beam that is about to fire
+  minMs: 1800,       // the lock lasts at least this long
+  fullMs: 4300,      // energy reaches 100% here: the struggle can no longer be decided by pushing, it ends
+  winAt: .1,         // the meeting point has to get this close to a Pokémon for it to lose (0 = at the Pokémon, .5 = middle)
+  drawBand: .3,      // at full energy, a meeting point within .5 ± this band ends in the cancel explosion
+  surgeScale: 1.2, powerScale: .9, mashPush: .09, damping: 2.2
+};
+const beamMight = b => {
+  const m = b.u, mv = b.mv, atk = mv.cat === 'P' ? m.stats.atk * stageMult(m.stages.atk) : m.stats.spa * stageMult(m.stages.spa);
+  return Math.max(1, mv.pow * (atk / 90) * (m.types.includes(mv.type) ? 1.25 : 1) * (.8 + .2 * m.hp / m.max));
+};
+const inClash = S => !!(G.clash && G.clash._b[S] && !G.clash.over);
+// Is the rival about to fire a beam of its own (so this beam should wait for it)?
+function beamRivalSoon(S, c, window) {
+  if (window <= 0 || !c.accOk || G.clash) return false;
+  const fs = other(S), oc = side(fs).cast;
+  if (!oc || oc.mv.anim !== 'beam' || oc._beam || !oc.accOk || !present(fs) || (oc.phase !== 'wind' && oc.phase !== 'go')) return false;
+  const left = (oc.phase === 'wind' ? WINDUP(oc.mv) - oc.t + 360 : 360 - oc.t);
+  return left > 0 && left <= window;           // when the rival is ready too, nobody waits: both fire
+}
+function landBeam(b) {
+  if (!b.pend) return; b.pend = false;
+  const sd = side(b.owner), landed = applyHit(b.owner, b.mv, b.u);
+  if (sd.cast && sd.cast._beam === b) sd.cast.landed = landed;
+}
+function startClash(b1, b2) {
+  const bA = b1.owner === 'A' ? b1 : b2, bB = b1.owner === 'A' ? b2 : b1;
+  const cl = { t: 0, p: .5, v: 0, e: 0, over: false, mash: { A: 0, B: 0 }, surgeT: 450, surge: 0, aiT: { A: 0, B: 0 }, nA: 0, nB: 0,
+    mA: beamMight(bA), mB: beamMight(bB), x: 0, y: 0, k: 0, _b: { A: bA, B: bB } };
+  for (const b of [bA, bB]) { b.pend = false; b.cl = 1; b.t = b.life * .45; }
+  G.clash = cl; placeClash(cl); G.lastDmgT = G.time;
+  VFX.clashStart(cl.x, cl.y, 'A', bA.mv, 'B', bB.mv);
+  logLine(`${bA.u.name}'s ${bA.mv.name} and ${bB.u.name}'s ${bB.mv.name} collide! Beam struggle!`, 't');
+}
+// aim both beams at the meeting point
+function placeClash(cl) {
+  const bA = cl._b.A, bB = cl._b.B, sA = side('A'), sB = side('B');
+  bA.x = sA.x + sA.face * 18; bA.y = sA.y - 32; bB.x = sB.x + sB.face * 18; bB.y = sB.y - 32;
+  cl.x = bA.x + (bB.x - bA.x) * cl.p; cl.y = bA.y + (bB.y - bA.y) * cl.p;
+  for (const b of [bA, bB]) { b.ang = Math.atan2(cl.y - b.y, cl.x - b.x); b.clip = Math.hypot(cl.x - b.x, cl.y - b.y); b.t = b.life * .45; }
+}
+function clashBroken(S) {
+  const sd = side(S), m = act(S), c = sd.cast;
+  return !c || c._beam !== G.clash._b[S] || sd.state !== 'idle' || sd.stun > 0 || m.hp <= 0 || m.status === 'slp' || m.status === 'frz';
+}
+function updateClash(dt) {
+  for (const b of G.beams.slice()) if (b.cl >= 2) driveBeamAfterClash(b, dt);   // beams retracting or surging after a clash was settled
+  const cl = G.clash; if (!cl) return;
+  const k = dt / 1000;
+  if (G.phase !== 'battle') { endClash('draw', null); return; }
+  const brokeA = clashBroken('A'), brokeB = clashBroken('B');
+  if (brokeA || brokeB) { endClash(brokeA && brokeB ? 'draw' : 'win', brokeA && brokeB ? null : brokeA ? 'B' : 'A'); return; }
+  cl.t += dt; cl.e = Math.min(1, cl.t / CLASH.fullMs);
+  // players push by pressing move buttons; the AI "mashes" at a rate set by its level
+  for (const S of ['A', 'B']) if (controlledByAI(S)) { cl.aiT[S] -= dt; if (cl.aiT[S] <= 0) { cl.aiT[S] = 1000 / aiK(S, 2.2, 4.2, 7.5) * (.6 + Math.random() * .8); cl.mash[S]++; } }
+  const push = cl.mash.A - cl.mash.B; cl.mash.A = cl.mash.B = 0;
+  cl.surgeT -= dt; if (cl.surgeT <= 0) { cl.surgeT = 420 + Math.random() * 520; cl.surge = (Math.random() < .5 ? -1 : 1) * (.45 + Math.random() * .65) * (.7 + cl.e * .8); }
+  cl.surge *= Math.pow(.18, k);
+  const lead = (cl.mA - cl.mB) / (cl.mA + cl.mB);                                      // -1 … 1: who has the stronger beam
+  const acc = lead * CLASH.powerScale + cl.surge * CLASH.surgeScale;
+  cl.v += acc * k * 2.2 + push * CLASH.mashPush; cl.v *= Math.max(0, 1 - CLASH.damping * k); cl.v = clamp(cl.v, -1.4, 1.4);   // each button press is a small shove
+  cl.p = clamp(cl.p + cl.v * k, 0, 1);
+  placeClash(cl); G.lastDmgT = G.time;
+  if (cl.t > CLASH.minMs) {
+    if (cl.p >= 1 - CLASH.winAt) return endClash('win', 'A');
+    if (cl.p <= CLASH.winAt) return endClash('win', 'B');
+  }
+  if (cl.e >= 1) {
+    if (Math.abs(cl.p - .5) <= CLASH.drawBand) endClash('draw', null);
+    else endClash('win', cl.p > .5 ? 'A' : 'B');
+  }
+}
+function endClash(kind, win) {
+  const cl = G.clash; if (!cl || cl.over) return; cl.over = true; G.clash = null;
+  const bA = cl._b.A, bB = cl._b.B, x = cl.x, y = cl.y;
+  if (kind === 'draw') {
+    VFX.clashEnd(x, y, 'draw', '', '', bA.mv, bB.mv);
+    logLine(`The beams cancel out in a huge explosion!`, 't');
+    for (const b of [bA, bB]) { b.cl = 0; b.pend = false; b.t = b.life; const sd = side(b.owner); const a = Math.atan2(sd.y - y, sd.x - x); sd.kbx += Math.cos(a) * 520; sd.kby += Math.sin(a) * 520; sd.hit = 350; if (sd.cast && sd.cast._beam === b) { sd.cast.landed = false; sd.cast.t = 9999; sd.cast._beam = null; } }
+    G.beams = G.beams.filter(b => b !== bA && b !== bB);
+    if (G.phase === 'battle') for (const S of ['A', 'B']) { const b = S === 'A' ? bA : bB; applyHit(S, b.mv, b.u, { scale: .3 }); }   // the blast hurts both a little
+    G.hudDirty = true; return;
+  }
+  const wb = cl._b[win], lb = cl._b[other(win)];
+  VFX.clashEnd(x, y, 'win', win, other(win), wb.mv, lb.mv);
+  logLine(`${wb.u.name}'s ${wb.mv.name} overpowers ${lb.u.name}'s ${lb.mv.name}!`, 't');
+  lb.cl = 2; lb.pend = false; lb.from = Math.hypot(x - lb.x, y - lb.y);      // loser's beam is driven back into its owner
+  wb.cl = 3; wb.pend = false;                                               // winner's beam surges through to the loser
+  const lsd = side(lb.owner); if (lsd.cast && lsd.cast._beam === lb) { lsd.cast.landed = false; }
+}
+function driveBeamAfterClash(b, dt) {
+  const k = dt / 1000, sd = side(b.owner), foe = side(other(b.owner));
+  b.x = sd.x + sd.face * 18; b.y = sd.y - 32;
+  if (b.cl === 2) {                                   // retreating
+    b.clip -= 2600 * k; b.t = b.life * .45;
+    if (b.clip <= 0) { b.cl = 0; b.t = b.life; }
+  } else if (b.cl === 3) {                            // surging at the loser
+    const tx = foe.x, ty = foe.y - 32, dd = Math.hypot(tx - b.x, ty - b.y);
+    b.ang = Math.atan2(ty - b.y, tx - b.x); b.clip = Math.min(dd, b.clip + 2800 * k); b.t = b.life * .45;
+    if (b.clip >= dd - 4) {
+      b.cl = 0; b.t = b.life * .45; b.clip = 0;
+      const landed = applyHit(b.owner, b.mv, b.u, { scale: 1.3 }); if (sd.cast && sd.cast._beam === b) sd.cast.landed = landed;   // an overpowered hit
+      VFX.clashBreak(b.owner, b.mv);
+    }
+  }
 }
 const groupState = {};
 function groupHit(p) {
@@ -2748,7 +2882,7 @@ function megaEvolve(S) { return zMove(S); }
 
 /* ---------- Dodge: a quick dash in the direction you are moving, with a brief moment of invulnerability ---------- */
 const DODGE_CD = 1400, DODGE_IFRAMES = 280;
-function canDodge(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && sd.state === 'idle' && !(sd.dodgeCd > 0) && sd.stun <= 0 && m && m.hp > 0 && m.status !== 'slp' && m.status !== 'frz'; }
+function canDodge(S) { const sd = side(S), m = act(S); return !!G && G.phase === 'battle' && !(G.clash && inClash(S)) && sd.state === 'idle' && !(sd.dodgeCd > 0) && sd.stun <= 0 && m && m.hp > 0 && m.status !== 'slp' && m.status !== 'frz'; }
 function dodge(S, dx, dy) {
   if (!canDodge(S)) return false;
   const sd = side(S); dx = +dx || 0; dy = +dy || 0; let l = Math.hypot(dx, dy);
@@ -2799,6 +2933,7 @@ function decideByHp(reason) {
   return Math.abs(a - b) < .001 ? 'draw' : a > b ? 'A' : 'B';
 }
 function endBattle(w, big) {
+  if (G.clash) { G.clash.over = true; G.clash = null; } G.beams = G.beams.filter(b => !b.cl);   // a beam lock never outlives the battle
   if (G.phase === 'over') return;
   G.phase = 'over'; G.winner = w; G.shots.length = G.marks.length = G.waves.length = 0;
   logLine(w === 'draw' ? 'The battle ended in a draw!' : `${TEAM_NAME[w]} wins the battle!`, 't');
@@ -2905,7 +3040,7 @@ const MOVE_FX = {
   Normal: { col: '#ffffff', core: '#ffffff', scar: 'trail' }, Dark: { col: '#6a5a7a', core: '#d9cde8', scar: 'crack' }
 };
 const fxOf = mv => MOVE_FX[mv.type] || MOVE_FX.Normal;
-const head = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 }; };
+const head = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 * bodyScaleOf(S) }; };
 function spark(x, y, o = {}) { parts.push({ x, y, vx: o.vx ?? (Math.random() - .5) * 120, vy: o.vy ?? (Math.random() - .5) * 120, g: o.g ?? 0, life: o.life ?? 500, t: 0, color: o.color || '#fff', size: o.size || 1, shape: o.shape || 'sq', add: !!o.add }); }
 function burstAt(x, y, color, n = 16, spd = 260, size = 1) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = spd * (.35 + Math.random() * .8); spark(x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, g: 260, life: 320 + Math.random() * 320, color: Math.random() < .3 ? '#ffffff' : color, size: size + (Math.random() < .3 ? 1 : 0) }); } }
 function floatText(x, y, text, o = {}) {
@@ -3018,6 +3153,7 @@ function actorLook(S) {
   if (sd.state === 'leaving') { const q = sd.stateT / 360; scale = 1 - q; white = Math.min(1, q * 3); }
   if (sd.state === 'fainting') { const q = sd.stateT / 1100; gray = q > .25; if (q < .25) white = Math.floor(q * 24) % 2 ? .9 : 0; sink = q > .25 ? (q - .25) / .75 : 0; alpha = 1 - Math.max(0, (q - .4) / .6); }
   if (sd.state === 'mega') { const q = sd.stateT / 1500; white = q < .5 ? (Math.floor(q * 30) % 2 ? .9 : .2) : Math.max(0, 1 - (q - .5) * 3); }
+  scale *= sizeScaleOf(m.name, megaNow);          // size class from the official height (visual only)
   return { sd, m, sp, megaNow, scale, alpha, white, gray, sink };
 }
 // footprint size in art pixels: generated art is 1:1, custom art is 2 sprite pixels per art pixel
@@ -3038,7 +3174,7 @@ function drawActorSprite(S) {
   const { sd, m, sp, megaNow, scale, alpha, white, gray, sink } = L, c = sctx;
   const st = m.status, frozen = st === 'frz', asleep = st === 'slp', moving = Math.hypot(sd.vx, sd.vy) > 40;
   const hopArt = (sd.hop > 0 ? Math.sin(sd.hop * Math.PI) * 6 * (sd.hopK || 1) : 0) + (moving && !sp.custom ? Math.floor(sd.walk / 16) % 2 : 0);
-  const sx = (ax(sd.x) - OX) * cam.pz, sy = (ay(sd.y) - OY) * cam.pz;
+  const sx = (ax(sd.x) - OX) * cam.pz + clashJitter(S), sy = (ay(sd.y) - OY) * cam.pz;
   const flashOn = sd.hit > 0 && Math.floor(sd.hit / 55) % 2 === 0;
   if (sp.custom) {
     // Front or back view: show the back while heading up the screen (away from the camera).
@@ -3103,7 +3239,18 @@ function drawShot(p) {
   aDisc(i, j, r, f.col); aDisc(i - 1, j - 1, Math.max(1, r - 2), f.core);
 }
 function drawBeam(b) {
-  const R = MFX[b.mv.name]; if (R && R.beam) { try { R.beam(b); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
+  if (b.cl) {   // locked in a beam clash (1), driven back (2) or surging through (3): draw the move's own beam, cut off at the meeting point
+    if (!(b.clip > 0)) return;
+    b.t = b.life * .45;
+    const i0 = ax(b.x) - OX, j0 = ay(b.y) - OY;
+    bctx.save(); bctx.translate(i0, j0); bctx.rotate(b.ang); bctx.beginPath(); bctx.rect(-24, -70, b.clip / 2 + 24, 140); bctx.clip(); bctx.rotate(-b.ang); bctx.translate(-i0, -j0);
+    const R = MFX[b.mv.name]; try { if (R && R.beam) R.beam(b); else drawBeamDefault(b); } catch (e) { console.error(e); }
+    bctx.restore(); bctx.globalAlpha = 1; return;
+  }
+  drawBeamDefault(b);
+}
+function drawBeamDefault(b) {
+  const R = MFX[b.mv.name]; if (!b.cl && R && R.beam) { try { R.beam(b); } catch (e) { console.error(e); } bctx.globalAlpha = 1; return; }
   const f = fxOf(b.mv), q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1;
   const n = Math.round(450 * grow), i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, di = Math.cos(b.ang), dj = Math.sin(b.ang), w = Math.round(b.w / 2 * (1 + Math.sin(clock.t / 25) * .12));
   bctx.globalCompositeOperation = 'lighter';
@@ -3180,7 +3327,7 @@ function draw(dt) {
   for (const S of order) drawActorSprite(S);
   // effects layer above the sprites
   bctx = fctx; bctx.clearRect(0, 0, fbuf.width, fbuf.height);
-  if (G) { for (const p of G.shots) drawShot(p); for (const bm of G.beams) drawBeam(bm); }
+  if (G) { for (const p of G.shots) drawShot(p); for (const bm of G.beams) drawBeam(bm); drawClash(); }
   drawEnts(false);
   drawWorldFx();
   drawAmbient(dt);
@@ -3203,6 +3350,7 @@ function draw(dt) {
     if (f.kind === 'call') { c.save(); c.globalAlpha = q > .8 ? (1 - q) / .2 : 1; textAt(c, f.text, toScreenX(f.x), toScreenY(f.y), Math.round(15 * zs), '#ff6b8a', '#2a0a14', { italic: true, align: f.align }); c.restore(); }
   }
   const unit = DH / 560;
+  drawClashMeter(c, DW, DH, unit);
   if (banner.text && clock.t - banner.t < 1500) { const q = (clock.t - banner.t) / 1500; c.save(); c.globalAlpha = q > .8 ? (1 - q) / .2 : 1; textAt(c, banner.text, DW / 2, DH * .3 - Math.min(1, q * 6) * 6 * unit, Math.round(19 * unit), banner.color, '#2a1206', { italic: true }); c.restore(); }
   if (bigText.text && clock.t - bigText.t < bigText.life) {
     const q = (clock.t - bigText.t) / bigText.life, sc = q < .15 ? Ease.outBack(q / .15) : 1, fs = Math.min(DW / (bigText.text.length > 14 ? 16 : 7), 76 * unit);
@@ -3396,7 +3544,7 @@ function powStar(i, j, r, col, q) {   // comic-book impact star
 }
 function speedLines(x, y, ang, n, len, col) { for (let k = 0; k < n; k++) { const o = (Math.random() - .5) * 40, ca = Math.cos(ang), sa = Math.sin(ang); P(x - sa * o, y + ca * o, { vx: -ca * rnd2(200, 400), vy: -sa * rnd2(200, 400), life: 180, color: col, shape: 'sq', size: 1 }); } }
 function crackBurst(x, y, n = 5, len = 26) { for (let k = 0; k < n; k++) addScar('crack', x + (Math.random() - .5) * len, y + (Math.random() - .5) * len * .5); }
-const headOf = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 }; };
+const headOf = S => { const sd = side(S); return { x: sd.x, y: sd.y - 44 * bodyScaleOf(S) }; };
 const footOf = S => { const sd = side(S); return { x: sd.x, y: sd.y }; };
 
 //# sourceURL=movefx_core.js
@@ -3485,7 +3633,8 @@ const BEAM = (ramp, wm = 1, wob = 0, spray) => b => {
   beamPx(ax(b.x) - OX, ay(b.y) - OY, b.ang, len, w, ramp, fade, wob);
   if (spray && q < .8) spray(b, len * 2);
 };
-const beamEnd = (b, wl) => ({ x: b.x + Math.cos(b.ang) * Math.min(wl, 300), y: b.y + Math.sin(b.ang) * Math.min(wl, 300) });
+const bcap = b => (b.cl ? Math.max(1, b.clip) : 300);   // during a clash the beam only reaches the meeting point
+const beamEnd = (b, wl) => ({ x: b.x + Math.cos(b.ang) * Math.min(wl, 300, bcap(b)), y: b.y + Math.sin(b.ang) * Math.min(wl, 300, bcap(b)) });
 
 /* =====================================================================
    NORMAL
@@ -3510,7 +3659,7 @@ def('Splash', { exec: S => { const f = footOf(S); for (let k = 0; k < 3; k++) se
    FIRE
    ===================================================================== */
 def('Ember', { charge: CH.rise('fire', 8), shot: SHOT.fireball(3), impact: S => { const h = headOf(S); emit(h.x, h.y + 10, 16, { speed: [40, 160], life: [300, 600], ramp: 'fire', size: [1, 2], g: 100, add: true }); addScar('scorch', footOf(S).x, footOf(S).y); } });
-def('Flamethrower', { charge: CH.orb('fire', 5, 320), beam: BEAM('fire', 1.1, 3, (b, wl) => { for (let k = 0; k < 4; k++) { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: Math.cos(b.ang) * 120 + (Math.random() - .5) * 80, vy: Math.sin(b.ang) * 120 - 40, life: [250, 500][k % 2], ramp: 'fire', size: 3, size2: 1, add: true }); } }),
+def('Flamethrower', { charge: CH.orb('fire', 5, 320), beam: BEAM('fire', 1.1, 3, (b, wl) => { for (let k = 0; k < 4; k++) { const d = Math.random() * Math.min(wl, 300, bcap(b)); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: Math.cos(b.ang) * 120 + (Math.random() - .5) * 80, vy: Math.sin(b.ang) * 120 - 40, life: [250, 500][k % 2], ramp: 'fire', size: 3, size2: 1, add: true }); } }),
   impact: S => { IMP.explode('fire', 16)(S); const h = headOf(S); ent(1000, q => { if (Math.random() < .5) P(h.x + (Math.random() - .5) * 30, h.y + 30, { vy: -80, life: 500, ramp: 'fire', size: 2, size2: 1, add: true }); }); addScar('scorch', footOf(S).x, footOf(S).y); } });
 def('Fire Blast', { charge: S => { dim(.4, 1400); CH.orb('fire', 7, 300)(S); CH.rise('fire', 20)(S); },
   shot: SHOT.fireball(5),
@@ -3582,7 +3731,7 @@ def('Ice Punch', { charge: both(CH.fist('#bff4ff', 1), CH.gather('ice', 10, 30, 
 def('Aurora Beam', { charge: CH.gather('aurora', 18, 46, 'star'), beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .18), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
     const cols = ['#ff9ad8', '#c89aff', '#9ad0ff', '#9affd8', '#fff09a']; for (let k = 0; k < len; k++) for (let s = -4; s <= 4; s++) { const idx = ((((s + 4) >> 1) + Math.floor((k - clock.t / 20) / 6)) % 5 + 5) % 5, o = s + Math.sin(k / 8 - clock.t / 60) * 2; PX(i0 + ca * k - sa * o, j0 + sa * k + ca * o, cols[idx], fade * (s === 0 ? 1 : .8)); } bctx.globalAlpha = 1; },
   impact: both(IMP.sparkle('aurora', 22), IMP.shatter(8)) });
-def('Ice Beam', { charge: CH.gather('ice', 18, 46, 'star'), beam: BEAM('ice', 1, 1, (b, wl) => { const d = Math.random() * Math.min(wl, 300); const x = b.x + Math.cos(b.ang) * d, y = b.y + Math.sin(b.ang) * d; P(x, y, { life: 500, ramp: 'ice', shape: 'shard', size: 2, rot: Math.random() * 6.28 }); }),
+def('Ice Beam', { charge: CH.gather('ice', 18, 46, 'star'), beam: BEAM('ice', 1, 1, (b, wl) => { const d = Math.random() * Math.min(wl, 300, bcap(b)); const x = b.x + Math.cos(b.ang) * d, y = b.y + Math.sin(b.ang) * d; P(x, y, { life: 500, ramp: 'ice', shape: 'shard', size: 2, rot: Math.random() * 6.28 }); }),
   impact: S => { IMP.shatter(20)(S); const f = footOf(S); ent(1400, q => { const a = 1 - Math.max(0, q - .7) * 3.3; for (let k = 0; k < 7; k++) { const ang = k / 7 * 6.28; spikePx(bx(f.x + Math.cos(ang) * 16), by(f.y + Math.sin(ang) * 7), 6 + (k % 3) * 4, 2, RAMP.ice, a * Math.min(1, q * 6)); } }, { under: true }); } });
 def('Blizzard', { charge: S => { dim(.45, 1600, '20,30,48'); CH.gather('ice', 24, 70, 'star')(S); },
   exec: S => { for (let k = 0; k < 60; k++) setTimeoutGame(k * 12, () => { const sd = side(S); P(sd.x + (Math.random() - .5) * 600, -40, { vx: rnd2(200, 400) * sd.face, vy: rnd2(200, 380), life: 1200, ramp: 'ice', shape: Math.random() < .5 ? 'star' : 'sq', size: rnd2(1, 3) | 0 }); }); },
@@ -3681,7 +3830,7 @@ def('Confuse Ray', { shot: SHOT.confuse(), impact: S => { const h = headOf(S); e
 /* =====================================================================
    DRAGON
    ===================================================================== */
-def('Dragon Breath', { charge: CH.orb('dragon', 5, 300), beam: BEAM(['#ffffff', '#e8fff0', '#a8ffd0', '#7d6bff', '#4a3ad0', '#24187a'], 1.2, 3, (b, wl) => { for (let k = 0; k < 3; k++) { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: (Math.random() - .5) * 120, vy: -60, life: 400, ramp: k % 2 ? 'dragon' : ['#ffffff', '#c8ffe0', '#5ee08a', '#2a8a5a'], size: 2, size2: 1, add: true }); } }),
+def('Dragon Breath', { charge: CH.orb('dragon', 5, 300), beam: BEAM(['#ffffff', '#e8fff0', '#a8ffd0', '#7d6bff', '#4a3ad0', '#24187a'], 1.2, 3, (b, wl) => { for (let k = 0; k < 3; k++) { const d = Math.random() * Math.min(wl, 300, bcap(b)); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { vx: (Math.random() - .5) * 120, vy: -60, life: 400, ramp: k % 2 ? 'dragon' : ['#ffffff', '#c8ffe0', '#5ee08a', '#2a8a5a'], size: 2, size2: 1, add: true }); } }),
   impact: both(IMP.explode('dragon', 16), IMP.zap(3, '#a8ffd0')) });
 def('Dragon Claw', { charge: S => ent(300, q => glow(bx(headOf(S).x + side(S).face * 12), by(headOf(S).y + 8), 12, '#7d6bff', .7)), dash: DASH.engulf('dragon', 2), impact: both(IMP.claws('#a99bff', 3, 44, 3), IMP.burst('dragon', 18, [100, 260])) });
 def('Dragon Pulse', { charge: S => { CH.gather('dragon', 20, 54)(S); dim(.35, 1100, '10,6,30'); }, beam: b => { const q = b.t / b.life, grow = Math.min(1, q / .2), fade = q > .7 ? (1 - q) / .3 : 1, len = 450 * grow, i0 = ax(b.x) - OX, j0 = ay(b.y) - OY, ca = Math.cos(b.ang), sa = Math.sin(b.ang);
@@ -3695,7 +3844,7 @@ def('Dragon Dance', { exec: S => { const sd = side(S); ent(1000, q => { for (let
    STEEL
    ===================================================================== */
 def('Metal Claw', { charge: S => ent(260, q => { const h = headOf(S); PX(bx(h.x + side(S).face * 14), by(h.y + 4), '#ffffff'); glow(bx(h.x + side(S).face * 14), by(h.y + 4), 6, '#ffffff', .6 * (1 - q)); }), impact: both(IMP.claws('#e2ecf6', 3, 32, 2), IMP.sparkle('steel', 10)) });
-def('Flash Cannon', { charge: S => { CH.orb('steel', 6, 320)(S); dim(.3, 1000); }, beam: BEAM('steel', 1.3, 0, (b, wl) => { const d = Math.random() * Math.min(wl, 300); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { life: 300, color: '#ffffff', shape: 'star', size: 2, add: true }); }),
+def('Flash Cannon', { charge: S => { CH.orb('steel', 6, 320)(S); dim(.3, 1000); }, beam: BEAM('steel', 1.3, 0, (b, wl) => { const d = Math.random() * Math.min(wl, 300, bcap(b)); P(b.x + Math.cos(b.ang) * d, b.y + Math.sin(b.ang) * d, { life: 300, color: '#ffffff', shape: 'star', size: 2, add: true }); }),
   exec: S => screenFlash('#ffffff', .4), impact: both(IMP.explode('steel', 20), IMP.sparkle('steel', 16)) });
 def('Iron Tail', { charge: S => ent(300, q => { const sd = side(S); glow(bx(sd.x - sd.face * 14), by(sd.y - 20), 10, '#ffffff', .6); }), impact: S => { const h = headOf(S); ent(380, q => { for (let k = 0; k < 40 * Math.min(1, q * 3); k++) { const a = Math.PI * (1.1 + k / 40 * .9), r = 26; aRect(bx(h.x + Math.cos(a) * r), by(h.y + 30 + Math.sin(a) * r), 3, 3, k > 34 ? '#ffffff' : '#cad8e6', 1 - Math.max(0, q - .6) * 2.5); } }); setTimeoutGame(140, () => { IMP.pow('#ffffff', 22)(S); IMP.sparkle('steel', 14)(S); VFX.shake(10, 300); }); } });
 def('Iron Defense', { exec: S => { const sd = side(S); ent(900, q => { const i = bx(sd.x), j = by(sd.y - 30); for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28 + q * 2; aLine(i + Math.cos(a) * 22, j + Math.sin(a) * 26, i + Math.cos(a + 1.05) * 22, j + Math.sin(a + 1.05) * 26, '#e2ecf6', 1 - q, 2); } aRect(i - 20 + q * 40, j - 30, 3, 60, '#ffffff', .7 * (1 - q)); }); IMP.sparkle('steel', 14)(S); } });
@@ -4696,6 +4845,236 @@ sig('Charm', {
 });
 
 //# sourceURL=movefx_signature3.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 18: Pokémon size classes (visual only)
+   Each Pokémon's official Gen 1 height puts it in one of six size classes and its battle
+   sprite is drawn at that class's scale. The smallest class is the normal 1x sprite, so every
+   Pokémon stays easy to see. Hitboxes, stats and balance are not touched: this is drawing only.
+     XS  up to 0.4 m     x1.00   Pikachu, Diglett, Eevee, Mew
+     S   0.4 - 0.8 m     x1.10   Charmander, Squirtle, Vulpix
+     M   0.8 - 1.3 m     x1.22   Wartortle, Raichu, Gengar
+     L   1.3 - 2.0 m     x1.36   Charizard, Mewtwo, Blastoise
+     XL  2.0 - 4.0 m     x1.52   Snorlax, Lapras, Dragonair, Arbok
+     XXL over 4 m        x1.70   only Onix and Gyarados
+   ===================================================================== */
+const HEIGHT_M = { 'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
+const MEGA_HEIGHT_M = { Venusaur: 2.4, Beedrill: 1.4, Pidgeot: 2.2, Slowbro: 2.0, Kangaskhan: 2.2, Aerodactyl: 2.1, Mewtwo: 2.3, Pinsir: 1.7 };
+const SIZE_CLASSES = [
+  { id: 'XS', max: .4, scale: 1.00, label: 'Extra small' }, { id: 'S', max: .79, scale: 1.10, label: 'Small' }, { id: 'M', max: 1.3, scale: 1.22, label: 'Medium' },
+  { id: 'L', max: 2.0, scale: 1.36, label: 'Large' }, { id: 'XL', max: 4.0, scale: 1.52, label: 'Extra large' }, { id: 'XXL', max: 1e9, scale: 1.70, label: 'Huge' }
+];
+function sizeClassOf(name, mega) {
+  const h = (mega && MEGA_HEIGHT_M[name]) || HEIGHT_M[name] || 1.0;
+  return SIZE_CLASSES.find(c => h <= c.max + 1e-9) || SIZE_CLASSES[2];
+}
+const sizeScaleOf = (name, mega) => sizeClassOf(name, mega).scale;
+// Scale of the Pokémon currently out on side S (1 when nobody is out). Used to lift floating text and effects to the head.
+function bodyScaleOf(S) { try { const m = act(S); return m ? sizeScaleOf(m.name, !!m.mega) : 1; } catch (e) { return 1; } }
+
+//# sourceURL=sizes.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 19: beam clash visuals
+   The battle logic (sim.js, also run by the server) locks two beams together and moves the
+   meeting point (G.clash). This file only draws it:
+     · both beams, each in its own move animation, cut off at the meeting point
+     · a two-tone energy ball with swirling arms, crackling arcs and a type flavour per side
+     · a mix of both types where they matter (Fire + Water makes steam, and so on)
+     · the tug-of-war meter, muzzle flares, screen shake and camera punch
+     · the finales: an overpowering blast, or both beams cancelling in a huge explosion
+   ===================================================================== */
+const CLS = { id: 0, last: 0, lastX: 0, lastY: 0, ring: 0, shake: 0, dim: 0, punch: 0, pulse: 0, arcs: [] };
+const clRamp = mv => RR(TYPE_RAMP[mv.type] || 'normal');
+const clashBeamsNow = () => { const o = {}; if (G) for (const b of G.beams) if (b.cl === 1) o[b.owner] = b; return o; };
+const clashActive = S => !!(G && G.clash && G.beams.some(b => b.cl === 1 && b.owner === S));
+
+// Pokémon in a clash tremble with the effort
+function clashJitter(S) {
+  if (!clashActive(S)) return 0;
+  const e = (G.clash.e || 0), k = REDUCED ? .3 : 1;
+  return (Math.random() - .5) * 2 * (.6 + e * 2.2) * k * (cam.pz || 1) * .5;
+}
+
+/* ---------- type flavours: what each side throws into the struggle ---------- */
+// (x, y) = meeting point in world units, e = struggle energy 0…1, f = frame scale (≈1 at 60 fps)
+const CL_FLAVOR = {
+  Fire: (x, y, r, e, f) => { if (Math.random() < .9 * f) emit(x, y, 2, { speed: [20, 110], ang: -Math.PI / 2, spread: 2.2, vy: -40, life: [380, 760], ramp: 'fire', size: [1, 2], size2: 1, add: true, r: 12 }); if (Math.random() < .12 * f) P(x, y, { life: 520, ramp: 'fire', shape: 'ring', size: 3, size2: 20 + e * 14, add: true }); },
+  Water: (x, y, r, e, f) => { emit(x, y, 2, { speed: [60, 200], g: 380, life: [380, 700], ramp: 'water', shape: 'drop', size: [1, 2], size2: 1, vy: -90 }); if (Math.random() < .5 * f) emit(x, y, 1, { speed: [10, 50], life: [500, 900], ramp: 'water', shape: 'disc', size: 1, size2: 4, add: true, r: 14 }); },
+  Ice: (x, y, r, e, f) => { if (Math.random() < .7 * f) emit(x, y, 1, { speed: [60, 190], life: [420, 800], ramp: 'ice', shape: 'shard', size: [1, 2], size2: 1, spin: 6, g: 60 }); if (Math.random() < .8 * f) emit(x, y, 1, { speed: [20, 80], life: [500, 900], ramp: 'ice', shape: 'star', size: 1, size2: 2, add: true, r: 16 }); },
+  Psychic: (x, y, r, e, f) => { if (Math.random() < .22 * f) P(x, y, { life: 620, ramp: r, shape: 'ring', size: 3, size2: 22 + e * 20, add: true }); emit(x, y, 1, { speed: [30, 120], life: [400, 800], ramp: 'psychic', shape: 'plus', size: 1, add: true }); },
+  Bug: (x, y, r, e, f) => { emit(x, y, 1, { speed: [50, 170], life: [320, 650], ramp: 'bug', shape: 'star', size: 1, size2: 2, add: true }); if (Math.random() < .4 * f) emit(x, y, 1, { speed: [40, 140], life: [200, 380], color: '#fff07a', shape: 'zap', size: 1, add: true }); },
+  Dragon: (x, y, r, e, f) => { const a = clock.t / 90; for (const s of [0, Math.PI]) P(x + Math.cos(a + s) * (14 + e * 8), y + Math.sin(a + s) * (14 + e * 8) * .8, { life: 520, ramp: 'dragon', shape: 'star', size: 1, size2: 2, add: true, vx: Math.cos(a + s) * 40, vy: Math.sin(a + s) * 40 }); if (Math.random() < .5 * f) emit(x, y, 1, { speed: [60, 170], life: [380, 700], ramp: 'dragon', size: 2, size2: 1, add: true }); },
+  Steel: (x, y, r, e, f) => { emit(x, y, 2, { speed: [120, 320], g: 240, life: [240, 520], ramp: 'steel', size: [1, 2], size2: 1, add: true }); if (Math.random() < .3 * f) P(x + (Math.random() - .5) * 20, y + (Math.random() - .5) * 14, { life: 220, color: '#ffffff', shape: 'star', size: 2, size2: 1, add: true }); },
+  Normal: (x, y, r, e, f) => { emit(x, y, 1, { speed: [60, 220], life: [320, 640], ramp: 'gold', shape: 'star', size: 1, size2: 2, add: true }); if (Math.random() < .5 * f) emit(x, y, 1, { speed: [100, 260], life: [200, 420], color: '#ffffff', size: 1, add: true }); }
+};
+const clFlavorOf = (type, ramp, x, y, e, f) => { (CL_FLAVOR[type] || ((x, y, r, e, f) => emit(x, y, 2, { speed: [60, 200], life: [320, 640], ramp: r, size: [1, 2], size2: 1, add: true })))(x, y, ramp, e, f); };
+// Mixed types: what happens where the two meet
+function clComboFx(tA, tB, x, y, e, f) {
+  const has = t => tA === t || tB === t, steam = has('Fire') && (has('Water') || has('Ice'));
+  if (steam) {   // Fire meets Water or Ice: a billowing steam cloud
+    if (Math.random() < (.55 + e * .5) * f) emit(x, y, 1, { speed: [10, 60], ang: -Math.PI / 2, spread: 2.6, life: [700, 1300], ramp: 'smoke', shape: 'disc', size: 2, size2: 6 + e * 3, r: 16 });
+    if (Math.random() < .5 * f) emit(x, y, 1, { speed: [30, 90], ang: -Math.PI / 2, spread: 3, life: [500, 900], color: '#ffffff', shape: 'disc', size: 1, size2: 4, add: true, r: 12 });
+  }
+  if (has('Water') && has('Ice') && Math.random() < .5 * f) emit(x, y, 1, { speed: [30, 120], g: 200, life: [500, 900], color: '#e8fbff', shape: 'star', size: 1, size2: 2 });
+  if (has('Psychic') && has('Dragon') && Math.random() < .4 * f) P(x, y, { life: 560, color: '#c8a0ff', shape: 'ring', size: 4, size2: 26, add: true });
+  if (has('Steel') && (has('Fire') || has('Normal')) && Math.random() < .5 * f) emit(x, y, 2, { speed: [160, 340], g: 300, life: [240, 480], ramp: 'gold', size: 1, add: true });
+}
+
+/* ---------- per frame: the locked beams ---------- */
+function drawClash() {
+  const cl = G && G.clash; if (!cl) { CLS.id = 0; return; }
+  const bs = clashBeamsNow(), bA = bs.A, bB = bs.B; if (!bA || !bB) return;
+  const t = clock.t, dt = CLS.last ? clamp(t - CLS.last, 0, 60) : 16, f = dt / 16.7; CLS.last = t;
+  if (CLS.id !== cl.id) { CLS.id = cl.id; CLS.lastX = cl.x; CLS.lastY = cl.y; CLS.ring = 0; CLS.shake = 0; CLS.dim = 0; CLS.punch = 0; CLS.pulse = 0; }
+  const e = cl.e || 0, rA = clRamp(bA.mv), rB = clRamp(bB.mv), ci = bx(cl.x), cj = by(cl.y);
+  const aA = Math.atan2(bA.y - cl.y, bA.x - cl.x), aB = Math.atan2(bB.y - cl.y, bB.x - cl.x);
+  // surge detection: the ball is shoved along the line
+  const sp = Math.hypot(cl.x - CLS.lastX, cl.y - CLS.lastY) / Math.max(1, dt) * 1000; CLS.lastX = cl.x; CLS.lastY = cl.y;
+  CLS.pulse = Math.max(0, CLS.pulse - dt / 260); CLS.ring -= dt;
+  if (sp > 90 && CLS.ring <= 0) { CLS.ring = 240; CLS.pulse = 1; const towardB = Math.cos(aB) * (cl.x - CLS.lastX) < 0; ringFx(cl.x, cl.y, (towardB ? rA : rB)[2], 8, 54 + e * 30, 340); P(cl.x, cl.y, { life: 260, color: '#ffffff', shape: 'star', size: 3, size2: 1, add: true }); }
+  const R = 6 + e * 8 + CLS.pulse * 4 + Math.sin(t / 55) * 1.1;
+
+  // muzzle flares and the glow on each Pokémon
+  for (const [b, r] of [[bA, rA], [bB, rB]]) {
+    const oi = bx(b.x), oj = by(b.y), pr = 7 + Math.sin(t / 45 + (b.owner === 'A' ? 0 : 2)) * 1.5 + e * 3;
+    glow(oi, oj, pr * 1.8, r[3], .65); aDisc(oi, oj, pr * .6, r[2]); aDisc(oi, oj, pr * .3, '#ffffff');
+    ACTOR_GLOW[b.owner] = { col: r[2], a: .22 + e * .3, until: t + 140 };
+  }
+  // energy streaks racing along each beam toward the ball, and a swelling where the beam feeds the ball
+  bctx.globalCompositeOperation = 'lighter';
+  for (const [b, r, a] of [[bA, rA, aA], [bB, rB, aB]]) {
+    const len = Math.hypot(cl.x - b.x, cl.y - b.y) / 2, ca = Math.cos(a + Math.PI), sa = Math.sin(a + Math.PI), oi = bx(b.x), oj = by(b.y);
+    for (let k = 0; k < 7; k++) { const d = ((t * .42 + k * len / 7) % Math.max(20, len)), i = oi + ca * d, j = oj + sa * d; aRect(i - 1, j - 1, 3, 3, r[1], .55); aRect(i - ca * 5 - 1, j - sa * 5 - 1, 2, 2, r[2], .35); }
+    for (let k = 0; k < 16; k++) { const d = len - k * 2.2; if (d < 0) break; aDisc(oi + ca * d, oj + sa * d, Math.max(1.5, (R * .75) * (1 - k / 17)), r[3], .22); }
+  }
+  bctx.globalCompositeOperation = 'source-over';
+
+  // the ball: two-tone body, one half per beam
+  glow(ci, cj, R * 2.8, '#ffffff', .22 + e * .2); glow(ci, cj, R * 2.2, rA[3], .25); glow(ci, cj, R * 2.2, rB[3], .25);
+  for (const [a, r] of [[aA, rA], [aB, rB]]) {
+    bctx.save(); bctx.translate(ci, cj); bctx.rotate(a); bctx.beginPath(); bctx.rect(0, -R * 3, R * 3, R * 6); bctx.clip(); bctx.rotate(-a); bctx.translate(-ci, -cj);
+    aDisc(ci, cj, R, r[4]); aDisc(ci, cj, R * .86, r[3]); aDisc(ci - Math.cos(a) * R * .12, cj - Math.sin(a) * R * .12, R * .62, r[2]); aDisc(ci - Math.cos(a) * R * .2, cj - Math.sin(a) * R * .2, R * .38, r[1]);
+    bctx.restore();
+  }
+  aDisc(ci, cj, Math.max(2, R * .3), '#ffffff', .95 - Math.sin(t / 40) * .1);
+  for (let arm = 0; arm < 4; arm++) {   // swirling arms: one pair per type, spinning opposite ways
+    const r = arm % 2 ? rB : rA, dir = arm % 2 ? -1 : 1;
+    for (let k = 0; k < 15; k++) { const rad = R * (.5 + k / 15 * 1.9), ang = dir * t / (95 - e * 30) + k * .33 + arm * Math.PI / 2; aRect(ci + Math.cos(ang) * rad, cj + Math.sin(ang) * rad * .85, k < 6 ? 2 : 1, k < 6 ? 2 : 1, r[k < 8 ? 1 : 2], 1 - k / 18); }
+  }
+  for (let k = 0; k < 6; k++) { const ang = t / 70 + k * 1.047; aRect(ci + Math.cos(ang) * (R + 4), cj + Math.sin(ang) * (R + 4) * .85, 2, 2, '#ffffff', .9); }
+
+  // crackling arcs between the ball and the surroundings, more as the energy builds
+  const arcs = (1 + Math.floor(e * 3)) * (f > .5 ? 1 : 0);
+  for (let k = 0; k < arcs; k++) { const a = Math.random() * 6.28, L = R * 1.6 + Math.random() * (14 + e * 18), r = Math.random() < .5 ? rA : rB; zig(ci + Math.cos(a) * R * .6, cj + Math.sin(a) * R * .6, ci + Math.cos(a) * L, cj + Math.sin(a) * L * .85, r[2], 1, 3, '#ffffff'); }
+  bctx.globalAlpha = 1;
+
+  // particles: both flavours, a spray of sparks, and the combination effect
+  const rate = f * (1.4 + e * 2.6);
+  clFlavorOf(bA.mv.type, rA, cl.x + Math.cos(aA) * 6, cl.y + Math.sin(aA) * 6, e, f); clFlavorOf(bB.mv.type, rB, cl.x + Math.cos(aB) * 6, cl.y + Math.sin(aB) * 6, e, f);
+  clComboFx(bA.mv.type, bB.mv.type, cl.x, cl.y, e, f);
+  if (Math.random() < rate / 2) { const a = Math.random() * 6.28, r = Math.random() < .5 ? rA : rB; P(cl.x, cl.y, { vx: Math.cos(a) * rnd2(90, 320), vy: Math.sin(a) * rnd2(90, 320) - 30, g: 220, life: rnd2(260, 620), ramp: r, size: 1 + (Math.random() < .3 ? 1 : 0), size2: 1, add: true }); }
+  if (e > .55 && Math.random() < .25 * f) P(cl.x, cl.y, { life: 360, color: '#ffffff', shape: 'ring', size: 2, size2: 30, add: true });
+
+  // the whole screen feels it
+  CLS.shake -= dt; if (CLS.shake <= 0) { CLS.shake = 90; VFX.shake(1.5 + e * 6, 140); }
+  CLS.dim -= dt; if (CLS.dim <= 0) { CLS.dim = 260; dim(.18 + e * .22, 420, '8,6,18'); }
+  CLS.punch -= dt; if (CLS.punch <= 0) { CLS.punch = 550; punch(cl.x, cl.y, 800, 1); }
+  if (e > .7 && Math.random() < .03 * f) screenFlash('#ffffff', .18 + e * .2);
+}
+
+/* ---------- tug-of-war meter (drawn on the screen layer) ---------- */
+function drawClashMeter(c, DW, DH, unit) {
+  const cl = G && G.clash; if (!cl) return; const bs = clashBeamsNow(), bA = bs.A, bB = bs.B; if (!bA || !bB) return;
+  const full = Math.hypot(bB.x - bA.x, bB.y - bA.y) || 1, p = clamp(Math.hypot(cl.x - bA.x, cl.y - bA.y) / full, 0, 1), rA = clRamp(bA.mv), rB = clRamp(bB.mv);
+  const w = Math.round(Math.min(DW * .5, 300 * unit * 1.5)), h = Math.max(8, Math.round(11 * unit * 1.3)), x0 = Math.round(DW / 2 - w / 2), y0 = Math.round(DH * .115);
+  c.save(); c.globalAlpha = .92; c.fillStyle = '#05070d'; c.fillRect(x0 - 3, y0 - 3, w + 6, h + 6);
+  const sp = Math.round(w * p), jig = Math.sin(clock.t / 40) * 1.5;
+  c.fillStyle = rA[3]; c.fillRect(x0, y0, sp, h); c.fillStyle = rA[1]; c.fillRect(x0, y0, sp, Math.max(2, h / 3));
+  c.fillStyle = rB[3]; c.fillRect(x0 + sp, y0, w - sp, h); c.fillStyle = rB[1]; c.fillRect(x0 + sp, y0, w - sp, Math.max(2, h / 3));
+  c.fillStyle = '#ffffff'; c.fillRect(x0 + sp - 2, y0 - 5, 4, h + 10);
+  c.fillStyle = 'rgba(255,255,255,.55)'; for (const q of [.1, .9]) c.fillRect(x0 + Math.round(w * q) - 1, y0, 2, h);   // the lines where a beam gives way
+  c.globalAlpha = 1;
+  if (G && !G.auto && (cl.e || 0) < .92) textAt(c, 'MASH A MOVE BUTTON!', DW / 2, y0 + h + Math.round(15 * unit * 1.2), Math.round(13 * unit * 1.25 * (1 + Math.max(0, Math.sin(clock.t / 90)) * .1)), '#ffffff', '#1a1020', { italic: true });
+  c.restore();
+}
+
+/* ---------- events ---------- */
+// A charged beam waits a moment for a rival beam that is about to fire: both leave together.
+VFX.beamHold = (S, mv) => {
+  const rp = clRamp(mv), ms = CLASH.sync + 90;
+  ent(ms, (q, age) => {
+    const sd = side(S), i = bx(sd.x + sd.face * 18), j = by(sd.y - 32), r = 4 + Math.min(1, q * 1.4) * 9 + Math.sin(age / 40) * 1.5;
+    glow(i, j, r * 1.9, rp[3], .7); aDisc(i, j, r, rp[3]); aDisc(i, j, r * .66, rp[1]); aDisc(i, j, r * .32, '#ffffff');
+    for (let k = 0; k < 6; k++) { const a = age / 65 + k * 1.047, d = r + 4 + 14 * (1 - q) * (k % 2 ? 1 : .6); aRect(i + Math.cos(a) * d, j + Math.sin(a) * d * .8, 2, 2, rp[1]); }
+    if (Math.random() < .5) { const a = Math.random() * 6.28; spark(sd.x + sd.face * 18 + Math.cos(a) * 30, sd.y - 32 + Math.sin(a) * 30, { color: rp[2], vx: -Math.cos(a) * 130, vy: -Math.sin(a) * 130, life: 240, add: true }); }
+  });
+  ringFx(side(S).x + side(S).face * 18, side(S).y - 32, rp[2], 30, 8, 340);
+};
+VFX.clashStart = (x, y, sa, mva, sb, mvb) => {
+  const rA = clRamp(mva), rB = clRamp(mvb);
+  screenFlash('#ffffff', .7); VFX.shake(12, 420); punch(x, y, 900, 1);
+  ringFx(x, y, '#ffffff', 6, 90, 380); ringFx(x, y, rA[2], 4, 70, 460); ringFx(x, y, rB[2], 4, 120, 560);
+  for (let k = 0; k < 22; k++) { const a = Math.random() * 6.28, v = rnd2(120, 380), r = k % 2 ? rA : rB; P(x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rnd2(300, 600), ramp: r, size: 2, size2: 1, add: true }); }
+  ent(520, q => { const i = bx(x), j = by(y); for (let k = 0; k < 12; k++) { const a = k / 12 * 6.28 + q, L = 6 + Ease.outQ(q) * 46; aLine(i + Math.cos(a) * 4, j + Math.sin(a) * 4, i + Math.cos(a) * L, j + Math.sin(a) * L, k % 2 ? rA[1] : rB[1], 1 - q, k % 3 ? 1 : 2); } });
+  VFX.big('BEAM CLASH!', '#ffffff'); VFX.crowd(2);
+  if (G && !G.auto) VFX.banner('MASH A MOVE BUTTON TO PUSH BACK!', '#ffffff');
+  CLS.id = 0;
+};
+// One side is overpowered: the winner's energy rockets down the loser's beam.
+VFX.clashEnd = (x, y, kind, win, lose, mvW, mvL) => {
+  if (kind === 'draw') return clashExplosion(x, y, mvW, mvL);
+  const rW = clRamp(mvW), rL = clRamp(mvL), ls = side(lose), tx = ls.x, ty = ls.y - 32;
+  screenFlash(rW[1], .75); VFX.shake(14, 520); VFX.big('OVERPOWERED!', rW[3]); punch(x, y, 900, 1);
+  ringFx(x, y, '#ffffff', 8, 120, 420); ringFx(x, y, rW[2], 6, 170, 520); ringFx(x, y, rL[2], 6, 90, 420);
+  const ang = Math.atan2(ty - y, tx - x);
+  emit(x, y, 26, { ang, spread: .9, speed: [160, 420], life: [300, 650], ramp: rW, size: [1, 2], size2: 1, add: true });
+  emit(x, y, 18, { ang: ang + Math.PI, spread: 1.2, speed: [80, 260], life: [300, 600], ramp: rL, size: [1, 2], size2: 1, add: true });
+  ent(280, q => {
+    const e = Ease.inQ(q), i = bx(lerp(x, tx, e)), j = by(lerp(y, ty, e));
+    for (let k = 7; k >= 1; k--) { const ee = Math.max(0, e - k * .05); aDisc(bx(lerp(x, tx, ee)), by(lerp(y, ty, ee)), 8 - k, rW[3], .25); }
+    glow(i, j, 18, rW[3], .7); aDisc(i, j, 8, rW[3]); aDisc(i, j, 6, rW[1]); aDisc(i, j, 3, '#ffffff');
+  });
+  crackBurst(x, y + 28, 2);
+};
+// The blast that follows an overpowering: the winner's beam arrives at the loser.
+VFX.clashBreak = (owner, mv) => {
+  const r = clRamp(mv), foe = side(other(owner)), x = foe.x, y = foe.y - 30;
+  screenFlash('#ffffff', .65); VFX.shake(18, 560); punch(x, y, 1100, 2);
+  ringFx(x, y, '#ffffff', 10, 190, 500); ringFx(x, y, r[2], 8, 150, 560); setTimeoutGame(110, () => ringFx(x, y, r[3], 8, 230, 640));
+  burstAt(x, y, r[2], 34, 420, 2);
+  ent(560, q => { const i = bx(x), j = by(y); for (let k = 0; k < 14; k++) { const a = k / 14 * 6.28 + k, L = 8 + Ease.outQ(q) * 70 * (k % 2 ? 1 : .6); aLine(i + Math.cos(a) * 6, j + Math.sin(a) * 6, i + Math.cos(a) * L, j + Math.sin(a) * L, k % 3 ? r[1] : '#ffffff', 1 - q, k % 2 ? 2 : 1); } aDisc(i, j, 4 + q * 20, r[2], (1 - q) * .6); });
+  addScar('scorch', foe.x, foe.y); crackBurst(foe.x, foe.y, 4); VFX.crowd(2);
+};
+// The beams cancel: a huge explosion centred on the meeting point.
+function clashExplosion(x, y, mvA, mvB) {
+  const rA = clRamp(mvA), rB = clRamp(mvB), gy = (side('A').y + side('B').y) / 2;
+  screenFlash('#ffffff', 1); VFX.shake(24, 900); punch(x, y, 1500, 2); dim(.5, 700, '10,6,16');
+  VFX.big('BEAMS CANCELLED!', '#ffffff'); setTimeoutGame(520, () => VFX.big('HUGE EXPLOSION!', '#ffd23f'));
+  // fireball: white-hot core, one lobe per type, fading through smoke
+  ent(1000, q => {
+    const i = bx(x), j = by(y), g = Ease.outQ(Math.min(1, q * 2.4)), r = (8 + g * 48) * (q < .55 ? 1 : 1 - (q - .55) * .7), a = 1 - Math.max(0, q - .45) / .55;
+    glow(i, j, r * 1.6, rA[3], .5 * a); glow(i, j, r * 1.6, rB[3], .5 * a);
+    aDisc(i - r * .22, j, r * .95, q < .35 ? rA[2] : rA[4], a * .9); aDisc(i + r * .22, j, r * .95, q < .35 ? rB[2] : rB[4], a * .9);
+    aDisc(i, j - r * .1, r * .72, q < .25 ? '#ffffff' : rA[1], a); aDisc(i, j, r * .42, '#ffffff', a);
+    if (q > .4) for (let k = 0; k < 8; k++) { const ang = k * .785 + q * 2; aDisc(i + Math.cos(ang) * r * .8, j + Math.sin(ang) * r * .6 - q * 14, r * .28, RAMP.smoke[3], (1 - q) * .55); }
+  });
+  // spokes of light
+  ent(700, q => { const i = bx(x), j = by(y); for (let k = 0; k < 22; k++) { const a = k / 22 * 6.28 + k * .31, L = 10 + Ease.outQ(q) * 120 * (k % 2 ? 1 : .6), c0 = k % 3 === 0 ? '#ffffff' : k % 2 ? rA[1] : rB[1]; aLine(i + Math.cos(a) * 10 * (1 - q), j + Math.sin(a) * 10 * (1 - q), i + Math.cos(a) * L, j + Math.sin(a) * L, c0, 1 - q, k % 2 ? 3 : 1); } });
+  // concentric shockwaves, a ground blast and debris
+  ringFx(x, y, '#ffffff', 10, 240, 560); ringFx(x, y, rA[2], 6, 190, 640); setTimeoutGame(110, () => ringFx(x, y, rB[2], 6, 280, 760)); setTimeoutGame(260, () => ringFx(x, y, '#ffffff', 10, 360, 900)); setTimeoutGame(420, () => ringFx(x, gy, RAMP.smoke[2], 10, 420, 1000));
+  burstAt(x, y, rA[2], 40, 520, 2); burstAt(x, y, rB[2], 40, 520, 2);
+  for (let k = 0; k < 34; k++) { const a = Math.random() * 6.28, v = rnd2(120, 520); P(x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 120, g: 520, life: rnd2(500, 1100), ramp: k % 2 ? rA : rB, size: 2, size2: 1, add: k % 3 === 0 }); }
+  for (let k = 0; k < 6; k++) setTimeoutGame(60 + k * 90, () => emit(x + (Math.random() - .5) * 70, y + (Math.random() - .5) * 40, 5, { speed: [20, 110], ang: -Math.PI / 2, spread: 2.4, life: [800, 1500], ramp: 'smoke', shape: 'disc', size: 2, size2: 7, r: 14 }));
+  addScar('scorch', x, gy); addScar('scorch', x - 24, gy + 6); addScar('scorch', x + 24, gy - 4); crackBurst(x, gy, 7, 60); VFX.crowd(2);
+  for (const S of ['A', 'B']) { const sd = side(S); ACTOR_GLOW[S] = { col: '#ffffff', a: .8, until: clock.t + 380 }; sd.hit = 350; }
+}
+
+//# sourceURL=clash.js
 </script>
 <script>
 'use strict';
@@ -6542,7 +6921,7 @@ async function battleCountdown(my) {
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '15.7';
+const APP_VERSION = '15.8';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -6706,6 +7085,7 @@ function applySnap(s, events) {
     for (const [i, mon] of Object.entries(s.tm[S] || {})) Object.assign(sd.team[+i], dec(mon));
   }
   mergeWorld(G.shots, s.shots); mergeWorld(G.beams, s.beams); mergeWorld(G.marks, s.marks); mergeWorld(G.waves, s.waves);
+  { const nc = s.clash ? dec(s.clash) : null; G.clash = nc && G.clash && G.clash.id === nc.id ? Object.assign(G.clash, nc) : nc; }   // the beam clash, if one is going on
   G.hudDirty = true;
   for (const ev of events || []) {
     const [name, ...args] = ev;
@@ -6752,7 +7132,7 @@ function netStep(dt) {
 function endOnline(winner, big, reason, keepConnection) {
   if (NET.over) return; NET.over = true;
   G.phase = 'over'; G.winner = winner; G.decision = reason || '';
-  G.shots.length = G.marks.length = G.waves.length = 0;
+  G.shots.length = G.marks.length = G.waves.length = 0; G.clash = null;
   showOverlay('ovSwitch', false);
   try { onBattleEnd(winner, big); } catch (e) { console.error(e); }
 }

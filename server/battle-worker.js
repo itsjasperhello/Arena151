@@ -62,7 +62,7 @@ function mirror(v, key, inManual) {
   if (typeof v === 'string' && (key === 'owner' || key === 'S')) return swapSide(v);
   return v;
 }
-const POS_EVENTS = new Set(['erupt', 'explode', 'impactAt', 'missAt']);
+const POS_EVENTS = new Set(['erupt', 'explode', 'impactAt', 'missAt', 'clashStart', 'clashEnd']);
 function mirrorEvent(ev) {
   const [name, ...args] = ev;
   if (name === '__log') return ev;
@@ -150,7 +150,7 @@ function sumHp(room, S) { try { return room.ctx.__teamHp(S); } catch (e) { retur
 function info(snap, S) { const sd = snap.sides[S] || {}; return { mon: (snap.teams[S][sd.active] || {}).name, state: sd.state, cast: sd.cast && sd.cast.mv && sd.cast.mv.__mv, x: Math.round(sd.x), y: Math.round(sd.y) }; }
 function mirrorView(s) {
   const m = { ...s, sides: { A: mirror(s.sides.B), B: mirror(s.sides.A) }, teams: { A: s.teams.B, B: s.teams.A },
-    shots: mirror(s.shots), beams: mirror(s.beams), marks: mirror(s.marks), waves: mirror(s.waves),
+    shots: mirror(s.shots), beams: mirror(s.beams), marks: mirror(s.marks), waves: mirror(s.waves), clash: mirror(s.clash),
     pickLeft: s.pickLeft ? { A: s.pickLeft.B, B: s.pickLeft.A } : null };
   if (s.hold) m.hold = { side: swapSide(s.hold.side), left: s.hold.left };
   return m;

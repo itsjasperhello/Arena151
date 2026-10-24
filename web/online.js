@@ -126,6 +126,7 @@ function applySnap(s, events) {
     for (const [i, mon] of Object.entries(s.tm[S] || {})) Object.assign(sd.team[+i], dec(mon));
   }
   mergeWorld(G.shots, s.shots); mergeWorld(G.beams, s.beams); mergeWorld(G.marks, s.marks); mergeWorld(G.waves, s.waves);
+  { const nc = s.clash ? dec(s.clash) : null; G.clash = nc && G.clash && G.clash.id === nc.id ? Object.assign(G.clash, nc) : nc; }   // the beam clash, if one is going on
   G.hudDirty = true;
   for (const ev of events || []) {
     const [name, ...args] = ev;
@@ -172,7 +173,7 @@ function netStep(dt) {
 function endOnline(winner, big, reason, keepConnection) {
   if (NET.over) return; NET.over = true;
   G.phase = 'over'; G.winner = winner; G.decision = reason || '';
-  G.shots.length = G.marks.length = G.waves.length = 0;
+  G.shots.length = G.marks.length = G.waves.length = 0; G.clash = null;
   showOverlay('ovSwitch', false);
   try { onBattleEnd(winner, big); } catch (e) { console.error(e); }
 }
