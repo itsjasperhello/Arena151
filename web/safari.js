@@ -384,6 +384,7 @@ function safariEncounter(leg) {
   });
 }
 
+window.safariEncounter = safariEncounter; window.SAFARI = SAFARI;   // used by story_plus.js (grass search)
 /* ---------- every gym challenge (Pokédex runs): walk the route to the leader, meet a wild Pokémon, then battle ----------
    Gyms 1–8 trigger an encounter on every challenge (rematches too). Lance and Gary: the walk only. Optional trainers: never. */
 const _sfStartGymBattle = startGymBattle;

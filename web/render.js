@@ -46,6 +46,7 @@ const ax = x => toArtX(x), ay = y => toArtY(y);
 
 /* ---------- persistent ground scars (art space) ---------- */
 function addScar(kind, x, y, extra = {}) {
+  if (typeof groundScar === 'function') return groundScar(kind, x, y, extra);   // ground.js: marks chosen by the move
   const g = scarCtx; if (!g) return; const r = mulberry(Math.floor(Math.random() * 1e6)), gx = Math.round(ax(x)), gy = Math.round(ay(y));
   const dot = (i, j, c, a) => { g.globalAlpha = a; g.fillStyle = c; g.fillRect(i, j, 1, 1); };
   if (kind === 'crack') { for (let k = 0; k < 4; k++) { let i = gx, j = gy, a = k * 1.6 + r(); for (let q = 0; q < 9; q++) { i += Math.round(Math.cos(a)); j += Math.round(Math.sin(a) * .7); a += (r() - .5) * .9; dot(i, j, '#2a2e38', .8); } } }
@@ -276,6 +277,10 @@ function drawShot(p) {
   aDisc(i, j, r, f.col); aDisc(i - 1, j - 1, Math.max(1, r - 2), f.core);
 }
 function drawBeam(b) {
+  const pm = GCTX.mv, pmode = GCTX.mode; GCTX.mv = b.mv; GCTX.mode = 'styled';
+  try { drawBeamInner(b); } finally { GCTX.mv = pm; GCTX.mode = pmode; }
+}
+function drawBeamInner(b) {
   if (b.cl) {   // locked in a beam clash (1), driven back (2) or surging through (3): draw the move's own beam, cut off at the meeting point
     if (!(b.clip > 0)) return;
     b.t = b.life * .45;

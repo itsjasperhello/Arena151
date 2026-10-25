@@ -3009,6 +3009,7 @@ const ax = x => toArtX(x), ay = y => toArtY(y);
 
 /* ---------- persistent ground scars (art space) ---------- */
 function addScar(kind, x, y, extra = {}) {
+  if (typeof groundScar === 'function') return groundScar(kind, x, y, extra);   // ground.js: marks chosen by the move
   const g = scarCtx; if (!g) return; const r = mulberry(Math.floor(Math.random() * 1e6)), gx = Math.round(ax(x)), gy = Math.round(ay(y));
   const dot = (i, j, c, a) => { g.globalAlpha = a; g.fillStyle = c; g.fillRect(i, j, 1, 1); };
   if (kind === 'crack') { for (let k = 0; k < 4; k++) { let i = gx, j = gy, a = k * 1.6 + r(); for (let q = 0; q < 9; q++) { i += Math.round(Math.cos(a)); j += Math.round(Math.sin(a) * .7); a += (r() - .5) * .9; dot(i, j, '#2a2e38', .8); } } }
@@ -3239,6 +3240,10 @@ function drawShot(p) {
   aDisc(i, j, r, f.col); aDisc(i - 1, j - 1, Math.max(1, r - 2), f.core);
 }
 function drawBeam(b) {
+  const pm = GCTX.mv, pmode = GCTX.mode; GCTX.mv = b.mv; GCTX.mode = 'styled';
+  try { drawBeamInner(b); } finally { GCTX.mv = pm; GCTX.mode = pmode; }
+}
+function drawBeamInner(b) {
   if (b.cl) {   // locked in a beam clash (1), driven back (2) or surging through (3): draw the move's own beam, cut off at the meeting point
     if (!(b.clip > 0)) return;
     b.t = b.life * .45;
@@ -4856,15 +4861,15 @@ sig('Charm', {
      XS  up to 0.4 m     x1.00   Pikachu, Diglett, Eevee, Mew
      S   0.4 - 0.8 m     x1.10   Charmander, Squirtle, Vulpix
      M   0.8 - 1.3 m     x1.22   Wartortle, Raichu, Gengar
-     L   1.3 - 2.0 m     x1.36   Charizard, Mewtwo, Blastoise
-     XL  2.0 - 4.0 m     x1.52   Snorlax, Lapras, Dragonair, Arbok
-     XXL over 4 m        x1.70   only Onix and Gyarados
+     L   1.3 - 2.0 m     x1.42   Charizard, Mewtwo, Blastoise
+     XL  2.0 - 4.0 m     x1.68   Snorlax, Lapras, Dragonair, Arbok
+     XXL over 4 m        x1.95   only Onix and Gyarados
    ===================================================================== */
 const HEIGHT_M = { 'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
 const MEGA_HEIGHT_M = { Venusaur: 2.4, Beedrill: 1.4, Pidgeot: 2.2, Slowbro: 2.0, Kangaskhan: 2.2, Aerodactyl: 2.1, Mewtwo: 2.3, Pinsir: 1.7 };
 const SIZE_CLASSES = [
   { id: 'XS', max: .4, scale: 1.00, label: 'Extra small' }, { id: 'S', max: .79, scale: 1.10, label: 'Small' }, { id: 'M', max: 1.3, scale: 1.22, label: 'Medium' },
-  { id: 'L', max: 2.0, scale: 1.36, label: 'Large' }, { id: 'XL', max: 4.0, scale: 1.52, label: 'Extra large' }, { id: 'XXL', max: 1e9, scale: 1.70, label: 'Huge' }
+  { id: 'L', max: 2.0, scale: 1.42, label: 'Large' }, { id: 'XL', max: 4.0, scale: 1.68, label: 'Extra large' }, { id: 'XXL', max: 1e9, scale: 1.95, label: 'Huge' }
 ];
 function sizeClassOf(name, mega) {
   const h = (mega && MEGA_HEIGHT_M[name]) || HEIGHT_M[name] || 1.0;
@@ -5075,6 +5080,374 @@ function clashExplosion(x, y, mvA, mvB) {
 }
 
 //# sourceURL=clash.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 20: what a move leaves behind on the stage
+   Every hit, strike and blast now stamps a mark chosen by the MOVE (not just its type):
+     Flamethrower   a charred line with glowing cracks that cool, plus little flames and smoke
+     Hydro Pump     a wet streak and puddles whose ripples spread
+     Ice Beam       a frozen line of frost crystals that glint
+     Thunder        a branching burn, fused glass and crackling arcs
+     Earthquake     fissures; Earth Power's fissures glow like lava
+     Rock Slide     boulders that stay where they fell
+     Slash / claws  parallel gouges;  Bite  tooth marks;  String Shot  a web, and so on.
+   Each mark has two parts: a permanent decal painted into the scar layer (cleared with the
+   scene), and a lingering animated effect that plays on the ground for a few seconds, under the
+   Pokémon, while the mark settles: embers cooling, ripples, frost glints, bubbles popping, dust
+   settling, sparks, glitter, feathers drifting down.
+   ===================================================================== */
+const GCTX = { mv: null, mode: '' };          // which move is being drawn right now; mode 'central' = this file stamps, legacy calls are ignored
+const GR = { live: 0 };
+const gQual = () => { const S = window.SETTINGS; return (S && S.quality && S.quality !== 'high') ? .5 : 1; };
+function ghash(x, y, s) { let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 1274126177)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function gpx(g, i, j, c, a = 1) { g.globalAlpha = a; g.fillStyle = c; g.fillRect(Math.round(i), Math.round(j), 1, 1); }
+// irregular blob with a blocky noisy edge (reads as pixel art), optional dithered rim
+function gblob(g, cx, cy, rx, ry, c, a, seed, rough = .3, dith = false) {
+  rx = Math.max(1, Math.round(rx)); ry = Math.max(1, Math.round(ry));
+  for (let y = -ry - 1; y <= ry + 1; y++) for (let x = -rx - 1; x <= rx + 1; x++) {
+    const d = (x / rx) ** 2 + (y / ry) ** 2, thr = 1 + (ghash(Math.floor((x + rx) / 3), Math.floor((y + ry) / 2), seed) - .5) * rough * 2;
+    if (d > thr || (dith && d > thr * .7 && ((x + y) & 1))) continue; gpx(g, cx + x, cy + y, c, a);
+  }
+}
+function gline(g, x0, y0, x1, y1, c, a = 1, w = 1) { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0))); for (let k = 0; k <= n; k++) { const t = k / n; for (let q = 0; q < w; q++) gpx(g, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t + q, c, a); } }
+function gchunk(g, i, j, sz, pal, seed) {   // little rock / debris chunk lit from the top left
+  for (let y = 0; y < sz; y++) for (let x = 0; x < sz + (y % 2); x++) { const lit = (x + y) < sz * .8; gpx(g, i + x, j + y, y === sz - 1 ? pal[4] : lit ? pal[1] : pal[2]); }
+  gpx(g, i, j, pal[0]);
+}
+const ELL = .55;                                   // the ground is seen at an angle: circles are flattened
+
+/* ---------- permanent decal painters: (ctx, x, y, size, rng, options) → hot points for the lingering effect ---------- */
+const GP = {
+  // charred ground with soot streaks and cracks; pal can recolour it (dragon, steel, grass-green…)
+  char(g, x, y, s, r, o) {
+    const R = Math.round(8 * s), P = o.pal || ['#17141a', '#26211f', '#43362c', '#66503c'], pts = [], seed = (r() * 1e4) | 0;
+    gblob(g, x, y, R + 3, (R + 3) * ELL, P[3], .22, seed, .4, true); gblob(g, x, y, R, R * ELL, P[2], .4, seed + 1, .32); gblob(g, x, y, R * .72, R * .72 * ELL, P[1], .68, seed + 2, .3); gblob(g, x, y, R * .4, R * .4 * ELL, P[0], .86, seed + 3, .25);
+    for (let k = 0; k < 7 * s + 3; k++) { const a = r() * 6.28, L = R * (.9 + r() * .9); for (let q = R * .45; q < L; q++) gpx(g, x + Math.cos(a) * q, y + Math.sin(a) * q * ELL, P[1], .4 * (1 - q / L)); }
+    for (let k = 0; k < 4 * s + 2; k++) { let i = x, j = y, a = r() * 6.28; for (let q = 0; q < R * .9; q++) { i += Math.cos(a); j += Math.sin(a) * ELL; a += (r() - .5) * .8; gpx(g, i, j, P[0], .9); if (q > 1 && r() < .35) pts.push([i, j]); } }
+    for (let k = 0; k < 6 * s; k++) gpx(g, x + (r() - .5) * R * 2.6, y + (r() - .5) * R * 1.5, P[3], .35);
+    return pts;
+  },
+  // puddle: dark wet ring, glossy body, highlights and flung droplets
+  wet(g, x, y, s, r, o) {
+    const R = Math.round(9 * s), c = o.col || ['#2c4258', '#4c7aa6', '#7fb6dc', '#e2f6ff'], seed = (r() * 1e4) | 0;
+    gblob(g, x, y, R + 3, (R + 3) * ELL, c[0], .3, seed, .35, true); gblob(g, x, y, R, R * ELL, c[1], .5, seed + 1, .35); gblob(g, x, y, R * .65, R * .65 * ELL, c[2], .4, seed + 2, .3);
+    for (let k = 0; k < 2 + s; k++) { const a = 3.4 + r() * 1.5, rr = R * (.2 + r() * .45); for (let q = 0; q < 4 + s * 2; q++) gpx(g, x + Math.cos(a + q * .09) * rr, y + Math.sin(a + q * .09) * rr * ELL - 1, c[3], .75); }
+    for (let k = 0; k < 6 * s; k++) { const a = r() * 6.28, d = R * (1.1 + r() * .9); gpx(g, x + Math.cos(a) * d, y + Math.sin(a) * d * ELL, c[2], .55); if (r() < .4) gpx(g, x + Math.cos(a) * d, y + Math.sin(a) * d * ELL - 1, c[3], .6); }
+    return [[x, y]];
+  },
+  // frost: a haze plus six-armed crystals
+  frost(g, x, y, s, r, o) {
+    const R = Math.round(9 * s), P = o.col || ['#2a6a90', '#7fdcf0', '#bff4ff', '#f0fdff'], seed = (r() * 1e4) | 0, pts = [];
+    gblob(g, x, y, R + 2, (R + 2) * ELL, P[1], .2, seed, .45, true); gblob(g, x, y, R * .8, R * .8 * ELL, P[2], .25, seed + 1, .4, true);
+    const arms = (k, cx, cy, L) => { for (let a = 0; a < 6; a++) { const ang = a * Math.PI / 3 + k, ex = cx + Math.cos(ang) * L, ey = cy + Math.sin(ang) * L * ELL; gline(g, cx, cy, ex, ey, P[2], .9); gpx(g, ex, ey, P[3]);
+      for (const f of [.45, .75]) { const bx0 = cx + Math.cos(ang) * L * f, by0 = cy + Math.sin(ang) * L * f * ELL, bl = L * (1 - f) * .75; for (const sg of [-1, 1]) gline(g, bx0, by0, bx0 + Math.cos(ang + sg * .9) * bl, by0 + Math.sin(ang + sg * .9) * bl * ELL, P[1], .85); }
+      pts.push([ex, ey]); } gpx(g, cx, cy, P[3]); };
+    arms(r() * 1.0, x, y, R * .85); for (let k = 0; k < 2 + s; k++) arms(r() * 3, x + (r() - .5) * R * 1.6, y + (r() - .5) * R * .9, R * (.25 + r() * .3));
+    for (let k = 0; k < 8 * s; k++) gpx(g, x + (r() - .5) * R * 2.4, y + (r() - .5) * R * 1.3, P[3], .8);
+    return pts;
+  },
+  // electric burn: a scorched core and a branching Lichtenberg tree, fused glass specks
+  volt(g, x, y, s, r, o) {
+    const R = Math.round(7 * s), pts = [], seed = (r() * 1e4) | 0;
+    gblob(g, x, y, R + 2, (R + 2) * ELL, '#4a4230', .25, seed, .4, true); gblob(g, x, y, R * .8, R * .8 * ELL, '#24211f', .6, seed + 1, .3); gblob(g, x, y, R * .4, R * .4 * ELL, '#121216', .85, seed + 2, .25);
+    const branch = (i, j, a, L, d) => { for (let q = 0; q < L; q++) { i += Math.cos(a); j += Math.sin(a) * ELL; a += (r() - .5) * .7; gpx(g, i, j, '#17161c', .95); if (d < 2 && q % 4 === 0) gpx(g, i, j, '#7a6a28', .6); if (q === L - 1) pts.push([i, j]); if (d < 3 && q > 3 && r() < .16) branch(i, j, a + (r() < .5 ? -1 : 1) * (.6 + r() * .6), Math.round(L * .55), d + 1); } };
+    for (let k = 0; k < 4 + s * 2; k++) branch(x, y, r() * 6.28, Math.round(R * (1.1 + r() * .9)), 0);
+    for (let k = 0; k < 5 * s; k++) gpx(g, x + (r() - .5) * R * 2.5, y + (r() - .5) * R * 1.4, r() < .5 ? '#fff2a0' : '#ffe04a', .8);
+    return pts;
+  },
+  // toxic pool
+  sludge(g, x, y, s, r, o) {
+    const R = Math.round(8 * s), c = o.col || ['#2a1040', '#5a2088', '#8a3ac8', '#d8a0ff'], seed = (r() * 1e4) | 0;
+    gblob(g, x, y, R + 2, (R + 2) * ELL, c[0], .35, seed, .4, true); gblob(g, x, y, R, R * ELL, c[1], .62, seed + 1, .4); gblob(g, x, y, R * .6, R * .6 * ELL, c[2], .5, seed + 2, .3);
+    for (let k = 0; k < 3 + s * 2; k++) { const a = r() * 6.28, d = r() * R * .7, bi = x + Math.cos(a) * d, bj = y + Math.sin(a) * d * ELL, br = 1 + (r() < .4 ? 1 : 0); for (let q = 0; q < 8; q++) gpx(g, bi + Math.cos(q * .785) * br, bj + Math.sin(q * .785) * br, c[3], .8); gpx(g, bi - 1, bj - 1, '#ffffff', .8); }
+    for (let k = 0; k < 4 * s; k++) { const a = r() * 6.28, d = R * (1.1 + r() * .7); gpx(g, x + Math.cos(a) * d, y + Math.sin(a) * d * ELL, c[1], .7); }
+    return [[x, y]];
+  },
+  // grass: green stain, tufts, scattered leaves
+  grass(g, x, y, s, r, o) {
+    const R = Math.round(9 * s), G = o.col || ['#1a4a26', '#3fb04a', '#7fe05a', '#c8f58a'], seed = (r() * 1e4) | 0, pts = [];
+    gblob(g, x, y, R, R * ELL, G[0], .28, seed, .4, true);
+    for (let k = 0; k < 6 + 4 * s; k++) { const i = x + (r() - .5) * R * 2, j = y + (r() - .5) * R * ELL * 2, h = 2 + Math.round(r() * 3); for (let q = 0; q < h; q++) { gpx(g, i + (q > 1 ? (k % 2 ? 1 : -1) : 0), j - q, q < h - 1 ? G[1] : G[2], .9); } pts.push([i, j]); }
+    if (o.leaves !== false) for (let k = 0; k < 4 + 3 * s; k++) { const i = x + (r() - .5) * R * 2.4, j = y + (r() - .5) * R * 1.3, a = r() * 3.14, ca = Math.cos(a), sa = Math.sin(a); for (let q = -2; q <= 2; q++) gpx(g, i + ca * q, j + sa * q * .6, q === 0 ? G[3] : G[2], .9); gpx(g, i + ca * 3, j + sa * 2, G[0], .8); }
+    return pts;
+  },
+  // etched rune circle (psychic, fairy moon, dragon, aura)
+  rune(g, x, y, s, r, o) {
+    const R = Math.round(11 * s), c = o.col || ['#6a1a58', '#ff6fc8', '#ffe2f4'], pts = [], n = o.sides || 5;
+    for (let k = 0; k < R * 6; k++) { const a = k / (R * 6) * 6.28; gpx(g, x + Math.cos(a) * R, y + Math.sin(a) * R * ELL, c[1], .45); gpx(g, x + Math.cos(a) * (R - 2), y + Math.sin(a) * (R - 2) * ELL, c[0], .35); }
+    for (let k = 0; k < n; k++) { const a0 = k / n * 6.28 - 1.57, a1 = ((k + 2) % n) / n * 6.28 - 1.57; gline(g, x + Math.cos(a0) * (R - 3), y + Math.sin(a0) * (R - 3) * ELL, x + Math.cos(a1) * (R - 3), y + Math.sin(a1) * (R - 3) * ELL, c[1], .4); pts.push([x + Math.cos(a0) * R, y + Math.sin(a0) * R * ELL]); }
+    gblob(g, x, y, 2, 1, c[2], .5, 1, .1); return pts;
+  },
+  // shadow stain with creeping edges
+  shade(g, x, y, s, r, o) {
+    const R = Math.round(9 * s), c = o.col || ['#140e30', '#2d2068', '#5a3ac8'], seed = (r() * 1e4) | 0;
+    gblob(g, x, y, R + 3, (R + 3) * ELL, c[2], .16, seed, .5, true); gblob(g, x, y, R, R * ELL, c[1], .5, seed + 1, .4); gblob(g, x, y, R * .6, R * .6 * ELL, c[0], .8, seed + 2, .3);
+    for (let k = 0; k < 5; k++) { const a = r() * 6.28; for (let q = R * .8; q < R * 1.7; q++) gpx(g, x + Math.cos(a + q * .02) * q, y + Math.sin(a + q * .02) * q * ELL, c[1], .5 * (1 - (q - R * .8) / (R * .9))); }
+    return [[x, y]];
+  },
+  // crater with a lit rim, radial cracks, left-over rocks
+  crater(g, x, y, s, r, o) {
+    const R = Math.round(9 * s), pal = o.rock || RAMP.ground, seed = (r() * 1e4) | 0;
+    gblob(g, x, y, R + 4, (R + 4) * ELL, '#e7c27a', .12, seed, .4, true);
+    gblob(g, x, y + 1, R + 1, (R + 1) * ELL, pal[2], .5, seed + 1, .3); gblob(g, x, y + 1, R, R * ELL, pal[5] || pal[4], .75, seed + 2, .28); gblob(g, x + 1, y + 1, R * .72, R * .72 * ELL, '#2a2218', .8, seed + 3, .25);
+    for (let k = 0; k < R * 3; k++) { const a = 2.4 + k / (R * 3) * 2.5; gpx(g, x + Math.cos(a) * (R + 1), y + Math.sin(a) * (R + 1) * ELL, pal[0], .85); }   // sunlit rim, upper left
+    for (let k = 0; k < 4 + s * 2; k++) { let i = x, j = y, a = r() * 6.28; for (let q = 0; q < R * 1.5; q++) { i += Math.cos(a); j += Math.sin(a) * ELL; a += (r() - .5) * .7; if (q > R * .6) gpx(g, i, j, '#2a2e38', .8 * (1 - q / (R * 1.6))); } }
+    if (o.rocks) for (let k = 0; k < (o.rocks | 0); k++) { const a = r() * 6.28, d = R * (.4 + r() * 1.3); gchunk(g, x + Math.cos(a) * d, y + Math.sin(a) * d * ELL, 2 + Math.round(r() * 2 * s), o.rock || RAMP.rock, k); }
+    else for (let k = 0; k < 3 * s; k++) gpx(g, x + (r() - .5) * R * 3, y + (r() - .5) * R * 1.6, pal[1], .8);
+    return [[x, y]];
+  },
+  // claw gouges: parallel curved scratches
+  gouge(g, x, y, s, r, o) {
+    const n = o.n || 3, L = Math.round(11 * s), ang = o.ang ?? (-.6 + (r() - .5) * .5), c = o.col || ['#2a2218', '#8a7448', '#e3cb92'], pts = [];
+    for (const A of (o.cross ? [ang, ang + 1.5] : [ang])) for (let k = 0; k < n; k++) { const off = (k - (n - 1) / 2) * 3.2; let i = x - Math.cos(A) * L / 2 - Math.sin(A) * off, j = y - Math.sin(A) * L / 2 * ELL + Math.cos(A) * off * ELL;
+      for (let q = 0; q < L; q++) { const t = q / L, bow = Math.sin(t * Math.PI) * 1.4, w = t < .25 ? 1 : 2; gpx(g, i + Math.cos(A) * q - Math.sin(A) * bow, j + Math.sin(A) * q * ELL + Math.cos(A) * bow * ELL, c[0], .9); if (w > 1) gpx(g, i + Math.cos(A) * q - Math.sin(A) * bow, j + Math.sin(A) * q * ELL + Math.cos(A) * bow * ELL + 1, c[0], .6); gpx(g, i + Math.cos(A) * q - Math.sin(A) * bow, j + Math.sin(A) * q * ELL + Math.cos(A) * bow * ELL - 1, c[2], .55); } pts.push([i + Math.cos(A) * L, j]); }
+    for (let k = 0; k < 8; k++) gpx(g, x + (r() - .5) * L * 1.6, y + (r() - .5) * 8, c[1], .6);
+    return pts;
+  },
+  skid(g, x, y, s, r, o) {   // motion scuffs
+    const c = o.col || ['#2a2e38', '#8a8a96', '#d8d4c8'], L = Math.round(8 * s), a = o.ang ?? 0;
+    for (let k = 0; k < 3; k++) { const j = y + (k - 1) * 2; for (let q = 0; q < L; q++) gpx(g, x + q * Math.cos(a) - L / 2, j + q * Math.sin(a) * .5, q % 3 ? c[0] : c[1], .35 * (1 - q / L * .6)); }
+    for (let k = 0; k < 5; k++) gpx(g, x + (r() - .5) * L * 1.4, y + (r() - .5) * 6, c[2], .45); return [];
+  },
+  fissure(g, x, y, s, r, o) {   // long jagged crack, lit edge; lava option glows in the lingering part
+    const L = Math.round(16 * s), pts = [], a0 = o.ang ?? (r() * 6.28), edge = o.edge || '#c99a4d';
+    for (let k = 0; k < 2; k++) { let i = x, j = y, a = a0 + k * Math.PI; for (let q = 0; q < L; q++) { i += Math.cos(a); j += Math.sin(a) * ELL; a += (r() - .5) * .8; gpx(g, i, j, '#17151a', .95); gpx(g, i, j + 1, '#17151a', .6); gpx(g, i - 1, j - 1, edge, .5); if (q % 5 === 2) pts.push([i, j]);
+      if (q > 3 && r() < .12) { let bi = i, bj = j, ba = a + (r() < .5 ? -1.1 : 1.1); for (let z = 0; z < L * .35; z++) { bi += Math.cos(ba); bj += Math.sin(ba) * ELL; ba += (r() - .5) * .8; gpx(g, bi, bj, '#17151a', .85); } } } }
+    return pts;
+  },
+  sparkle(g, x, y, s, r, o) {
+    const c = o.col || ['#c84a98', '#ff7ac8', '#ffd0ef', '#ffffff'], R = Math.round(9 * s), pts = [];
+    gblob(g, x, y, R, R * ELL, c[1], .1, 7, .5, true);
+    for (let k = 0; k < 9 * s + 3; k++) { const i = x + (r() - .5) * R * 2.3, j = y + (r() - .5) * R * 1.3, big = r() < .3; gpx(g, i, j, c[3], .95); if (big) { gpx(g, i - 1, j, c[2], .8); gpx(g, i + 1, j, c[2], .8); gpx(g, i, j - 1, c[2], .8); gpx(g, i, j + 1, c[2], .8); } else gpx(g, i + 1, j, c[1], .6); pts.push([i, j]); }
+    return pts;
+  },
+  web(g, x, y, s, r, o) {
+    const R = Math.round(10 * s), spokes = 8, c = '#f4f4f4';
+    for (let k = 0; k < spokes; k++) { const a = k / spokes * 6.28; gline(g, x, y, x + Math.cos(a) * R, y + Math.sin(a) * R * ELL, c, .75); }
+    for (const rr of [.3, .55, .8, 1]) for (let k = 0; k < spokes; k++) { const a0 = k / spokes * 6.28, a1 = (k + 1) / spokes * 6.28, sag = rr * .12; gline(g, x + Math.cos(a0) * R * rr, y + Math.sin(a0) * R * rr * ELL, x + Math.cos(a1) * R * (rr - sag), y + Math.sin(a1) * R * (rr - sag) * ELL, c, .5); }
+    for (let k = 0; k < 4; k++) gpx(g, x + (r() - .5) * R * 1.6, y + (r() - .5) * R, '#bfe8ff', .9); return [[x, y]];
+  },
+  feather(g, x, y, s, r, o) {   // wind scuff with feathers
+    const c = o.col || ['#a8c0f0', '#d7e6ff', '#ffffff'], R = Math.round(10 * s);
+    for (let k = 0; k < 5 + s * 2; k++) { const a = r() * 6.28, L = R * (.6 + r() * .8); for (let q = 2; q < L; q++) gpx(g, x + Math.cos(a) * q, y + Math.sin(a) * q * ELL, '#8a8a96', .3 * (1 - q / L)); }
+    for (let k = 0; k < 2 + Math.round(s * 1.5); k++) { const i = x + (r() - .5) * R * 2, j = y + (r() - .5) * R, a = r() * 3.14, ca = Math.cos(a), sa = Math.sin(a); for (let q = -4; q <= 4; q++) { gpx(g, i + ca * q, j + sa * q * .6, c[2], .95); if (Math.abs(q) < 3) { gpx(g, i + ca * q - sa, j + sa * q * .6 + ca * .6, c[1], .8); gpx(g, i + ca * q + sa, j + sa * q * .6 - ca * .6, c[0], .7); } } }
+    return [];
+  },
+  bite(g, x, y, s, r, o) {   // two rows of tooth dents
+    const w = Math.round(9 * s), c = o.col || ['#17151a', '#6a5a4a'];
+    for (const row of [-1, 1]) for (let k = -3; k <= 3; k++) { const i = x + k * w / 3.2, j = y + row * (w * .3) + Math.abs(k) * .6 * -row; for (let q = 0; q < 3; q++) gpx(g, i, j + q * row, c[0], .85 - q * .2); gpx(g, i + 1, j, c[1], .6); }
+    for (let k = 0; k < 8; k++) gpx(g, x + (r() - .5) * w * 2.4, y + (r() - .5) * w, c[1], .45); return [];
+  },
+  pins(g, x, y, s, r, o) {   // needle holes with a few stuck needles
+    const c = o.col || ['#17151a', '#d8e872'];
+    for (let k = 0; k < 4 + s * 3; k++) { const i = x + (r() - .5) * 20 * s, j = y + (r() - .5) * 10 * s; gpx(g, i, j, c[0], .9); gpx(g, i + 1, j, c[0], .6); if (r() < .35) { gpx(g, i, j - 1, c[1], .95); gpx(g, i, j - 2, c[1], .8); gpx(g, i, j - 3, '#ffffff', .8); } }
+    return [];
+  },
+  mud(g, x, y, s, r, o) {
+    const R = Math.round(8 * s), c = ['#3a2a18', '#6a4a24', '#9a7038', '#c99a4d'], seed = (r() * 1e4) | 0;
+    gblob(g, x, y, R + 2, (R + 2) * ELL, c[0], .3, seed, .5, true); gblob(g, x, y, R, R * ELL, c[1], .72, seed + 1, .45); gblob(g, x - 1, y - 1, R * .55, R * .55 * ELL, c[2], .6, seed + 2, .4);
+    for (let k = 0; k < 8 * s; k++) { const a = r() * 6.28, d = R * (.9 + r() * 1.1); gpx(g, x + Math.cos(a) * d, y + Math.sin(a) * d * ELL, c[r() < .5 ? 1 : 2], .85); }
+    return [];
+  },
+  powder(g, x, y, s, r, o) {
+    const R = Math.round(11 * s), c = o.col || ['#c8a0ff', '#e6d0ff', '#ffffff']; for (let k = 0; k < 60 * s; k++) { const a = r() * 6.28, d = Math.sqrt(r()) * R; gpx(g, x + Math.cos(a) * d, y + Math.sin(a) * d * ELL, r() < .6 ? c[0] : c[1], .3 + r() * .3); } return [];
+  },
+  sonic(g, x, y, s, r, o) {
+    const c = o.col || ['#56701a', '#b6d636', '#e0f58a']; for (let k = 0; k < 3; k++) { const R = 5 * s + k * 5 * s; for (let q = 0; q < R * 6; q++) { if ((q >> 2) % 3 === 0) continue; const a = q / (R * 6) * 6.28; gpx(g, x + Math.cos(a) * R, y + Math.sin(a) * R * ELL, c[k % 2 ? 1 : 0], .45 - k * .1); } } return [];
+  },
+  // single-purpose: a line of boulders / ice chunks left behind
+  debris(g, x, y, s, r, o) { const n = o.n || 3; for (let k = 0; k < n; k++) { const a = r() * 6.28, d = r() * 11 * s; gchunk(g, x + Math.cos(a) * d, y + Math.sin(a) * d * ELL, 3 + Math.round(r() * 3 * s), o.pal || RAMP.rock, k); } return [[x, y]]; },
+  spiral(g, x, y, s, r, o) { const c = o.col || ['#2a2218', '#c99a4d']; for (let k = 0; k < 90 * s; k++) { const a = k * .28, rr = k * .09 * s; gpx(g, x + Math.cos(a) * rr, y + Math.sin(a) * rr * ELL, c[0], .8); gpx(g, x + Math.cos(a) * rr - 1, y + Math.sin(a) * rr * ELL - 1, c[1], .4); } return [[x, y]]; }
+};
+
+/* ---------- lingering effects: they play under the Pokémon for a few seconds ---------- */
+const GL = {
+  // glowing cracks cooling, little flames, smoke
+  embers(x, y, s, pts, o) {
+    const life = 2600 + 900 * s, ramp = RAMP[o.ramp || 'fire'], flames = Math.min(5, Math.round((1 + s * 1.5) * gQual())), spots = pts.slice(0, 40);
+    const fl = Array.from({ length: flames }, () => ({ dx: (Math.random() - .5) * 14 * s, dy: (Math.random() - .5) * 6 * s, ph: Math.random() * 9, life: .35 + Math.random() * .45 }));
+    ent(life, (q, age) => {
+      const i = bx(x), j = by(y), cool = 1 - q;
+      bctx.globalCompositeOperation = 'lighter'; for (const [pi, pj] of spots) { const pulse = .55 + .45 * Math.sin(age / 130 + pi * .7); aRect(pi - OX, pj - OY, 1, 1, ramp[q < .5 ? 2 : 3], .9 * cool * pulse); if (q < .35) aRect(pi - OX - 1, pj - OY, 3, 1, ramp[3], .2 * cool); } bctx.globalCompositeOperation = 'source-over';
+      for (const f of fl) { if (q > f.life) continue; const h = Math.max(2, Math.round((6 + 5 * s) * (1 - q / f.life))); flamePx(i + f.dx / 2, j + f.dy / 2, h, 2 + (s > 1.3 ? 1 : 0), age + f.ph * 100, ramp, 1 - q / f.life); }
+      if (q < .7 && Math.random() < .22 * gQual()) P(x + (Math.random() - .5) * 16 * s, y + (Math.random() - .5) * 6, { vy: -26 - Math.random() * 20, vx: (Math.random() - .5) * 14, life: 1100, ramp: 'smoke', shape: 'disc', size: 1, size2: 3 + s, drag: .3 });
+      if (q < .4 && Math.random() < .12) P(x + (Math.random() - .5) * 14 * s, y, { vy: -90 - Math.random() * 50, vx: (Math.random() - .5) * 40, g: 120, life: 700, ramp, size: 1, add: true });
+    }, { under: true });
+  },
+  ripples(x, y, s, pts, o) {
+    const life = 3200 + 500 * s, col = o.col || ['#ffffff', '#d8f4ff', '#8fd4ff'];
+    ent(life, (q, age) => { const i = bx(x), j = by(y); for (let k = 0; k < 3; k++) { const t = ((age / 1000) * .55 + k / 3) % 1; if (age / 1000 * .55 > k / 3 + 1.6) continue; const R = (3 + t * 12 * s), a = (1 - t) * (1 - q) * .7; aRing(i, j, R, R * ELL, col[t < .5 ? 1 : 2], a, 1); }
+      if (Math.random() < .12) { const a = Math.random() * 6.28, d = Math.random() * 7 * s; aRect(i + Math.cos(a) * d, j + Math.sin(a) * d * ELL - 1, 1, 1, '#ffffff', .85 * (1 - q)); } }, { under: true });
+    emit(x, y - 4, Math.round(6 * s * gQual()), { ang: -Math.PI / 2, spread: 1.6, speed: [60, 130], g: 520, life: [380, 620], ramp: 'water', shape: 'drop', size: 1 });
+  },
+  frostglint(x, y, s, pts, o) {
+    const life = 3000 + 600 * s, spots = pts.slice(0, 16), ramp = RAMP[o.ramp || 'ice'];
+    ent(life, (q, age) => { for (let k = 0; k < spots.length; k++) { const tw = Math.sin(age / 210 + k * 2.3); if (tw < .55) continue; const i = spots[k][0] - OX, j = spots[k][1] - OY; bctx.globalCompositeOperation = 'lighter'; aRect(i - 1, j, 3, 1, ramp[0], .9 * (1 - q)); aRect(i, j - 1, 1, 3, ramp[0], .9 * (1 - q)); bctx.globalCompositeOperation = 'source-over'; }
+      if (q < .7 && Math.random() < .2 * gQual()) P(x + (Math.random() - .5) * 18 * s, y + (Math.random() - .5) * 6, { vy: -12, vx: (Math.random() - .5) * 10, life: 1200, ramp: 'ice', shape: 'disc', size: 1, size2: 3, drag: .2 }); }, { under: true });
+    emit(x, y - 2, Math.round(7 * s * gQual()), { speed: [40, 120], ang: -Math.PI / 2, spread: 2.2, life: [500, 900], ramp: 'ice', shape: 'star', size: 1, add: true, g: 80 });
+  },
+  arcs(x, y, s, pts, o) {
+    const life = 1500 + 300 * s, spots = pts.slice(0, 20);
+    ent(life, (q, age) => { const i = bx(x), j = by(y); if (Math.random() < .55 * (1 - q)) { const p = spots.length ? spots[(Math.random() * spots.length) | 0] : [x / 2, y / 2]; const pi = spots.length ? p[0] - OX : i, pj = spots.length ? p[1] - OY : j; bctx.globalCompositeOperation = 'lighter'; zig(i, j, pi, pj, '#ffd52a', 1, 2, '#ffffff'); bctx.globalCompositeOperation = 'source-over'; }
+      for (const p of spots) if (Math.random() < .05 * (1 - q)) aRect(p[0] - OX - 1, p[1] - OY - 1, 3, 3, '#fff07a', .8 * (1 - q)); }, { under: true });
+  },
+  bubbles(x, y, s, pts, o) {
+    const life = 3500 + 400 * s, ramp = RAMP[o.ramp || 'poison'];
+    ent(life, (q, age) => { if (q < .8 && Math.random() < .14 * gQual() * s) { const a = Math.random() * 6.28, d = Math.random() * 7 * s; P(x + Math.cos(a) * d * 2, y + Math.sin(a) * d * ELL * 2, { vy: -22, life: 700, ramp, shape: 'bubble', size: 1, size2: 3 }); }
+      if (q < .6 && Math.random() < .05) P(x + (Math.random() - .5) * 14 * s, y - 2, { vy: -40, vx: (Math.random() - .5) * 10, life: 1300, ramp: 'smoke', shape: 'disc', size: 1, size2: 3, color: ramp[2], drag: .3 }); }, { under: true });
+  },
+  sprouts(x, y, s, pts, o) {   // blades pop up out of the ground, leaves drift down
+    const life = 2200, G = o.col || ['#1a4a26', '#3fb04a', '#7fe05a', '#c8f58a'], spots = pts.slice(0, 14);
+    ent(life, (q, age) => { const grow = Math.min(1, age / 500), a = q > .75 ? (1 - q) / .25 : 1; for (const [pi, pj] of spots) { const h = Math.round(5 * grow * (1 + Math.sin(age / 400 + pi) * .1)); for (let k = 0; k < h; k++) aRect(pi - OX + Math.sin(k * .5 + age / 500) * (k / 3), pj - OY - k, 1, 1, k > h - 2 ? G[3] : G[1], a); } }, { under: true });
+    emit(x, y - 20, Math.round(8 * s * gQual()), { r: 18, speed: [10, 40], vy: 20, g: 40, life: [900, 1500], ramp: 'grass', shape: 'leaf', size: 1, spin: 4, drag: .6 });
+  },
+  runeglow(x, y, s, pts, o) {
+    const life = 2400, c = o.col || ['#6a1a58', '#ff6fc8', '#ffe2f4'], R = 11 * s / 2;
+    ent(life, (q, age) => { const i = bx(x), j = by(y), a = (q < .15 ? q / .15 : 1 - (q - .15) / .85) * .9; bctx.globalCompositeOperation = 'lighter'; aRing(i, j, R, R * ELL, c[1], a, 1); aRing(i, j, R - 1, (R - 1) * ELL, c[2], a * .6, 1);
+      for (let k = 0; k < pts.length; k++) { const p = pts[k], t = age / 400 + k; aRect(p[0] - OX - 1, p[1] - OY - 1, 3, 3, c[1], a * (.4 + .4 * Math.sin(t))); } bctx.globalCompositeOperation = 'source-over';
+      if (Math.random() < .3 * gQual()) P(x + (Math.random() - .5) * R * 4, y + (Math.random() - .5) * R, { vy: -30, life: 900, color: c[2], size: 1, add: true }); }, { under: true });
+  },
+  wisps(x, y, s, pts, o) {
+    const life = 2600, ramp = RAMP[o.ramp || 'ghost'];
+    ent(life, (q, age) => { if (q < .75 && Math.random() < .2 * gQual()) P(x + (Math.random() - .5) * 16 * s, y + (Math.random() - .5) * 5, { vy: -30 - Math.random() * 20, vx: Math.sin(age / 300) * 12, life: 1100, ramp, shape: 'disc', size: 1, size2: 3, add: Math.random() < .4 }); }, { under: true });
+  },
+  dust(x, y, s, pts, o) {   // dust billows then settles; pebbles hop
+    const col = o.dust || 'dust';
+    for (let k = 0; k < Math.round(7 * s * gQual()); k++) { const a = Math.random() * 6.28; P(x + Math.cos(a) * 6, y + Math.sin(a) * 3, { vx: Math.cos(a) * rnd2(20, 70) * s, vy: Math.sin(a) * rnd2(6, 20) - 14, life: rnd2(700, 1200), ramp: col, shape: 'disc', size: 2, size2: 5 + s * 2, drag: 1.4 }); }
+    for (let k = 0; k < Math.round(5 * s * gQual()); k++) P(x, y - 4, { vx: rnd2(-90, 90), vy: rnd2(-200, -110), g: 760, life: 700, ramp: o.rockRamp || 'rock', size: [1, 2][k % 2], size2: 1 });
+    ent(1500, q => { if (q < .6) { const i = bx(x), j = by(y); bctx.globalCompositeOperation = 'lighter'; aEllFill(i, j, 10 * s * (1 + q), 5 * s * (1 + q), '#e8dcc0', .09 * (1 - q / .6)); bctx.globalCompositeOperation = 'source-over'; } }, { under: true });
+  },
+  sparks(x, y, s, pts, o) {
+    const ramp = o.ramp || 'steel';
+    emit(x, y - 2, Math.round(10 * s * gQual()), { speed: [90, 260], ang: -Math.PI / 2, spread: 2.4, g: 520, life: [260, 560], ramp, size: [1, 2], size2: 1, add: true });
+    ent(700, (q, age) => { for (const p of pts.slice(0, 8)) if (Math.random() < .25 * (1 - q)) { bctx.globalCompositeOperation = 'lighter'; aRect(p[0] - OX - 1, p[1] - OY, 3, 1, '#ffffff', .8); aRect(p[0] - OX, p[1] - OY - 1, 1, 3, '#ffffff', .8); bctx.globalCompositeOperation = 'source-over'; } }, { under: true });
+  },
+  glitter(x, y, s, pts, o) {
+    const life = 3000, c = o.col || ['#c84a98', '#ff7ac8', '#ffd0ef', '#ffffff'], spots = pts.slice(0, 24);
+    ent(life, (q, age) => { for (let k = 0; k < spots.length; k++) { const tw = Math.sin(age / 180 + k * 1.9); if (tw < .35) continue; const i = spots[k][0] - OX, j = spots[k][1] - OY - age / 400; bctx.globalCompositeOperation = 'lighter'; aRect(i - 1, j, 3, 1, c[2], .9 * (1 - q)); aRect(i, j - 1, 1, 3, c[3], .9 * (1 - q)); bctx.globalCompositeOperation = 'source-over'; } }, { under: true });
+    emit(x, y - 6, Math.round(8 * s * gQual()), { r: 16, speed: [8, 30], ang: -Math.PI / 2, spread: 1, life: [900, 1600], ramp: 'fairy', shape: 'star', size: 1, add: true });
+  },
+  feathers(x, y, s, pts, o) { emit(x, y - 40, Math.round((3 + s * 2) * gQual()), { r: 22, speed: [4, 20], vy: 20, g: 14, drag: .8, life: [1800, 2800], ramp: 'flying', shape: 'feather', size: 1, spin: 2 }); },
+  snow(x, y, s, pts, o) { GL.frostglint(x, y, s, pts, o); emit(x, y - 60, Math.round(10 * s * gQual()), { r: 40, speed: [4, 18], vy: 24, g: 6, drag: .9, life: [1600, 2600], color: '#ffffff', shape: 'star', size: 1 }); }
+};
+
+/* ---------- per-move choice: [decal, size, options, lingering effect] ---------- */
+const GPAL = {
+  fire: null, dragon: ['#14102a', '#241c46', '#3a2f6a', '#6a5ab0'], steel: ['#1c2026', '#363e48', '#66717e', '#a8b4c2'], green: ['#10201a', '#1f3a26', '#2f5a38', '#4a8048'], blue: ['#10182a', '#1c2a4a', '#2a4a8a', '#5a8ae0'],
+  normal: ['#1c1a1a', '#34302c', '#5a5248', '#8a8070']
+};
+const GM = {
+  // Normal
+  'Tackle': ['crater', .55, { rocks: 0 }, 'dust'], 'Quick Attack': ['skid', 1.1, {}, 'dust'], 'Extreme Speed': ['skid', 1.4, { col: ['#6a4a10', '#c8a040', '#fff3b0'] }, 'glitter'], 'Body Slam': ['crater', 1.15, { rocks: 2 }, 'dust'], 'Headbutt': ['crater', .75, {}, 'dust'],
+  'Slash': ['gouge', 1, {}, 'sparks'], 'Double-Edge': ['crater', 1.35, { rocks: 3 }, 'dust'], 'Swift': ['sparkle', .8, { col: ['#a8761a', '#ffd23f', '#fff3b0', '#ffffff'] }, 'glitter'], 'Hyper Beam': ['char', 1.9, { pal: GPAL.normal }, 'embers'],
+  // Fire
+  'Ember': ['char', .6, {}, 'embers'], 'Flamethrower': ['char', 1.0, {}, 'embers'], 'Fire Blast': ['char', 1.8, {}, 'embers'], 'Fire Punch': ['char', .85, {}, 'embers'], 'Flare Blitz': ['char', 1.5, {}, 'embers'], 'Will-O-Wisp': ['char', .6, { pal: GPAL.blue, ramp: 'blueFire' }, 'embers'],
+  // Water
+  'Water Gun': ['wet', .7, {}, 'ripples'], 'Bubble Beam': ['wet', .85, { col: ['#2c4258', '#6a9ac6', '#bfe8ff', '#ffffff'] }, 'ripples'], 'Surf': ['wet', 1.9, {}, 'ripples'], 'Hydro Pump': ['wet', 1.45, {}, 'ripples'],
+  'Scald': ['wet', 1.1, { col: ['#3a4a5a', '#7aaed0', '#d8f4ff', '#ffffff'] }, 'ripples'], 'Aqua Jet': ['wet', .8, {}, 'ripples'], 'Waterfall': ['wet', 1.5, {}, 'ripples'], 'Crabhammer': ['crater', .9, { rocks: 2 }, 'ripples'],
+  // Grass
+  'Vine Whip': ['gouge', .9, { n: 2, col: ['#17301c', '#3fb04a', '#c8f58a'] }, 'sprouts'], 'Razor Leaf': ['grass', 1.1, {}, 'sprouts'], 'Seed Bomb': ['grass', .9, { leaves: false }, 'sprouts'], 'Giga Drain': ['grass', .9, { col: ['#1a4a26', '#5ee08a', '#a8ffc0', '#e8ffef'] }, 'sprouts'],
+  'Energy Ball': ['char', 1.0, { pal: GPAL.green }, 'sprouts'], 'Leaf Storm': ['grass', 1.8, {}, 'sprouts'], 'Sleep Powder': ['powder', 1.2, { col: ['#e8a0ff', '#f6d8ff', '#ffffff'] }, 'wisps'], 'Stun Spore': ['powder', 1.2, { col: ['#e8d040', '#fff07a', '#ffffff'] }, 'wisps'],
+  // Electric
+  'Thunder Shock': ['volt', .65, {}, 'arcs'], 'Thunderbolt': ['volt', 1.1, {}, 'arcs'], 'Thunder': ['volt', 1.7, {}, 'arcs'], 'Thunder Punch': ['volt', .9, {}, 'arcs'], 'Volt Tackle': ['volt', 1.3, {}, 'arcs'], 'Thunder Wave': ['volt', .6, {}, 'arcs'],
+  // Ice
+  'Ice Shard': ['frost', .65, {}, 'frostglint'], 'Ice Punch': ['frost', .9, {}, 'frostglint'], 'Aurora Beam': ['frost', 1.0, { col: ['#6a5ab0', '#a0d8ff', '#d0b0ff', '#ffffff'] }, 'frostglint', { ramp: 'aurora' }], 'Ice Beam': ['frost', 1.1, {}, 'frostglint'], 'Blizzard': ['frost', 2.0, {}, 'snow'],
+  // Fighting
+  'Mach Punch': ['skid', 1.1, {}, 'dust'], 'Karate Chop': ['crater', .65, {}, 'dust'], 'Brick Break': ['crater', 1.1, { rocks: 4, rock: RAMP.dust }, 'dust'], 'Cross Chop': ['gouge', 1, { cross: true, n: 2 }, 'sparks'], 'Close Combat': ['crater', 1.5, { rocks: 3 }, 'dust'], 'Aura Sphere': ['rune', .8, { col: ['#1c3a6a', '#5aa6ff', '#d8f0ff'], sides: 6 }, 'runeglow'], 'Bulk Up': null,
+  // Poison
+  'Poison Sting': ['sludge', .5, {}, 'bubbles'], 'Poison Jab': ['sludge', .8, {}, 'bubbles'], 'Sludge Bomb': ['sludge', 1.4, {}, 'bubbles'], 'Gunk Shot': ['sludge', 1.9, {}, 'bubbles'], 'Toxic': ['sludge', .9, {}, 'bubbles'],
+  // Ground
+  'Mud Shot': ['mud', .9, {}, 'dust'], 'Dig': ['crater', 1.15, { rocks: 3 }, 'dust'], 'Drill Run': ['spiral', 1.0, {}, 'dust'], 'Earth Power': ['fissure', 1.6, { edge: '#ffb347', glow: true }, 'embers', { ramp: 'fire' }], 'Earthquake': ['fissure', 1.7, {}, 'dust'],
+  // Flying
+  'Peck': ['feather', .6, {}, 'feathers'], 'Wing Attack': ['feather', .9, {}, 'feathers'], 'Aerial Ace': ['feather', .8, {}, 'feathers'], 'Air Slash': ['gouge', 1.0, { n: 2, col: ['#4a5a8a', '#a8c0f0', '#ffffff'] }, 'feathers'], 'Drill Peck': ['spiral', .8, { col: ['#2a2e38', '#d7e6ff'] }, 'feathers'], 'Brave Bird': ['crater', 1.3, { rocks: 2 }, 'feathers'], 'Hurricane': ['feather', 1.9, {}, 'feathers'],
+  // Psychic
+  'Confusion': ['rune', .8, {}, 'runeglow'], 'Psybeam': ['rune', .9, {}, 'runeglow'], 'Psychic': ['rune', 1.5, { sides: 7 }, 'runeglow'], 'Zen Headbutt': ['rune', .85, { sides: 6 }, 'runeglow'], 'Hypnosis': ['rune', .8, { sides: 3 }, 'runeglow'],
+  // Bug
+  'Bug Bite': ['bite', .7, { col: ['#2a3a0e', '#b6d636'] }, 'bubbles', { ramp: 'bug' }], 'X-Scissor': ['gouge', 1.05, { cross: true, n: 2, col: ['#2a3a0e', '#86a82a', '#e0f58a'] }, 'sparks', { ramp: 'bug' }], 'Leech Life': ['grass', .6, { col: ['#2a3a0e', '#86a82a', '#b6d636', '#e0f58a'], leaves: false }, 'sprouts'],
+  'Pin Missile': ['pins', 1, {}, 'dust'], 'Signal Beam': ['char', 1.0, { pal: ['#1a2a0e', '#2a3a1a', '#56701a', '#b6d636'] }, 'embers', { ramp: 'bug' }], 'Bug Buzz': ['sonic', 1.4, {}, 'dust'], 'String Shot': ['web', 1.1, {}, 'frostglint', { ramp: 'normal' }],
+  // Ghost
+  'Lick': ['sludge', .7, { col: ['#140e30', '#3a2a8a', '#8c6bff', '#e6dcff'] }, 'wisps'], 'Shadow Claw': ['gouge', 1.0, { col: ['#140e30', '#5a3ac8', '#b9a4ff'] }, 'wisps'], 'Shadow Ball': ['shade', 1.2, {}, 'wisps'], 'Night Shade': ['shade', 1.0, {}, 'wisps'], 'Confuse Ray': ['shade', .7, {}, 'wisps'],
+  // Dragon
+  'Dragon Breath': ['char', 1.0, { pal: GPAL.dragon, ramp: 'dragon' }, 'embers'], 'Dragon Claw': ['gouge', 1.1, { col: ['#14102a', '#4a3ad0', '#a99bff'] }, 'sparks', { ramp: 'dragon' }], 'Dragon Pulse': ['rune', 1.3, { col: ['#24187a', '#7d6bff', '#e5e0ff'], sides: 5 }, 'runeglow'], 'Outrage': ['char', 1.6, { pal: GPAL.dragon, ramp: 'dragon' }, 'embers'],
+  // Steel
+  'Metal Claw': ['gouge', 1, { col: ['#1c2026', '#9aaabb', '#ffffff'] }, 'sparks'], 'Flash Cannon': ['char', 1.3, { pal: GPAL.steel, ramp: 'steel' }, 'sparks'], 'Iron Tail': ['crater', 1.0, { rocks: 2, rock: RAMP.steel }, 'sparks'],
+  // Rock
+  'Rock Throw': ['crater', .8, { rocks: 4, rock: RAMP.rock }, 'dust'], 'Rock Slide': ['crater', 1.0, { rocks: 6, rock: RAMP.rock }, 'dust'], 'Stone Edge': ['debris', 1.2, { n: 5, pal: RAMP.rock }, 'dust'],
+  // Fairy
+  'Fairy Wind': ['sparkle', .9, {}, 'glitter'], 'Dazzling Gleam': ['sparkle', 1.6, {}, 'glitter'], 'Moonblast': ['rune', 1.2, { sides: 4 }, 'runeglow'], 'Play Rough': ['crater', .8, {}, 'glitter'],
+  // Dark
+  'Bite': ['bite', .9, {}, 'wisps', { ramp: 'dark' }], 'Crunch': ['bite', 1.25, {}, 'wisps', { ramp: 'dark' }]
+};
+const GTYPE = { Normal: ['crater', .8, {}, 'dust'], Fire: ['char', 1, {}, 'embers'], Water: ['wet', 1, {}, 'ripples'], Grass: ['grass', 1, {}, 'sprouts'], Electric: ['volt', 1, {}, 'arcs'], Ice: ['frost', 1, {}, 'frostglint'], Fighting: ['crater', .9, {}, 'dust'], Poison: ['sludge', 1, {}, 'bubbles'], Ground: ['crater', 1, { rocks: 3 }, 'dust'], Flying: ['feather', 1, {}, 'feathers'], Psychic: ['rune', 1, {}, 'runeglow'], Bug: ['pins', 1, {}, 'dust'], Ghost: ['shade', 1, {}, 'wisps'], Dragon: ['char', 1, { pal: GPAL.dragon, ramp: 'dragon' }, 'embers'], Steel: ['gouge', 1, { col: ['#1c2026', '#9aaabb', '#ffffff'] }, 'sparks'], Rock: ['crater', 1, { rocks: 4 }, 'dust'], Fairy: ['sparkle', 1, {}, 'glitter'], Dark: ['bite', 1, {}, 'wisps'] };
+function groundStyleOf(mv) { return GM[mv.name] || GTYPE[mv.type] || GTYPE.Normal; }
+
+/* ---------- stamping ---------- */
+function groundStamp(style, size, wx, wy, extra = {}) {
+  if (!scarCtx || !style) return;
+  const [kind, sz, opts, linger, lopts] = style, o = Object.assign({}, opts, extra), g = scarCtx, r = mulberry((Math.random() * 1e9) | 0), gx = Math.round(ax(wx)), gy = Math.round(ay(wy));
+  if (gx < 4 || gy < 4 || gx > ART_W - 4 || gy > ART_H - 4) return;
+  const s = clamp(sz * size, .45, 2.4); let pts = [];
+  try { pts = (GP[kind] || GP.crater)(g, gx, gy, s, r, o) || []; } catch (e) { console.error(e); }
+  g.globalAlpha = 1;
+  if (o.glow && !extra.noLinger) { /* lava-lit cracks are shown by the lingering embers */ }
+  if (extra.noLinger || !linger || GR.live >= 22) return;
+  GR.live++; const f = GL[linger]; if (!f) { GR.live--; return; }
+  const lo = Object.assign({}, lopts || {}, o.ramp ? { ramp: o.ramp } : {}, o.col && linger !== 'embers' ? { col: o.col } : {});
+  try { f(wx, wy, s, pts, lo); } catch (e) { console.error(e); }
+  setTimeoutGame(900 + 1200 * s, () => { GR.live = Math.max(0, GR.live - 1); });
+}
+// a beam leaves a trail of the move's mark from the user to the target
+function groundLine(style, size, x0, y0, x1, y1) {
+  const d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(3, Math.min(9, Math.round(d / 55)));
+  for (let k = 1; k <= n; k++) { const t = k / n, last = k === n, jx = (Math.random() - .5) * 8, jy = (Math.random() - .5) * 4;
+    groundStamp(style, size * (last ? 1 : .55 + .15 * (k % 2)), x0 + (x1 - x0) * t + jx, y0 + (y1 - y0) * t + jy, { noLinger: !last && k % 3 !== 0, ang: Math.atan2(y1 - y0, x1 - x0) }); }
+}
+// what a damaging hit leaves, chosen by the move and how it was delivered
+function groundHit(S, mv, eff, crit) {
+  const sd = side(S), src = side(other(S)), st = groundStyleOf(mv); if (!st) return;
+  const size = clamp(.65 + (mv.pow || 50) / 160, .6, 1.5) * (crit ? 1.2 : 1) * (eff > 1 ? 1.1 : eff < 1 ? .85 : 1);
+  if (mv.anim === 'beam') groundLine(st, size, src.x + src.face * 24, src.y + 2, sd.x, sd.y + 2);
+  else if (mv.anim === 'wave' || mv.anim === 'quake') { const n = 4, ang = Math.atan2(sd.y - src.y, sd.x - src.x); for (let k = 1; k <= n; k++) { const t = k / n, a = ang + (Math.random() - .5) * .5; groundStamp(st, size * (.5 + t * .5), src.x + (sd.x - src.x) * t + (Math.random() - .5) * 20, src.y + (sd.y - src.y) * t + (Math.random() - .5) * 14, { ang: a, noLinger: k < n - 1 }); } }
+  else if (['dash', 'contact'].includes(mv.anim) && (st[0] === 'skid')) { groundStamp(st, size, (src.x + sd.x) / 2, (src.y + sd.y) / 2, { ang: Math.atan2(sd.y - src.y, sd.x - src.x) }); groundStamp(['crater', .6, { rocks: 0 }, 'dust'], size, sd.x, sd.y + 2); }
+  else groundStamp(st, size, sd.x + (Math.random() - .5) * 12, sd.y + 2 + (Math.random() - .5) * 4);
+}
+// ground strikes (Thunder, Rock Slide, Blizzard, Psychic…) mark where they land, hit or miss
+function groundMark(mk) {
+  const st = groundStyleOf(mk.mv), size = clamp(.7 + (mk.r || 60) / 110, .8, 1.7);
+  if (mk.mv.name === 'Rock Slide') { for (let k = 0; k < 4; k++) groundStamp(st, .55, mk.x + (Math.random() - .5) * 60, mk.y + (Math.random() - .5) * 22, { noLinger: k > 0, rocks: 3 }); return; }
+  if (mk.mv.name === 'Thunder') { groundStamp(st, size, mk.x, mk.y + 2); for (let k = 0; k < 2; k++) groundStamp(GM['Thunder Shock'], .8, mk.x + (Math.random() - .5) * 40, mk.y + (Math.random() - .5) * 14, { noLinger: true }); return; }
+  groundStamp(st, size, mk.x, mk.y + 2);
+}
+
+/* ---------- hooks: replace the old single-kind scars ---------- */
+function groundScar(kind, x, y, extra) {            // called by addScar() in render.js
+  if (!scarCtx) return;
+  if (GCTX.mode === 'central' && kind !== 'trail') return;   // the move's own mark is stamped separately
+  const mv = GCTX.mv;
+  if (kind === 'trail') {
+    const st = mv ? groundStyleOf(mv) : null, k = st ? st[0] : 'skid';
+    if (['char', 'volt', 'wet', 'frost', 'sludge', 'grass'].includes(k)) return groundStamp([k, .32, st[2], null], 1, x, y, { noLinger: true });
+    return groundStamp(['skid', .55, {}, null], 1, x, y, { noLinger: true });
+  }
+  if (mv) { const st = groundStyleOf(mv); return groundStamp([st[0], st[1] * .6, st[2], null], 1, x, y, { noLinger: true }); }
+  const c = (extra && extra.color) || '';
+  if (kind === 'crack') return groundStamp(['fissure', .5, {}, null], 1, x, y, { noLinger: true });
+  if (kind === 'splat') { const n = parseInt(c.slice(1), 16) || 0, R = n >> 16 & 255, G = n >> 8 & 255, B = n & 255; return groundStamp([B > R + 20 && B > G ? 'wet' : R > G + 20 && B > G ? 'sludge' : 'mud', .6, {}, null], 1, x, y, { noLinger: true }); }
+  return groundStamp(['char', .6, {}, null], 1, x, y, { noLinger: true });
+}
+(function hookVFX() {
+  const wrap = (name, mode, after) => { const orig = VFX[name]; if (typeof orig !== 'function') return; VFX[name] = function (...a) { const mv = name === 'hit' ? a[1] : name === 'markFire' ? a[0].mv : name === 'explode' || name === 'impactAt' ? a[2] : name === 'dashFx' ? a[1] : name === 'moveImpact' ? a[1] : null; const pm = GCTX.mv, pmode = GCTX.mode; GCTX.mv = mv || null; GCTX.mode = mode; try { return orig.apply(this, a); } finally { GCTX.mv = pm; GCTX.mode = pmode; if (after) try { after(...a); } catch (e) { console.error(e); } } }; };
+  wrap('hit', 'central', (S, mv, dmg, eff, crit) => groundHit(S, mv, eff, crit));
+  wrap('markFire', 'central', mk => groundMark(mk));
+  wrap('explode', 'central', (x, y, mv) => groundStamp(groundStyleOf(mv), clamp(.8 + (mv.pow || 60) / 130, .9, 1.7), x, y + 30));
+  wrap('impactAt', 'central', null);
+  wrap('dashFx', 'styled', null); wrap('moveImpact', 'central', null);
+  const er = VFX.erupt; VFX.erupt = function (x, y) { const r = er.apply(this, arguments); groundStamp(['crater', 1.0, { rocks: 4 }, 'dust'], 1, x, y + 2); return r; };
+})();
+
+//# sourceURL=ground.js
 </script>
 <script>
 'use strict';
@@ -6921,7 +7294,7 @@ async function battleCountdown(my) {
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '15.8';
+const APP_VERSION = '15.9';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -8871,6 +9244,7 @@ function safariEncounter(leg) {
   });
 }
 
+window.safariEncounter = safariEncounter; window.SAFARI = SAFARI;   // used by story_plus.js (grass search)
 /* ---------- every gym challenge (Pokédex runs): walk the route to the leader, meet a wild Pokémon, then battle ----------
    Gyms 1–8 trigger an encounter on every challenge (rematches too). Lance and Gary: the walk only. Optional trainers: never. */
 const _sfStartGymBattle = startGymBattle;
@@ -8930,6 +9304,192 @@ window.safariBall = safariBall; window.catchChance = catchChance; window.safariC
 })();
 
 //# sourceURL=safari.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 24: STORY PLUS (Pokédex Adventure)
+   1. Faster levelling. Every battle now gives a lot more experience:
+        gain = the old amount x 4, but never less than 1.1 levels' worth, and a Pokémon that
+        is behind for the gym you are about to face (for example a fresh catch) gets up to 3x more.
+      Searching the grass (below) also trains your whole party.
+   2. "Where to find" lookup. For every Pokémon: which routes, which levels, the chance, and which
+      gym badge you need before that route opens (or "from the start"), plus evolutions.
+      Open it from the story map, the Pokédex, or a gym card (that gym's route).
+   3. Search the grass. On any unlocked gym's card you can walk its route and meet a wild Pokémon
+      instead of fighting the leader. It can be repeated as often as you like and trains your party.
+   ===================================================================== */
+/* ---------- 1. faster levelling ---------- */
+const EXP_BOOST = 4, MIN_LEVELS_PER_BATTLE = 1.1;
+function easyExp(e, base) {
+  const sv = STORY.save, need = expFor(e.level + 1) - expFor(e.level);
+  let gain = Math.max(base * EXP_BOOST, need * MIN_LEVELS_PER_BATTLE);
+  const target = Math.min(75, 8 + 6 * (sv ? sv.badges : 0)), lag = Math.max(0, target - e.level);      // catch-up for low-level Pokémon
+  return Math.round(gain * (1 + Math.min(2, lag / 8)));
+}
+awardExp = function () {
+  const sv = STORY.save; if (!isDexSave(sv) || !G || !G.sides) return [];
+  return G.sides.A.team.map(m => {
+    const key = m.pick || m.name, e = dexEntry(sv, key); if (!e) return null;
+    return dexGainExp(sv, key, easyExp(e, Math.round((m.dmgDealt || 0) * .8) + 200));
+  }).filter(Boolean);
+};
+
+/* ---------- 2. where to find Pokémon ---------- */
+const locReq = leg => (leg <= 0 ? { text: 'From the start', badge: null } : { text: `After the ${GYMS[leg - 1].badge}`, badge: GYMS[leg - 1] });
+function locInfo(name) {
+  const routes = [];
+  for (const R of ROUTES) { const tot = R.mons.reduce((s, m) => s + m[3], 0); for (const m of R.mons) if (m[0] === name) routes.push({ leg: R.leg, name: R.name, lo: m[1], hi: m[2], pct: m[3] / tot * 100, rare: m[3] < 1 }); }
+  const evoFrom = Object.entries(EVO).filter(([k, v]) => [].concat(v[0]).includes(name)).map(([k, v]) => ({ from: k, lv: v[1] }));
+  return { routes, evoFrom, starter: STARTERS.includes(name) };
+}
+// the earliest point this Pokémon can be obtained (-1 = starter), following its pre-evolutions
+function locEarliest(name, seen = new Set()) {
+  if (seen.has(name)) return Infinity; seen.add(name); const I = locInfo(name); let best = I.starter ? -1 : Infinity;
+  for (const r of I.routes) best = Math.min(best, r.leg);
+  for (const f of I.evoFrom) best = Math.min(best, locEarliest(f.from, seen));
+  return best;
+}
+const fmtPct = p => (p < 1 ? '<1%' : p < 10 ? p.toFixed(1) + '%' : Math.round(p) + '%');
+(function locUi() {
+  const st = document.createElement('style');
+  st.textContent = `
+#locOv{position:fixed;inset:0;z-index:92;display:none;align-items:center;justify-content:center;background:rgba(5,8,22,.8);backdrop-filter:blur(3px);padding:10px;font-family:var(--ui);color:#fff}
+#locOv.show{display:flex}
+#locOv .lc{width:min(940px,100%);max-height:100%;display:flex;flex-direction:column;border-radius:20px;background:linear-gradient(160deg,#1d2766,#121838 60%);border:2px solid #ffd84a;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
+#locOv .lc-top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,216,74,.12);border-bottom:2px solid rgba(255,216,74,.4)}
+#locOv .lc-top h3{margin:0;font-family:var(--display);font-size:clamp(20px,3vw,28px);color:#ffd84a;flex:1}
+#locOv .lc-top h3 small{display:block;font:700 12px var(--ui);color:#a9b6ff}
+#locOv .lc-x{border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font:900 16px var(--ui);width:36px;height:36px;cursor:pointer}
+#locOv .lc-bar{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px;align-items:center}
+#locOv .lc-bar input,#locOv .lc-bar select{border:0;border-radius:10px;padding:8px 10px;font:700 14px var(--ui);background:rgba(255,255,255,.14);color:#fff;min-width:0}
+#locOv .lc-bar input{flex:1;min-width:140px}
+#locOv .lc-bar select option{color:#111}
+#locOv .lc-bar button{border:0;border-radius:10px;padding:8px 12px;font:800 13px var(--ui);cursor:pointer;background:rgba(255,255,255,.12);color:#fff}
+#locOv .lc-bar button.on{background:#ffd84a;color:#2a1206}
+#locOv .lc-list{flex:1;overflow:auto;padding:8px 12px 14px;display:flex;flex-direction:column;gap:6px}
+#locOv .lr{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:6px 10px}
+#locOv .lr.got{border-color:rgba(122,215,255,.55)}
+#locOv .lr .p{height:56px;display:flex;align-items:center;justify-content:center}
+#locOv .lr .p img,#locOv .lr .p canvas{max-height:54px;max-width:100%;image-rendering:pixelated}
+#locOv .lr .nm{font:900 15px var(--ui)} #locOv .lr .nm small{font:800 11px var(--ui);color:#a9b6ff;margin-left:6px}
+#locOv .lr .ok{color:#7ad7ff;font:800 11px var(--ui);margin-left:6px}
+#locOv .lr .w{display:flex;flex-direction:column;gap:3px;margin-top:3px}
+#locOv .lr .w div{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:700 12px var(--ui);color:#dfe5ff}
+#locOv .chip{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:2px 9px;font:800 11px var(--ui);background:rgba(255,255,255,.14);white-space:nowrap}
+#locOv .chip.req{background:#ffd84a;color:#2a1206} #locOv .chip.start{background:#58d65a;color:#06240a} #locOv .chip.evo{background:#7ad7ff;color:#06243a} #locOv .chip.rare{background:#ff7ab8;color:#2a0616}
+#locOv .chip img{width:15px;height:15px}
+#locOv .none{padding:24px;text-align:center;color:#a9b6ff;font:700 14px var(--ui)}
+#dexOv .dm .loc{position:absolute;bottom:3px;left:4px;width:18px;height:18px;border-radius:50%;border:0;background:#1d2766;color:#ffd84a;font:900 11px var(--ui);cursor:pointer;padding:0;line-height:18px}
+#dexOv .dx-where{border:0;border-radius:10px;background:#ffd84a;color:#2a1206;font:800 13px var(--ui);padding:8px 12px;cursor:pointer}
+@media (max-height:560px){#locOv .lr{grid-template-columns:48px 1fr}#locOv .lr .p{height:42px}}`;
+  document.head.appendChild(st);
+  const d = document.createElement('div'); d.id = 'locOv'; d.setAttribute('role', 'dialog'); document.body.appendChild(d);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && d.classList.contains('show')) { d.classList.remove('show'); e.stopPropagation(); } }, true);
+})();
+const LOC = { q: '', show: 'all', leg: 'all' };
+function openLocations(opts = {}) {
+  const sv = STORY.save; if (!isDexSave(sv)) return;
+  if ('query' in opts) LOC.q = opts.query || ''; if ('leg' in opts) LOC.leg = opts.leg === null ? 'all' : String(opts.leg); if (opts.show) LOC.show = opts.show;
+  const ov = $('locOv'), owned = n => !!dexEntry(sv, n);
+  ov.innerHTML = `<div class="lc"><div class="lc-top"><h3>WHERE TO FIND POKÉMON<small>Routes, levels, chances and the gym badge that opens each route</small></h3><button class="lc-x" type="button" aria-label="Close">✕</button></div>
+    <div class="lc-bar"><input id="lcQ" type="search" placeholder="Search a Pokémon…" value="${escapeHtml(LOC.q)}" autocomplete="off">
+      <select id="lcLeg"><option value="all">All routes</option>${ROUTES.map(R => `<option value="${R.leg}">${R.leg + 1}. ${escapeHtml(R.name)} — ${locReq(R.leg).text}</option>`).join('')}</select>
+      <button type="button" data-s="all">All</button><button type="button" data-s="new">Not caught</button><button type="button" data-s="got">Caught</button></div>
+    <div class="lc-list" id="lcList"></div></div>`;
+  $('lcLeg').value = LOC.leg;
+  const draw = () => {
+    const q = LOC.q.trim().toLowerCase(), list = $('lcList'); list.innerHTML = '';
+    for (const b of ov.querySelectorAll('.lc-bar button')) b.classList.toggle('on', b.dataset.s === LOC.show);
+    let rows = DEX.map(d => ({ d, I: locInfo(d.name), got: owned(d.name) || owned(d.name + '|shiny') }));
+    if (q) rows = rows.filter(r => r.d.name.toLowerCase().includes(q) || String(r.d.id) === q);
+    if (LOC.leg !== 'all') { const L = +LOC.leg; rows = rows.filter(r => r.I.routes.some(x => x.leg === L)); rows.sort((a, b) => b.I.routes.find(x => x.leg === L).pct - a.I.routes.find(x => x.leg === L).pct); }
+    if (LOC.show === 'new') rows = rows.filter(r => !r.got); else if (LOC.show === 'got') rows = rows.filter(r => r.got);
+    ov.querySelector('.lc-top small').textContent = `${rows.length} Pokémon shown · caught ${DEX.filter(d => owned(d.name) || owned(d.name + '|shiny')).length} / ${DEX.length}`;
+    if (!rows.length) { list.innerHTML = '<div class="none">No Pokémon match.</div>'; return; }
+    for (const { d, I, got } of rows.slice(0, 160)) {
+      const lines = [];
+      if (I.starter) lines.push(`<div><span class="chip start">Starter</span> Choose it at the start of a run</div>`);
+      for (const r of I.routes.filter(x => LOC.leg === 'all' || x.leg === +LOC.leg)) { const q2 = locReq(r.leg); lines.push(`<div><span class="chip req">${q2.badge ? `<img src="${badgeUrl(q2.badge)}" alt="">` : ''}${q2.text}</span><span>${escapeHtml(r.name)}</span><span class="chip">Lv ${r.lo === r.hi ? r.lo : r.lo + '–' + r.hi}</span><span class="chip ${r.rare ? 'rare' : ''}">${r.rare ? 'Rare · ' : ''}${fmtPct(r.pct)}</span></div>`); }
+      for (const f of I.evoFrom) { const e0 = locEarliest(f.from), q3 = e0 < 0 ? 'Starter' : locReq(e0).text; lines.push(`<div><span class="chip evo">Evolves</span><span>from ${escapeHtml(f.from)} at Lv ${f.lv} — ${escapeHtml(f.from)}: ${e0 < 0 ? 'a starter' : q3.toLowerCase()}</span></div>`); }
+      if (!lines.length) lines.push('<div>Not found in the wild</div>');
+      const row = document.createElement('div'); row.className = 'lr' + (got ? ' got' : '');
+      row.innerHTML = `<div class="p"></div><div><div class="nm">${escapeHtml(d.name)}<small>#${String(d.id).padStart(3, '0')} · ${d.types.join(' / ')}</small>${got ? '<span class="ok">● in your Pokédex</span>' : ''}</div><div class="w">${lines.join('')}</div></div>`;
+      try { row.querySelector('.p').appendChild(monPic(d.name)); } catch (e) { }
+      list.appendChild(row);
+    }
+    if (rows.length > 160) list.insertAdjacentHTML('beforeend', '<div class="none">Showing the first 160 — search to narrow it down.</div>');
+  };
+  $('lcQ').oninput = e => { LOC.q = e.target.value; draw(); };
+  $('lcLeg').onchange = e => { LOC.leg = e.target.value; draw(); };
+  for (const b of ov.querySelectorAll('.lc-bar button')) b.onclick = () => { LOC.show = b.dataset.s; draw(); };
+  ov.querySelector('.lc-x').onclick = () => ov.classList.remove('show');
+  ov.onclick = e => { if (e.target === ov) ov.classList.remove('show'); };
+  draw(); ov.classList.add('show');
+  if (opts.focus !== false && !LOC.q) setTimeout(() => { try { $('lcQ').focus(); } catch (e) { } }, 60);
+}
+
+/* the Pokédex gets a "Where to find" button, and an info dot on every card (also on Pokémon you have not caught yet) */
+const _lpOpenDex = openDex;
+openDex = function () {
+  const r = _lpOpenDex.apply(this, arguments);
+  const ov = $('dexOv'), top = ov && ov.querySelector('.dx-top'); if (!top) return r;
+  if (!top.querySelector('.dx-where')) { const b = document.createElement('button'); b.type = 'button'; b.className = 'dx-where'; b.textContent = 'Where to find'; b.onclick = () => openLocations({ query: '', leg: null, show: 'all' }); top.insertBefore(b, top.querySelector('.dx-close')); }
+  for (const card of ov.querySelectorAll('.dm')) {
+    if (card.querySelector('.loc')) continue; const num = card.querySelector('.num'), id = num && parseInt(num.textContent.replace('#', ''), 10), d = DEX[id - 1]; if (!d) continue;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'loc'; b.textContent = 'i'; b.title = `Where to find ${d.name}`;
+    b.onclick = e => { e.stopPropagation(); openLocations({ query: d.name, leg: null, show: 'all', focus: false }); }; card.appendChild(b);
+    if (card.classList.contains('no')) card.onclick = () => openLocations({ query: d.name, leg: null, show: 'all', focus: false });
+  }
+  return r;
+};
+
+/* ---------- 3. search the grass instead of fighting ---------- */
+function grassExp(res) {
+  const sv = STORY.save, out = [], base = 100 + (res && res.lv ? res.lv : 5) * 30;
+  for (const key of sv.team || []) { const e = dexEntry(sv, key); if (!e) continue; const r = dexGainExp(sv, key, easyExp(e, base)); if (r) out.push(r); }
+  return out;
+}
+async function searchGrass(i) {
+  const sv = STORY.save; if (!isDexSave(sv) || SAFARI.busy || i >= ROUTES.length || i > sv.badges) return;
+  SAFARI.busy = true; closeModal(); STORY.at = null; let res = null;
+  try { placeAvatar(nodeAt(i)); await walkLeg(i); res = await safariEncounter(i); }
+  finally { SAFARI.busy = false; }
+  const gains = grassExp(res); saveStory(); renderStory();
+  const m = $('syModal'), R = ROUTES[i], g = GYMS[i];
+  m.innerHTML = `<div class="sy-cer"><h2>${res && res.caught ? 'Caught ' + escapeHtml(res.sp) + '!' : 'Grass search over'}</h2>
+    <p>${escapeHtml(R.name)} · on the way to ${escapeHtml(g.city)}. Your party trained while you searched.</p>${expSummaryHtml(gains)}
+    <div class="acts" style="justify-content:center;margin-top:12px"><button class="sy-btn go" type="button" id="gsAgain">Search again</button><button class="sy-btn" type="button" id="gsFight">Gym card</button><button class="sy-btn" type="button" id="gsBack">Back to map</button></div></div>`;
+  m.classList.add('show');
+  $('gsAgain').onclick = () => searchGrass(i); $('gsFight').onclick = () => openGymCard(i); $('gsBack').onclick = closeModal; $('gsAgain').focus();
+}
+const _lpOpenGymCard = openGymCard;
+openGymCard = function (i) {
+  const r = _lpOpenGymCard.apply(this, arguments); const sv = STORY.save;
+  if (!isDexSave(sv) || i >= ROUTES.length) return r;
+  const acts = document.querySelector('#syModal .acts'); if (!acts || acts.querySelector('#syGrass')) return r;
+  const open = i <= sv.badges, back = acts.querySelector('#syBack'), g = GYMS[i];
+  const grass = document.createElement('button'); grass.type = 'button'; grass.className = 'sy-btn'; grass.id = 'syGrass';
+  grass.textContent = open ? 'Search the grass' : 'Search the grass (locked)'; grass.disabled = !open;
+  grass.title = open ? `Walk the route to ${g.city}, meet a wild Pokémon and train your party — no gym battle` : `Earn the ${GYMS[Math.max(0, i - 1)].badge} first`;
+  const loc = document.createElement('button'); loc.type = 'button'; loc.className = 'sy-btn'; loc.id = 'syRouteMons'; loc.textContent = 'Route Pokémon'; loc.title = 'Which Pokémon live on this route';
+  acts.insertBefore(grass, back); acts.insertBefore(loc, back);
+  grass.onclick = () => searchGrass(i); loc.onclick = () => openLocations({ leg: i, query: '', show: 'all', focus: false });
+  return r;
+};
+
+/* a "Locations" button on the story map */
+(function locButton() {
+  const top = document.querySelector('#storyOv .sy-top'); if (!top) return;
+  const b = document.createElement('button'); b.className = 'sy-btn'; b.id = 'syLoc'; b.type = 'button'; b.textContent = 'Where to find'; b.style.display = 'none';
+  b.onclick = () => openLocations({ query: '', leg: null, show: 'all' }); top.insertBefore(b, $('syDex') || $('syMenu'));
+})();
+const _lpRenderStory = renderStory;
+renderStory = function () { const r = _lpRenderStory.apply(this, arguments); const b = $('syLoc'); if (b) b.style.display = isDexSave(STORY.save) ? '' : 'none'; return r; };
+{ const sb = $('syDex'); if (sb) sb.onclick = () => openDex(); }   // the map's Pokédex button was bound to the old function
+window.openLocations = openLocations; window.searchGrass = searchGrass;
+
+//# sourceURL=story_plus.js
 </script>
 <script>
 'use strict';
