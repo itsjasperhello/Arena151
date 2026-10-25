@@ -230,6 +230,7 @@ function updateCast(S, dt) {
         const b = { owner: S, mv, u: m, x: from.x, y: from.y, ang, t: 0, life: 520, w: mv.pow >= 110 ? 26 : 18, pend: false, grace: CLASH.grace, cl: 0, clip: 0 };
         const px = t.x - from.x, py = (t.y - 32) - from.y, along = px * Math.cos(ang) + py * Math.sin(ang), perp = Math.abs(-px * Math.sin(ang) + py * Math.cos(ang));
         G.beams.push(b); c._beam = b;
+        if (mv.e && mv.e.rch) { sd.kbx -= sd.face * 360; }   // the user is pushed back by the force of the beam (Hyper Beam style recoil)
         if (present(fs) && along > 0 && perp < 44) {
           b.pend = true;                           // damage lands after a short grace so a beam fired back can still meet it
           const rival = G.clash ? null : G.beams.find(o => o !== b && o.owner === fs && o.pend && !o.cl);
