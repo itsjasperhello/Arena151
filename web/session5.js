@@ -35,6 +35,7 @@ function resizeScene() {
   buf = document.createElement('canvas'); buf.width = Math.ceil(DW / pzMin) + 4; buf.height = Math.ceil(DH / pzMin) + 4;
   gctx = bctx = buf.getContext('2d'); bctx.imageSmoothingEnabled = false;
   fbuf = document.createElement('canvas'); fbuf.width = buf.width; fbuf.height = buf.height; fctx = fbuf.getContext('2d'); fctx.imageSmoothingEnabled = false;
+  makeHiLayers();
   cam.pz = modePz((window.SETTINGS && SETTINGS.cam) || 'arena');
   if (!snow.length) for (let i = 0; i < 170; i++) snow.push({ x: Math.random() * ART_W, y: Math.random() * ART_H, z: .35 + Math.random() * .9, p: Math.random() * 6 });
   if (!scarCanvas) buildScars();

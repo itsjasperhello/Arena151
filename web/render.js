@@ -37,6 +37,7 @@ function resizeScene() {
   buf = document.createElement('canvas'); buf.width = Math.ceil(DW / PZ0) + 4; buf.height = Math.ceil(DH / PZ0) + 4;
   gctx = bctx = buf.getContext('2d'); bctx.imageSmoothingEnabled = false;
   fbuf = document.createElement('canvas'); fbuf.width = buf.width; fbuf.height = buf.height; fctx = fbuf.getContext('2d'); fctx.imageSmoothingEnabled = false;
+  makeHiLayers();   // hdfx.js: full-resolution effect layers
   cam.pz = PZ0;
   if (!snow.length) for (let i = 0; i < 170; i++) snow.push({ x: Math.random() * ART_W, y: Math.random() * ART_H, z: .35 + Math.random() * .9, p: Math.random() * 6 });
   if (!scarCanvas) buildScars();
@@ -58,12 +59,12 @@ function addScar(kind, x, y, extra = {}) {
 
 /* ---------- art-buffer primitives ---------- */
 let OX = 0, OY = 0;   // camera offset in art pixels (top-left of the view)
-const bx = x => Math.round(ax(x) - OX), by = y => Math.round(ay(y) - OY);
-function aRect(i, j, w, h, col, a = 1) { bctx.globalAlpha = a; bctx.fillStyle = col; bctx.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); bctx.globalAlpha = 1; }
-function aDisc(i, j, r, col, a = 1) { bctx.globalAlpha = a; bctx.fillStyle = col; const ri = Math.max(1, Math.round(r)); for (let q = -ri; q <= ri; q++) { const w = Math.round(Math.sqrt(Math.max(0, ri * ri - q * q))); bctx.fillRect(Math.round(i) - w, Math.round(j) + q, w * 2 + 1, 1); } bctx.globalAlpha = 1; }
-function aRing(i, j, rx, ry, col, a = 1, th = 1) { bctx.globalAlpha = a; bctx.fillStyle = col; const n = Math.max(24, Math.round((rx + ry) * 3)); let li = null, lj = null; for (let k = 0; k < n; k++) { const t = k / n * Math.PI * 2, x = Math.round(i + Math.cos(t) * rx), y = Math.round(j + Math.sin(t) * ry); if (x !== li || y !== lj) bctx.fillRect(x, y, th, th); li = x; lj = y; } bctx.globalAlpha = 1; }
-function aEllFill(i, j, rx, ry, col, a) { bctx.globalAlpha = a; bctx.fillStyle = col; const rows = Math.max(1, Math.round(ry)); for (let q = -rows; q <= rows; q++) { const w = rx * Math.sqrt(Math.max(0, 1 - (q / rows) ** 2)); bctx.fillRect(Math.round(i - w), Math.round(j) + q, Math.max(1, Math.round(w * 2)), 1); } bctx.globalAlpha = 1; }
-function aLine(i0, j0, i1, j1, col, a = 1, w = 1) { bctx.globalAlpha = a; bctx.fillStyle = col; const n = Math.ceil(Math.hypot(i1 - i0, j1 - j0)); for (let k = 0; k <= n; k++) { const t = n ? k / n : 0; bctx.fillRect(Math.round(lerp(i0, i1, t) - w / 2), Math.round(lerp(j0, j1, t) - w / 2), w, w); } bctx.globalAlpha = 1; }
+const bx = x => ax(x) - OX, by = y => ay(y) - OY;   // art-pixel coordinates (fractional: the effect layers are drawn at full resolution)
+function aRect(i, j, w, h, col, a = 1) { if (bctx.__hi) return hiRect(i, j, w, h, col, a); bctx.globalAlpha = a; bctx.fillStyle = col; bctx.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); bctx.globalAlpha = 1; }
+function aDisc(i, j, r, col, a = 1) { if (bctx.__hi) return hiDisc(i, j, r, col, a); bctx.globalAlpha = a; bctx.fillStyle = col; const ri = Math.max(1, Math.round(r)); for (let q = -ri; q <= ri; q++) { const w = Math.round(Math.sqrt(Math.max(0, ri * ri - q * q))); bctx.fillRect(Math.round(i) - w, Math.round(j) + q, w * 2 + 1, 1); } bctx.globalAlpha = 1; }
+function aRing(i, j, rx, ry, col, a = 1, th = 1) { if (bctx.__hi) return hiRing(i, j, rx, ry, col, a, th); bctx.globalAlpha = a; bctx.fillStyle = col; const n = Math.max(24, Math.round((rx + ry) * 3)); let li = null, lj = null; for (let k = 0; k < n; k++) { const t = k / n * Math.PI * 2, x = Math.round(i + Math.cos(t) * rx), y = Math.round(j + Math.sin(t) * ry); if (x !== li || y !== lj) bctx.fillRect(x, y, th, th); li = x; lj = y; } bctx.globalAlpha = 1; }
+function aEllFill(i, j, rx, ry, col, a) { if (bctx.__hi) return hiEll(i, j, rx, ry, col, a); bctx.globalAlpha = a; bctx.fillStyle = col; const rows = Math.max(1, Math.round(ry)); for (let q = -rows; q <= rows; q++) { const w = rx * Math.sqrt(Math.max(0, 1 - (q / rows) ** 2)); bctx.fillRect(Math.round(i - w), Math.round(j) + q, Math.max(1, Math.round(w * 2)), 1); } bctx.globalAlpha = 1; }
+function aLine(i0, j0, i1, j1, col, a = 1, w = 1) { if (bctx.__hi) return hiLine(i0, j0, i1, j1, col, a, w); bctx.globalAlpha = a; bctx.fillStyle = col; const n = Math.ceil(Math.hypot(i1 - i0, j1 - j0)); for (let k = 0; k <= n; k++) { const t = n ? k / n : 0; bctx.fillRect(Math.round(lerp(i0, i1, t) - w / 2), Math.round(lerp(j0, j1, t) - w / 2), w, w); } bctx.globalAlpha = 1; }
 
 /* ---------- effects API used by the simulation ---------- */
 const MOVE_FX = {
@@ -349,33 +350,37 @@ function draw(dt) {
   if (clock.t < shakeState.until) { OX += Math.round((Math.random() - .5) * shakeState.amp / 2); OY += Math.round((Math.random() - .5) * shakeState.amp / 2); } else shakeState.amp = 0;
   const b = bctx; b.setTransform(1, 0, 0, 1, 0, 0); b.imageSmoothingEnabled = false;
   b.clearRect(0, 0, buf.width, buf.height);   // the arena itself is painted in HD on the screen layer
-  b.drawImage(scarCanvas, -OX, -OY);
+  drawCrowd();
+  drawTrainer('A'); drawTrainer('B');
+  const order = G ? ['A', 'B'].sort((p, q) => side(p).y - side(q).y) : [];
+  if (G) { drawAimLines(); for (const S of order) drawActorGround(S); }
+  // ground effects: marks, shockwaves, lingering ground effects (full resolution)
+  bctx = uctx; hiBegin(uctx);
+  drawDecals();
   if (G) {
     for (const mk of G.marks) { const RM = MFX[mk.mv.name]; if (RM && RM.markDraw) { try { RM.markDraw(mk, mk.t / mk.delay); } catch (e) { console.error(e); } bctx.globalAlpha = 1; bctx.globalCompositeOperation = 'source-over'; continue; } const q = mk.t / mk.delay, col = fxOf(mk.mv).col, i = bx(mk.x), j = by(mk.y), r = mk.r / 2; aEllFill(i, j, r, r * .6, col, .12 + q * .14); aRing(i, j, r, r * .6, col, .9); aRing(i, j, r * q, r * q * .6, '#ffffff', .8);
       if (mk.kind === 'sky' && q > .45) { const fall = (q - .45) / .55; for (let s = 0; s < 4; s++) aDisc(bx(mk.x + (s - 1.5) * 22), by(lerp(mk.y - 300, mk.y - 10, fall) - s * 18), mk.mv.type === 'Rock' ? 3 : 2, s % 2 ? col : fxOf(mk.mv).core); } }
     for (const w of G.waves) { const RW = MFX[w.mv.name]; if (RW && RW.wave) { try { RW.wave(w); } catch (e) { console.error(e); } bctx.globalAlpha = 1; continue; } const col = fxOf(w.mv).col, r = w.r / 2; aRing(bx(w.x), by(w.y), r, r * .62, col, .95, 2); aRing(bx(w.x), by(w.y), r - 2, r * .62 - 1, '#ffffff', .6); if (w.kind === 'quake' && Math.random() < .5) { const a = Math.random() * 6.28; spark(w.x + Math.cos(a) * w.r, w.y + Math.sin(a) * w.r * .62, { color: '#a08a66', vy: -90, vx: 0, g: 300, life: 380 }); } }
   }
-  drawCrowd();
-  drawTrainer('A'); drawTrainer('B');
-  const order = G ? ['A', 'B'].sort((p, q) => side(p).y - side(q).y) : [];
-  if (G) { drawAimLines(); for (const S of order) drawActorGround(S); }
   drawEnts(true);
+  bctx = gctx;
   const c = sctx; c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
   c.fillStyle = '#05070d'; c.fillRect(0, 0, DW, DH);
   drawStageHD(c, OX, OY, vw, vh, cam.pz);
   c.drawImage(buf, 0, 0, vw, vh, 0, 0, vw * cam.pz, vh * cam.pz);
+  c.drawImage(ubuf, 0, 0);
   if (typeof drawCustomTrainers === 'function') drawCustomTrainers(c);
   if (dimState.a > 0) { const over = clock.t - dimState.until, f = over > 0 ? 1 - over / 400 : 1; if (f <= 0) dimState.a = 0; else { c.fillStyle = `rgba(${dimState.col},${(dimState.a * f).toFixed(3)})`; c.fillRect(0, 0, DW, DH); } }
   for (const S of order) drawActorSprite(S);
   // effects layer above the sprites
-  bctx = fctx; bctx.clearRect(0, 0, fbuf.width, fbuf.height);
+  bctx = fctx; hiBegin(fctx);
   if (G) { for (const p of G.shots) drawShot(p); for (const bm of G.beams) drawBeam(bm); drawClash(); }
   drawEnts(false);
   drawWorldFx();
   drawAmbient(dt);
   drawStageForeground(bctx, OX, OY, clock.t);
   bctx = gctx;
-  c.drawImage(fbuf, 0, 0, vw, vh, 0, 0, vw * cam.pz, vh * cam.pz);
+  c.drawImage(fbuf, 0, 0);
   stageGrade(c);
   if (STAGE.ambient === 'snow') { lightning.next -= dt; if (lightning.next <= 0) { lightning.a = REDUCED ? .1 : .3; lightning.next = 8000 + Math.random() * 9000; } }
   if (lightning.a > 0) { c.fillStyle = `rgba(230,240,255,${lightning.a})`; c.fillRect(0, 0, DW, DH); lightning.a = Math.max(0, lightning.a - dt / 600); }

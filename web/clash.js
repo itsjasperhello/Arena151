@@ -57,7 +57,7 @@ function drawClash() {
   const sp = Math.hypot(cl.x - CLS.lastX, cl.y - CLS.lastY) / Math.max(1, dt) * 1000; CLS.lastX = cl.x; CLS.lastY = cl.y;
   CLS.pulse = Math.max(0, CLS.pulse - dt / 260); CLS.ring -= dt;
   if (sp > 90 && CLS.ring <= 0) { CLS.ring = 240; CLS.pulse = 1; const towardB = Math.cos(aB) * (cl.x - CLS.lastX) < 0; ringFx(cl.x, cl.y, (towardB ? rA : rB)[2], 8, 54 + e * 30, 340); P(cl.x, cl.y, { life: 260, color: '#ffffff', shape: 'star', size: 3, size2: 1, add: true }); }
-  const R = 6 + e * 8 + CLS.pulse * 4 + Math.sin(t / 55) * 1.1;
+  const R = (6 + e * 8 + CLS.pulse * 4 + Math.sin(t / 55) * 1.1) * 1.9;   // the effect layers are full resolution: the ball is drawn big enough to read at the default zoom
 
   // muzzle flares and the glow on each Pokémon
   for (const [b, r] of [[bA, rA], [bB, rB]]) {
@@ -81,6 +81,8 @@ function drawClash() {
     aDisc(ci, cj, R, r[4]); aDisc(ci, cj, R * .86, r[3]); aDisc(ci - Math.cos(a) * R * .12, cj - Math.sin(a) * R * .12, R * .62, r[2]); aDisc(ci - Math.cos(a) * R * .2, cj - Math.sin(a) * R * .2, R * .38, r[1]);
     bctx.restore();
   }
+  // a bright lens across the meeting point hides where the two beams are cut off
+  bctx.save(); bctx.translate(ci, cj); bctx.rotate(aA); bctx.scale(.55, 1.75); bctx.globalCompositeOperation = 'lighter'; hiSoft(0, 0, R * 1.25, '#ffffff', .95, .35); hiSoft(0, 0, R * .8, rA[1], .6, .3); bctx.restore();
   aDisc(ci, cj, Math.max(2, R * .3), '#ffffff', .95 - Math.sin(t / 40) * .1);
   for (let arm = 0; arm < 4; arm++) {   // swirling arms: one pair per type, spinning opposite ways
     const r = arm % 2 ? rB : rA, dir = arm % 2 ? -1 : 1;

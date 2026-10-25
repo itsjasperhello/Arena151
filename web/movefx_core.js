@@ -57,6 +57,7 @@ function emit(x, y, n, o = {}) {
 }
 function drawParticle(p) {
   const q = p.t / p.life; if (q >= 1) return false;
+  if (bctx.__hi) { hiParticle(p, bx(p.x), by(p.y), lerp(p.size, p.size2, q), q); return true; }
   const i = bx(p.x), j = by(p.y), s = Math.max(1, Math.round(lerp(p.size, p.size2, q)));
   const c = bctx; c.globalAlpha = p.ramp ? Math.min(1, 1.25 - q) : 1 - q; c.fillStyle = p.ramp ? rampAt(p.ramp, q) : p.color;
   if (p.add) c.globalCompositeOperation = 'lighter';
@@ -107,18 +108,20 @@ function dim(a, ms, col) { if (REDUCED) a *= .4; dimState.a = Math.max(dimState.
 function tintScreen(col, a) { screenFlash(col, a); }
 
 /* ---------- pixel drawing helpers (art pixels, current camera) ---------- */
-const PX = (i, j, col, a = 1) => { bctx.globalAlpha = a; bctx.fillStyle = col; bctx.fillRect(Math.round(i), Math.round(j), 1, 1); };
-function glow(i, j, r, col, a = .5) { bctx.globalCompositeOperation = 'lighter'; for (let k = 3; k >= 1; k--) aDisc(i, j, r * k / 3, col, a / 3); bctx.globalCompositeOperation = 'source-over'; }
+const PX = (i, j, col, a = 1) => { if (bctx.__hi) { hiDot(i + .5, j + .5, .62, col, a); return; } bctx.globalAlpha = a; bctx.fillStyle = col; bctx.fillRect(Math.round(i), Math.round(j), 1, 1); };
+function glow(i, j, r, col, a = .5) { if (bctx.__hi) return hiGlow(i, j, r, col, a); bctx.globalCompositeOperation = 'lighter'; for (let k = 3; k >= 1; k--) aDisc(i, j, r * k / 3, col, a / 3); bctx.globalCompositeOperation = 'source-over'; }
 function orbPx(i, j, r, ramp, t = 0) {   // layered orb: dark rim → bright core, flickering
   const R = RAMP[ramp] || ramp; glow(i, j, r * 1.8, R[3], .45);
   aDisc(i, j, r, R[4]); aDisc(i - r * .15, j - r * .15, r * .78, R[3]); aDisc(i - r * .25, j - r * .25, r * .5, R[2]); aDisc(i - r * .35, j - r * .35, Math.max(1, r * .22), R[0]);
   if (t) for (let k = 0; k < 3; k++) { const a = t / 120 + k * 2.1; PX(i + Math.cos(a) * (r + 1), j + Math.sin(a) * (r + 1), R[1]); }
 }
 function zig(i0, j0, i1, j1, col, w = 1, jit = 4, core) {   // lightning segment (re-randomised every frame)
+  if (bctx.__hi) return hiZig(i0, j0, i1, j1, col, w, jit, core);
   const d = Math.hypot(i1 - i0, j1 - j0), n = Math.max(2, Math.round(d / 5)); let pi = i0, pj = j0;
   for (let k = 1; k <= n; k++) { const t = k / n, ni = lerp(i0, i1, t) + (k < n ? (Math.random() - .5) * jit * 2 : 0), nj = lerp(j0, j1, t) + (k < n ? (Math.random() - .5) * jit * 2 : 0); aLine(pi, pj, ni, nj, col, 1, w); if (core) aLine(pi, pj, ni, nj, core, 1, 1); pi = ni; pj = nj; }
 }
 function beamPx(i0, j0, ang, len, w, ramp, a = 1, wob = 0) {
+  if (bctx.__hi) return hiBeam(i0, j0, ang, len, w, RAMP[ramp] || ramp, a, wob);
   const R = RAMP[ramp] || ramp, ca = Math.cos(ang), sa = Math.sin(ang), n = Math.round(len);
   bctx.globalCompositeOperation = 'lighter'; for (let k = 0; k < n; k += 2) aRect(i0 + ca * k - w, j0 + sa * k - w, w * 2, w * 2, R[3], .1 * a); bctx.globalCompositeOperation = 'source-over';
   for (const [ww, ci] of [[w, 4], [w * .75, 3], [w * .45, 1], [Math.max(1, w * .2), 0]]) {
