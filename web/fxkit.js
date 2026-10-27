@@ -140,5 +140,8 @@
     rock(x, y, k = 1, floor) { shock(x, y + 10, { r1: 70 * k, col: '220,200,160', w: 6 * k, squash: .38 }); debris(x, y, 18 * k, { floor: floor != null ? floor : y + 18 }); puff(x, y + 6, 12 * k, { tex: () => P.tex('dust', [[0, 'rgba(200,180,150,.6)'], [.5, 'rgba(180,160,130,.3)'], [1, 'rgba(160,140,110,0)']]), up: 20, r: [9, 16], a: .6 }); }
   };
 
-  window.FXK = { body, foe, dim, flash, shake, scar, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, ease, rnd, N, T };
+  // a Pokémon's current animation frame, for avatars: { an, src, unit, flip }
+  function actorFrame(S) { try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return null; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front);
+    return { an, src: an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
+  window.FXK = { tinted, actorFrame, body, foe, dim, flash, shake, scar, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, ease, rnd, N, T };
 })();
