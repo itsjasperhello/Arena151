@@ -45,16 +45,21 @@
     for (let i = POOL.length - 1; i >= 0; i--) {
       const p = POOL[i]; p.life += dt; if (p.life >= p.max) { POOL.splice(i, 1); continue; }
       const k = Math.pow(p.drag, dt * 60); p.vx *= k; p.vy *= k; p.vy += (p.ay || 0) * dt; p.vx += (p.ax || 0) * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.vr) p.rot += p.vr * dt;
+      if (p.floor != null && p.y > p.floor && p.vy > 0) { p.y = p.floor; p.vy *= -.32; p.vx *= .6; p.vr = (p.vr || 0) * .5; if (Math.abs(p.vy) < 25) { p.vy = 0; p.ay = 0; p.vx *= .5; } }
     }
-    for (const add of [false, true]) {                       // normal-blended first (smoke, water body), then the glow on top
-      c.globalCompositeOperation = add ? 'lighter' : 'source-over';
+    // passes: under (scene dimming), normal (smoke, water bodies, chunks), additive glow, over (screen flashes, speed lines)
+    for (const [layer, add] of [[-1, null], [0, false], [0, true], [1, null]]) {
       for (const p of POOL) {
-        if (!!p.add !== add) continue;
+        if ((p.layer || 0) !== layer) continue;
+        if (add !== null && !!p.add !== add) continue;
+        c.globalCompositeOperation = (add === null ? !!p.add : add) ? 'lighter' : 'source-over';
         const q = p.life / p.max, op = Math.max(0, 1 - Math.pow(q, 1.5)) * p.a; if (op <= .003) continue;
         const r = p.r * (.8 + q * (p.grow != null ? p.grow : .6));
         if (p.kind === 'shard') { c.globalAlpha = op; c.fillStyle = p.col; c.save(); c.translate(p.x, p.y); c.rotate(p.rot || 0); c.beginPath(); c.moveTo(0, -r); c.lineTo(r * .35, 0); c.lineTo(0, r); c.lineTo(-r * .35, 0); c.closePath(); c.fill(); c.restore(); }
         else if (p.kind === 'ring') { c.globalAlpha = op; c.strokeStyle = p.col; c.lineWidth = Math.max(.6, p.lw || 1.4); c.beginPath(); c.ellipse(p.x, p.y, r, r * (p.squash || 1), p.rot || 0, 0, T); c.stroke(); }
         else if (p.kind === 'streak') { const sp = Math.hypot(p.vx, p.vy) || 1, l = (p.len || 14) * (1 - q * .5); c.globalAlpha = op; c.strokeStyle = p.col; c.lineCap = 'round'; c.lineWidth = Math.max(.6, p.lw || 1.5); c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - p.vx / sp * l, p.y - p.vy / sp * l); c.stroke(); }
+        else if (p.kind === 'chunk') { c.globalAlpha = op; c.save(); c.translate(p.x, p.y); c.rotate(p.rot || 0); const pts = p.pts; c.fillStyle = p.col; c.beginPath(); pts.forEach(([x, y], k) => k ? c.lineTo(x * r, y * r) : c.moveTo(x * r, y * r)); c.closePath(); c.fill();
+          if (p.hi) { c.fillStyle = p.hi; c.beginPath(); c.moveTo(pts[0][0] * r, pts[0][1] * r); c.lineTo(pts[1][0] * r, pts[1][1] * r); c.lineTo(0, 0); c.closePath(); c.fill(); } c.restore(); }
         else if (p.kind === 'fn') { c.save(); c.globalAlpha = 1; try { p.draw(c, q, p, op); } catch (e) { console.error(e); } c.restore(); }
         else if (p.kind === 'drop') { c.globalAlpha = op; c.fillStyle = p.col; c.beginPath(); c.arc(p.x, p.y, Math.max(.5, r), 0, T); c.fill(); }
         else { c.globalAlpha = op; c.drawImage(p.img, p.x - r, p.y - r, r * 2, r * 2); }
