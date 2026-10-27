@@ -10,7 +10,7 @@ android {
         applicationId = "com.arena151.game"
         minSdk = 26          // Android 8.0+
         targetSdk = 35
-        versionCode = 69
+        versionCode = 70
         versionName = "16.3"
     }
 

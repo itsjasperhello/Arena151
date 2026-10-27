@@ -60,6 +60,9 @@ const ROUTES = [
     ['Nidorino', 30, 35, 3], ['Nidorina', 30, 35, 3], ['Arbok', 35, 38, 2], ['Sandslash', 35, 38, 2], ['Fearow', 38, 40, 2], ['Graveler', 40, 42, 3], ['Onix', 40, 45, 3], ['Machoke', 42, 42, 1], ['Marowak', 40, 42, 1],
     ['Venomoth', 40, 40, 2], ['Golbat', 40, 40, 2], ['Ditto', 35, 35, 1], ['Moltres', 50, 50, .3], ['Mew', 30, 30, .15]] }
 ];
+// Encounter balance: compress each Pokémon's weight with a square root, so rare Pokémon appear 3–5x as often, common ones a
+// quarter to a third less, and the middle barely moves. Rarity order is kept, and a weight under 1 (the "rare" mark) stays under 1.
+for (const R of ROUTES) for (const m of R.mons) m[3] = Math.round(Math.sqrt(m[3]) * 1000) / 1000;
 const expFor = lv => Math.pow(Math.max(1, lv), 3);                       // medium-fast growth: level n needs n³ experience
 const levelFor = exp => Math.max(1, Math.min(100, Math.floor(Math.cbrt(exp + .5))));
 const evoOf = sp => EVO[sp];
