@@ -54,6 +54,8 @@
         const r = p.r * (.8 + q * (p.grow != null ? p.grow : .6));
         if (p.kind === 'shard') { c.globalAlpha = op; c.fillStyle = p.col; c.save(); c.translate(p.x, p.y); c.rotate(p.rot || 0); c.beginPath(); c.moveTo(0, -r); c.lineTo(r * .35, 0); c.lineTo(0, r); c.lineTo(-r * .35, 0); c.closePath(); c.fill(); c.restore(); }
         else if (p.kind === 'ring') { c.globalAlpha = op; c.strokeStyle = p.col; c.lineWidth = Math.max(.6, p.lw || 1.4); c.beginPath(); c.ellipse(p.x, p.y, r, r * (p.squash || 1), p.rot || 0, 0, T); c.stroke(); }
+        else if (p.kind === 'streak') { const sp = Math.hypot(p.vx, p.vy) || 1, l = (p.len || 14) * (1 - q * .5); c.globalAlpha = op; c.strokeStyle = p.col; c.lineCap = 'round'; c.lineWidth = Math.max(.6, p.lw || 1.5); c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - p.vx / sp * l, p.y - p.vy / sp * l); c.stroke(); }
+        else if (p.kind === 'fn') { c.save(); c.globalAlpha = 1; try { p.draw(c, q, p, op); } catch (e) { console.error(e); } c.restore(); }
         else if (p.kind === 'drop') { c.globalAlpha = op; c.fillStyle = p.col; c.beginPath(); c.arc(p.x, p.y, Math.max(.5, r), 0, T); c.fill(); }
         else { c.globalAlpha = op; c.drawImage(p.img, p.x - r, p.y - r, r * 2, r * 2); }
       }
