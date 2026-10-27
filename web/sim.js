@@ -9,6 +9,11 @@ const HP_MULT = 8, DMG_MULT = 2.0;           // ~5–10 hits to knock out a Pok�
 const PINCH = { Fire: 'Blaze', Water: 'Torrent', Grass: 'Overgrow', Bug: 'Swarm' };
 const TOUCH = 52;                              // body radius for contact and collisions
 
+/* ---------- Balance (16.2) ---------- */
+const MEGA_NERF = new Set(['Venusaur', 'Charizard', 'Blastoise', 'Beedrill', 'Pidgeot', 'Alakazam', 'Slowbro', 'Gengar', 'Kangaskhan', 'Pinsir', 'Gyarados', 'Aerodactyl', 'Mewtwo']);
+// Night Shade dealt 400 fixed damage (30–50% of most Pokémon) on the shortest cooldown in the game: now 144, cycling like a 75-power move
+if (MOVES['Night Shade']) { MOVES['Night Shade'].e.fix = 18; MOVES['Night Shade'].pow = 75; }
+const REST_SLEEP = 7000;                      // Rest's sleep (was 4200 ms)
 function cooldownOf(mv) {
   if (mv.cat === 'X') return (mv.e.heal || mv.e.rest) ? 16000 : 6500;
   if (mv.pri > 0) return 1500;
@@ -23,6 +28,10 @@ function makeBattleMon(pick) {
   // while strong ones still feel strong. Base stats keep their shape; the spread is 65% as wide.
   const AVG = { hp: 140, atk: 90, def: 90, spa: 90, spd: 90, spe: 90 };
   for (const k of Object.keys(AVG)) m.stats[k] = Math.round(m.stats[k] * .65 + AVG[k] * .35);
+  // Balance (16.2): the Pokémon that have Mega Evolutions in the games were the strongest picks; trim them
+  if (MEGA_NERF.has(m.name)) { for (const k of ['atk', 'def', 'spa', 'spd', 'spe']) m.stats[k] = Math.round(m.stats[k] * .88); m.stats.hp = Math.round(m.stats.hp * .94); }
+  // Balance (16.2): a Pokémon with a healing move doesn't also hold Leftovers (no stacked damage prevention)
+  if (m.item === 'Leftovers' && m.moves.some(n => MOVES[n] && (MOVES[n].e.heal || MOVES[n].e.rest))) m.item = '';
   m.max = m.stats.hp * HP_MULT; m.hp = m.max;
   m.cd = m.moves.map(() => 0); m.stT = 0; m.thawT = 0; m.dotT = 0; m.lefT = 0; m.conf = 0;
   m.ability = PINCH[m.types[0]] || ''; m.pinchShown = false;
@@ -276,7 +285,7 @@ function updateCast(S, dt) {
         const e = mv.e;
         if (e.none) { VFX.text(S, 'NOTHING HAPPENED', '#e6ecff'); logLine('But nothing happened!'); }
         else if (e.heal) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = Math.min(m.max - m.hp, Math.ceil(m.max * Math.min(e.heal, .25) * Math.pow(.7, m.healUses || 0))); m.healUses = (m.healUses || 0) + 1; m.hp += h; VFX.heal(S, h); logLine(`${m.name} restored ${h} HP.`); } }
-        else if (e.rest) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = Math.min(m.max - m.hp, Math.ceil(m.max * .5 * Math.pow(.7, m.healUses || 0))); m.healUses = (m.healUses || 0) + 1; m.hp += h; m.status = 'slp'; m.stT = 4200; VFX.heal(S, h); VFX.status(S, 'slp'); logLine(`${m.name} slept and became healthy!`); } }
+        else if (e.rest) { if (m.hp >= m.max) VFX.text(S, 'FAILED', '#e6ecff'); else { const h = Math.min(m.max - m.hp, Math.ceil(m.max * .5 * Math.pow(.7, m.healUses || 0))); m.healUses = (m.healUses || 0) + 1; m.hp += h; m.status = 'slp'; m.stT = REST_SLEEP; VFX.heal(S, h); VFX.status(S, 'slp'); logLine(`${m.name} slept and became healthy!`); } }
         else if (e.self) { VFX.aura(S, MOVE_FX[mv.type].col); stageChange(S, e.self); }
         G.hudDirty = true; c.phase = 'after'; c.t = 0; return;
       }

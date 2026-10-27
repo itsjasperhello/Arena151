@@ -279,6 +279,16 @@ function levelStats(b) { // level 50, neutral nature, no training
 function pickBy(list, r) { return list[Math.floor(r() * list.length)]; }
 function movesOfType(type, cat) { return Object.values(MOVES).filter(m => m.type === type && m.cat === cat).sort((a, b) => a.pow - b.pow); }
 function buildMoveset(d, stats) {
+  const out = buildMovesetRaw(d, stats);
+  // Balance (16.2): a Pokémon with a healing move (Recover, Rest) can't also carry other status moves — no heal + boost/status stalling.
+  const heals = out.filter(n => MOVES[n] && (MOVES[n].e.heal || MOVES[n].e.rest));
+  if (heals.length) for (let i = 0; i < out.length; i++) { const mv = MOVES[out[i]]; if (!mv || mv.cat !== 'X' || heals.includes(out[i])) continue;
+    const pref = stats.atk >= stats.spa ? 'P' : 'S', pool = [...movesOfType(d.types[0], pref), ...movesOfType(d.types[0], pref === 'P' ? 'S' : 'P'), ...(d.types[1] ? movesOfType(d.types[1], pref) : []), ...movesOfType('Normal', pref)]
+      .filter(m => (m.pow || 0) > 0 && !m.e.rch && !m.e.fix && !out.includes(m.name)).sort((a, b) => Math.abs(a.pow - 85) - Math.abs(b.pow - 85));
+    out[i] = pool.length ? pool[0].name : 'Body Slam'; }
+  return out;
+}
+function buildMovesetRaw(d, stats) {
   if (MOVESET_OVERRIDE[d.name]) return MOVESET_OVERRIDE[d.name].slice();
   const r = mulberry(hashStr(d.name) ^ 0xa11ce);
   const pref = stats.atk >= stats.spa ? 'P' : 'S', alt = pref === 'P' ? 'S' : 'P';
