@@ -143,8 +143,8 @@ function grassExp(res) {
 }
 async function searchGrass(i) {
   const sv = STORY.save; if (!isDexSave(sv) || SAFARI.busy || i >= ROUTES.length || i > sv.badges) return;
-  SAFARI.busy = true; closeModal(); STORY.at = null; let res = null;
-  try { placeAvatar(nodeAt(i)); await walkLeg(i); res = await safariEncounter(i); }
+  SAFARI.busy = true; closeModal(); let res = null;
+  try { res = await safariEncounter(i); }   // searching the grass: the trainer stays where it is (only gym challenges walk the route)
   finally { SAFARI.busy = false; }
   const gains = grassExp(res); saveStory(); renderStory();
   const m = $('syModal'), R = ROUTES[i], g = GYMS[i];

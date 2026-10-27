@@ -30,8 +30,8 @@ function makeBattleMon(pick) {
   for (const k of Object.keys(AVG)) m.stats[k] = Math.round(m.stats[k] * .65 + AVG[k] * .35);
   // Balance (16.2): the Pokémon that have Mega Evolutions in the games were the strongest picks; trim them
   if (MEGA_NERF.has(m.name)) { for (const k of ['atk', 'def', 'spa', 'spd', 'spe']) m.stats[k] = Math.round(m.stats[k] * .88); m.stats.hp = Math.round(m.stats.hp * .94); }
-  // Balance (16.2): a Pokémon with a healing move doesn't also hold Leftovers (no stacked damage prevention)
-  if (m.item === 'Leftovers' && m.moves.some(n => MOVES[n] && (MOVES[n].e.heal || MOVES[n].e.rest))) m.item = '';
+  // Balance (16.2): a Pokémon with a healing move doesn't also hold Leftovers (no stacked damage prevention); 16.3: Snorlax keeps its Leftovers
+  if (m.item === 'Leftovers' && m.name !== 'Snorlax' && m.moves.some(n => MOVES[n] && (MOVES[n].e.heal || MOVES[n].e.rest))) m.item = '';
   m.max = m.stats.hp * HP_MULT; m.hp = m.max;
   m.cd = m.moves.map(() => 0); m.stT = 0; m.thawT = 0; m.dotT = 0; m.lefT = 0; m.conf = 0;
   m.ability = PINCH[m.types[0]] || ''; m.pinchShown = false;

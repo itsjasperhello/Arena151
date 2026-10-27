@@ -80,34 +80,54 @@ const SHAKE_MSG = ['You missed the POKéMON!', 'Darn! The POKéMON broke free!',
 
 /* ---------- the scene painter (480×270, layered with depth) ---------- */
 const W = 480, H = 270, SX = { c: null, t: 0 };
-const P = (x, y, w, h, col) => { SX.c.fillStyle = col; SX.c.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
-const Dk = (x, y, r, col) => { const c = SX.c; c.fillStyle = col; r = Math.max(1, Math.round(r)); for (let dy = -r; dy <= r; dy++) { const w = Math.round(Math.sqrt(r * r - dy * dy)); c.fillRect(Math.round(x - w), Math.round(y + dy), w * 2 + 1, 1); } };
-const El = (x, y, rx, ry, col) => { const c = SX.c; c.fillStyle = col; rx = Math.max(1, rx); ry = Math.max(1, Math.round(ry)); for (let dy = -ry; dy <= ry; dy++) { const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry)))); c.fillRect(Math.round(x - w), Math.round(y + dy), w * 2 + 1, 1); } };
+const P = (x, y, w, h, col) => { SX.c.fillStyle = col; SX.c.fillRect(x, y, Math.max(.5, w), Math.max(.5, h)); };
+const Dk = (x, y, r, col) => { const c = SX.c; c.fillStyle = col; c.beginPath(); c.arc(x, y, Math.max(.5, r), 0, Math.PI * 2); c.fill(); };
+const El = (x, y, rx, ry, col) => { const c = SX.c; c.fillStyle = col; c.beginPath(); c.ellipse(x, y, Math.max(.5, rx), Math.max(.5, ry), 0, 0, Math.PI * 2); c.fill(); };
+// colour helpers for shading: lighten / darken a hex colour
+const shade = (hex, f) => { if (typeof hex !== 'string' || hex[0] !== '#' || hex.length !== 7) return hex; const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = n >> 8 & 255, b = n & 255;
+  const m = v => Math.max(0, Math.min(255, Math.round(f >= 0 ? v + (255 - v) * f : v * (1 + f)))); return `rgb(${m(r)},${m(g)},${m(b)})`; };
+// a sphere-lit disc: radial gradient from a highlight (top-left) through the base colour to a darker rim
+const Lit = (x, y, r, base, hi = .35, lo = -.35) => { const c = SX.c; if (r <= .5) return; const g = c.createRadialGradient(x - r * .35, y - r * .4, r * .1, x, y, r); g.addColorStop(0, shade(base, hi)); g.addColorStop(.55, base); g.addColorStop(1, shade(base, lo)); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
+// a soft contact shadow
+const Shadow = (x, y, rx, ry, a = .28) => { const c = SX.c; c.save(); c.translate(x, y); c.scale(1, ry / rx); const g = c.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, rx, 0, Math.PI * 2); c.fill(); c.restore(); };
 const Grad = (y0, y1, stops) => { const c = SX.c, g = c.createLinearGradient(0, y0, 0, y1); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); c.fillStyle = g; c.fillRect(0, y0, W, y1 - y0); };
 const Glow = (x, y, r, col, a) => { const c = SX.c, g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.save(); c.globalAlpha = a; c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); c.restore(); };
 const Poly = (pts, col) => { const c = SX.c; c.fillStyle = col; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]); c.closePath(); c.fill(); };
 const Alpha = (a, f) => { SX.c.save(); SX.c.globalAlpha = a; f(); SX.c.restore(); };
 const rng = s => () => ((s = Math.imul(s ^ (s >>> 15), 2246822519) >>> 0) % 10000) / 10000;
-const ridge = (y, amp, f1, f2, seed, col, step = 2) => { for (let x = 0; x < W; x += step) { const h = Math.sin(x * f1 + seed) * amp + Math.sin(x * f2 + seed * 3) * amp * .45; P(x, y - h, step, H - y + h, col); } };
+const ridge = (y, amp, f1, f2, seed, col) => { const c = SX.c; c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W + 4; x += 4) { const h = Math.sin(x * f1 + seed) * amp + Math.sin(x * f2 + seed * 3) * amp * .45; c.lineTo(x, y - h); } c.lineTo(W, H); c.closePath();
+  const g = c.createLinearGradient(0, y - amp * 1.5, 0, y + 40); g.addColorStop(0, shade(col, .12)); g.addColorStop(.35, col); g.addColorStop(1, shade(col, -.25)); c.fillStyle = g; c.fill(); };
 const depthScale = (y, hz) => .35 + Math.max(0, (y - hz) / (H - hz)) * 1.5;
 // --- props ---
 function tree(x, y, s, pal) {
-  El(x + 3 * s, y, 12 * s, 3 * s, 'rgba(0,0,0,.22)');
-  P(x - 2.5 * s, y - 20 * s, 5 * s, 20 * s, pal[0]); P(x - 2.5 * s, y - 20 * s, 2 * s, 20 * s, pal[1]);
-  Dk(x, y - 30 * s, 15 * s, pal[2]); Dk(x - 9 * s, y - 24 * s, 10 * s, pal[2]); Dk(x + 9 * s, y - 25 * s, 10 * s, pal[2]);
-  Dk(x - 3 * s, y - 34 * s, 11 * s, pal[3]); Dk(x - 10 * s, y - 27 * s, 6 * s, pal[3]); Dk(x + 6 * s, y - 31 * s, 8 * s, pal[3]);
-  Dk(x - 6 * s, y - 38 * s, 5 * s, pal[4]); Dk(x + 2 * s, y - 40 * s, 3 * s, pal[4]); Dk(x - 12 * s, y - 30 * s, 2.5 * s, pal[4]);
+  Shadow(x + 4 * s, y, 15 * s, 4 * s, .3);
+  const c = SX.c, g = c.createLinearGradient(x - 3 * s, 0, x + 3 * s, 0); g.addColorStop(0, shade(pal[0], -.25)); g.addColorStop(.4, pal[1]); g.addColorStop(1, shade(pal[0], -.35)); c.fillStyle = g;
+  c.beginPath(); c.moveTo(x - 3 * s, y); c.quadraticCurveTo(x - 2 * s, y - 12 * s, x - 2.2 * s, y - 22 * s); c.lineTo(x + 2.2 * s, y - 22 * s); c.quadraticCurveTo(x + 2 * s, y - 12 * s, x + 3.2 * s, y); c.closePath(); c.fill();
+  // canopy clusters, lit from the top left; back clusters darker
+  Lit(x + 9 * s, y - 25 * s, 10 * s, shade(pal[2], -.15)); Lit(x - 9 * s, y - 24 * s, 10 * s, shade(pal[2], -.1)); Lit(x, y - 30 * s, 15 * s, pal[2], .25);
+  Lit(x + 6 * s, y - 33 * s, 9 * s, pal[3], .3); Lit(x - 4 * s, y - 35 * s, 11 * s, pal[3], .35); Lit(x - 11 * s, y - 28 * s, 6 * s, pal[3], .3);
+  Lit(x - 6 * s, y - 40 * s, 5.5 * s, pal[4], .4); Lit(x + 2 * s, y - 41 * s, 3.5 * s, pal[4], .45);
+  c.save(); c.globalAlpha = .18; c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(x - 7 * s, y - 39 * s, 4 * s, 2 * s, -.6, 0, Math.PI * 2); c.fill(); c.restore();
 }
 function pine(x, y, s, pal, snow) {
   El(x + 2 * s, y, 9 * s, 2.5 * s, 'rgba(0,0,0,.22)'); P(x - 1.5 * s, y - 8 * s, 3 * s, 8 * s, '#4a2e18');
   for (let k = 0; k < 4; k++) { const by = y - 6 * s - k * 9 * s, w = (16 - k * 3.4) * s; Poly([[x - w, by], [x, by - 14 * s], [x + w, by]], pal[0]); Poly([[x, by], [x, by - 14 * s], [x + w, by]], pal[1]); if (snow) Poly([[x - w * .45, by - 8 * s], [x, by - 14 * s], [x + w * .4, by - 8.5 * s]], '#f4f8ff'); }
 }
-function rock(x, y, s, pal) { El(x + 2 * s, y + 1, 12 * s, 3 * s, 'rgba(0,0,0,.25)'); El(x, y - 5 * s, 11 * s, 7 * s, pal[0]); El(x - 2 * s, y - 7 * s, 8 * s, 5 * s, pal[1]); El(x - 4 * s, y - 9 * s, 4 * s, 2 * s, pal[2]); P(x + 2 * s, y - 8 * s, 1, 5 * s, pal[0]); }
-function bush(x, y, s, pal) { El(x, y, 14 * s, 3 * s, 'rgba(0,0,0,.2)'); Dk(x - 7 * s, y - 6 * s, 7 * s, pal[0]); Dk(x + 6 * s, y - 6 * s, 7 * s, pal[0]); Dk(x, y - 9 * s, 8 * s, pal[1]); Dk(x - 3 * s, y - 12 * s, 3 * s, pal[2]); }
+function rock(x, y, s, pal) { Shadow(x + 3 * s, y + 1, 14 * s, 3.5 * s, .32); const c = SX.c;
+  const g = c.createRadialGradient(x - 4 * s, y - 10 * s, s, x, y - 4 * s, 13 * s); g.addColorStop(0, pal[2]); g.addColorStop(.45, pal[1]); g.addColorStop(1, shade(pal[0], -.2)); c.fillStyle = g;
+  c.beginPath(); c.moveTo(x - 11 * s, y); c.quadraticCurveTo(x - 12 * s, y - 8 * s, x - 5 * s, y - 11 * s); c.quadraticCurveTo(x + 2 * s, y - 14 * s, x + 8 * s, y - 9 * s); c.quadraticCurveTo(x + 13 * s, y - 4 * s, x + 11 * s, y); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = .9 * s; c.beginPath(); c.moveTo(x - 9 * s, y - 7 * s); c.quadraticCurveTo(x - 4 * s, y - 11 * s, x + 2 * s, y - 11.5 * s); c.stroke();
+  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = .7 * s; c.beginPath(); c.moveTo(x + 1 * s, y - 9 * s); c.lineTo(x + 3 * s, y - 4 * s); c.lineTo(x + 2 * s, y); c.stroke(); }
+function bush(x, y, s, pal) { Shadow(x + 2 * s, y, 16 * s, 3.5 * s, .26); Lit(x + 7 * s, y - 6 * s, 7 * s, shade(pal[0], -.1)); Lit(x - 7 * s, y - 6 * s, 7 * s, pal[0]); Lit(x, y - 9 * s, 8.5 * s, pal[1], .3); Lit(x - 3 * s, y - 13 * s, 3.5 * s, pal[2], .45); }
 function flower(x, y, s, col) { const r = Math.max(1, s * 1.4); P(x - r, y, r, r, col); P(x + r, y, r, r, col); P(x, y - r, r, r, col); P(x, y + r, r, r, col); P(x, y, r, r, '#ffe066'); P(x, y + r * 2, 1, r * 2, '#3a7a32'); }
 function tuft(x, y, s, c1, c2, t, sway = 1) { for (let k = -2; k <= 2; k++) { const h = (7 - Math.abs(k) * 1.4) * s, sw = Math.sin(t / 420 + x * .05) * 1.6 * s * sway; SX.c.strokeStyle = k % 2 ? c1 : c2; SX.c.lineWidth = Math.max(1, s * 1.2); SX.c.beginPath(); SX.c.moveTo(x + k * 1.6 * s, y); SX.c.quadraticCurveTo(x + k * 2 * s + sw * .5, y - h * .6, x + k * 2.6 * s + sw, y - h); SX.c.stroke(); } }
-function cloud(x, y, s, shade) { El(x, y + 3 * s, 26 * s, 5 * s, shade); Dk(x - 12 * s, y, 9 * s, '#ffffff'); Dk(x + 2 * s, y - 5 * s, 12 * s, '#ffffff'); Dk(x + 15 * s, y, 8 * s, '#ffffff'); El(x, y + 3 * s, 25 * s, 4 * s, '#ffffff'); El(x + 2 * s, y + 6 * s, 22 * s, 2 * s, shade); }
-function mountain(x, base, w, h, c1, c2, snow) { Poly([[x - w / 2, base], [x, base - h], [x + w / 2, base]], c1); Poly([[x, base - h], [x + w / 2, base], [x + w * .1, base]], c2); if (snow) Poly([[x - w * .16, base - h * .66], [x - w * .08, base - h * .72], [x, base - h], [x + w * .1, base - h * .7], [x + w * .03, base - h * .74], [x - w * .03, base - h * .64]], '#f4f8ff'); }
+function cloud(x, y, s, shadeCol) { const c = SX.c; const puff = (px, py, r, a = 1) => { const g = c.createRadialGradient(px - r * .3, py - r * .4, r * .1, px, py, r); g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(.7, `rgba(250,252,255,${a * .92})`); g.addColorStop(1, 'rgba(235,242,255,0)'); c.fillStyle = g; c.beginPath(); c.arc(px, py, r, 0, Math.PI * 2); c.fill(); };
+  c.save(); c.globalAlpha = .55; El(x + 2 * s, y + 6 * s, 24 * s, 4 * s, shadeCol); c.restore();
+  puff(x - 14 * s, y + 1 * s, 10 * s); puff(x + 16 * s, y + 1 * s, 9 * s); puff(x + 2 * s, y - 5 * s, 13 * s); puff(x - 5 * s, y + 2 * s, 11 * s); puff(x + 9 * s, y + 2 * s, 11 * s); }
+function mountain(x, base, w, h, c1, c2, snow) { const c = SX.c;
+  let g = c.createLinearGradient(0, base - h, 0, base); g.addColorStop(0, shade(c1, .15)); g.addColorStop(1, shade(c1, -.15)); Poly([[x - w / 2, base], [x, base - h], [x + w / 2, base]], g);
+  g = c.createLinearGradient(x, 0, x + w / 2, 0); g.addColorStop(0, shade(c2, -.1)); g.addColorStop(1, shade(c2, -.3)); Poly([[x, base - h], [x + w / 2, base], [x + w * .1, base]], g);
+  if (snow) { Poly([[x - w * .16, base - h * .66], [x - w * .08, base - h * .72], [x, base - h], [x + w * .1, base - h * .7], [x + w * .03, base - h * .74], [x - w * .03, base - h * .64]], '#f4f8ff'); Poly([[x, base - h], [x + w * .1, base - h * .7], [x + w * .03, base - h * .74]], '#cdd8ea'); } }
 function building(x, base, w, h, wall, roof, t, lit) {
   P(x, base - h, w, h, wall); P(x, base - h, w, 3, roof); P(x + w - 3, base - h, 3, h, 'rgba(0,0,0,.18)');
   for (let wy = base - h + 7; wy < base - 6; wy += 8) for (let wx = x + 4; wx < x + w - 5; wx += 7) { const on = lit && Math.sin(t / 900 + wx * 3.1 + wy * 1.7) > -.4; P(wx, wy, 4, 5, on ? '#ffd86a' : 'rgba(20,20,40,.55)'); if (on) P(wx, wy, 4, 1, '#fff2b8'); }
@@ -239,19 +259,29 @@ function prop(kind, x, y, hz, t) {
 function platform(x, y, rx, ry, scene, t) {
   const pal = { forest: ['#3a8436', '#6fcb5a', '#93e07a'], meadow: ['#47973e', '#86d66c', '#a8e88e'], safari: ['#9a7840', '#dcbc78', '#f0d898'], cave: ['#2e2438', '#5a4a6a', '#7a6a8c'], city: ['#44445a', '#8a8aa2', '#a8a8c0'],
     tower: ['#262038', '#4e4670', '#6a6290'], sea: ['#b8a070', '#ecd8a8', '#fff0c8'], mountain: ['#5e4e3e', '#a89878', '#c8b898'] }[scene] || ['#3a8436', '#6fcb5a', '#93e07a'];
-  El(x + 4, y + 4, rx + 4, ry + 3, 'rgba(0,0,0,.28)'); El(x, y, rx, ry, pal[0]); El(x, y - 2, rx - 4, ry - 3, pal[1]); El(x - rx * .2, y - ry * .4, rx * .45, ry * .35, pal[2]);
+  Shadow(x + 5, y + 5, rx + 10, ry + 6, .38); El(x, y + 3, rx, ry, shade(pal[0], -.3)); El(x, y, rx, ry, pal[0]);
+  { const c = SX.c; c.save(); c.translate(x, y - 2); c.scale(1, (ry - 3) / (rx - 4)); const g = c.createRadialGradient(-(rx - 4) * .3, -(rx - 4) * .35, 0, 0, 0, rx - 4); g.addColorStop(0, pal[2]); g.addColorStop(.6, pal[1]); g.addColorStop(1, shade(pal[1], -.18)); c.fillStyle = g; c.beginPath(); c.arc(0, 0, rx - 4, 0, Math.PI * 2); c.fill(); c.restore(); }
   const grassy = scene === 'forest' || scene === 'meadow' || scene === 'safari';
   for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, px = x + Math.cos(a) * rx * .96, py = y + Math.sin(a) * ry * .9;
     if (grassy) { if (Math.sin(a) > -.3) tuft(px, py + 2, rx / 70, scene === 'safari' ? '#b8903c' : '#2f7a32', scene === 'safari' ? '#e8c060' : '#5cc04a', t); }
     else if (i % 2) El(px, py, rx * .07, ry * .22, pal[0]); }
 }
 
+let GRAIN_C = null;
+const GRAIN = () => { if (GRAIN_C) return GRAIN_C; GRAIN_C = document.createElement('canvas'); GRAIN_C.width = GRAIN_C.height = 128; const x = GRAIN_C.getContext('2d'), d = x.createImageData(128, 128);
+  for (let i = 0; i < d.data.length; i += 4) { const v = 110 + Math.random() * 40 | 0; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); return GRAIN_C; };
+
 /* ---------- the encounter ---------- */
 function safariEncounter(leg) {
   return new Promise(resolve => {
     const sv = STORY.save, R = ROUTES[leg], w = pickWild(leg); w.shiny = Math.random() < .25; w.key = w.sp + (w.shiny ? '|shiny' : '');
     const ov = $('safariOv'), cv = $('sfCv'), msgEl = $('sfMsg'), menu = $('sfMenu'), hz = HZ[R.scene] || 124, scene = SCENES[R.scene] || SCENES.forest;
-    SX.c = cv.getContext('2d'); SX.c.imageSmoothingEnabled = false;
+    // render at full resolution: up to 4x the 480x270 design size (drawing coordinates stay the same)
+    const KX = Math.max(1.5, Math.min((devicePixelRatio || 1) > 1.5 ? 2.5 : 3, Math.round(Math.max(innerWidth, innerHeight * 16 / 9) * Math.min(2, devicePixelRatio || 1) / W * 4) / 4));
+    cv.width = Math.round(W * KX); cv.height = Math.round(H * KX); SX.c = cv.getContext('2d'); SX.c.imageSmoothingEnabled = false;
+    // an optional painted backdrop for this route: story/routes/route<N>.webp
+    const custom = new Image(); custom.src = `story/routes/route${leg + 1}.webp`;
+    const MONH = 54 * (typeof sizeScaleOf === 'function' ? sizeScaleOf(w.sp) : 1.4);   // the wild Pokémon's size class (XS 54 … XXL 105)
     // The same animated front sprite as in battle: <name>.gif, or <name>_shiny.gif for a shiny (switches in as soon as it has loaded).
     if (w.shiny) loadShiny(w.sp);
     const monFrame = t => { const sp = spriteOf(w.sp, false, w.shiny), r = sp.card || { x: 0, y: 0, s: sp.w };
@@ -282,25 +312,42 @@ function safariEncounter(leg) {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const anim = (key, ms) => new Promise(r => { S[key] = { t0: performance.now(), ms }; setTimeout(r, ms); });
     const FAR = { x: 352, y: 150, rx: 74, ry: 15 }, NEAR = { x: 112, y: 262, rx: 120, ry: 24 };
-    const mk = () => { const k = document.createElement('canvas'); k.width = W; k.height = H; const x = k.getContext('2d'); x.imageSmoothingEnabled = false; return [k, x]; };
-    const [backC, backX] = mk(), [nearC, nearX2] = mk(), [vigC, vigX] = mk(), mainC = SX.c, propsSorted = scene.props.slice().sort((a, b) => a[1] - b[1]);
+    const mk = () => { const k = document.createElement('canvas'); k.width = Math.round(W * KX); k.height = Math.round(H * KX); const x = k.getContext('2d'); x.setTransform(KX, 0, 0, KX, 0, 0); x.imageSmoothingEnabled = true; return [k, x]; };
+    const [backC, backX] = mk(), [nearC, nearX2] = mk(), [vigC, vigX] = mk(), [frontC, frontX] = mk(), [tmpC, tmpX] = mk(), mainC = SX.c, propsSorted = scene.props.slice().sort((a, b) => a[1] - b[1]);
     SX.c = vigX; vignette(R.scene === 'tower' || R.scene === 'cave' ? .55 : .32); SX.c = mainC;
 
-    let cacheT = -1e9;
+    let cacheT = -1e9, frontT = -1e9;
+    // a cheap blur: shrink a layer to a quarter and scale it back up with smoothing
+    let SOFTC = null; const SOFT = src => { const w = Math.max(2, src.width >> 2), h = Math.max(2, src.height >> 2); if (!SOFTC || SOFTC.width !== w) { SOFTC = document.createElement('canvas'); SOFTC.width = w; SOFTC.height = h; } const x = SOFTC.getContext('2d'); x.imageSmoothingEnabled = true; x.clearRect(0, 0, w, h); x.drawImage(src, 0, 0, w, h); return SOFTC; };
+    const refreshFront = t => { const useArt = custom.complete && custom.naturalWidth > 0; SX.c = tmpX; tmpX.clearRect(0, 0, W, H); if (!useArt) scene.front(t);
+      frontX.clearRect(0, 0, W, H); frontX.imageSmoothingEnabled = true; frontX.globalAlpha = .55; frontX.drawImage(SOFT(tmpC), 0, 0, W, H); frontX.globalAlpha = 1; frontX.drawImage(tmpC, 0, 0, W, H);   // soft focus: a blurred copy under a lighter sharp one
+      frontX.drawImage(vigC, 0, 0, W, H); SX.c = mainC; frontT = t; };
     const refreshLayers = t => {
-      SX.c = backX; backX.clearRect(0, 0, W, H); scene.back(t); for (const p of propsSorted) if (p[1] <= FAR.y) prop(p[2], p[0], p[1], hz, t);
-      SX.c = nearX2; nearX2.clearRect(0, 0, W, H); for (const p of propsSorted) if (p[1] > FAR.y) prop(p[2], p[0], p[1], hz, t);
+      const useArt = custom.complete && custom.naturalWidth > 0, dark = R.scene === 'cave' || R.scene === 'tower' || R.scene === 'city';
+      SX.c = backX; backX.clearRect(0, 0, W, H);
+      if (useArt) { const k = Math.max(W / custom.naturalWidth, H / custom.naturalHeight); backX.drawImage(custom, (W - custom.naturalWidth * k) / 2, (H - custom.naturalHeight * k) / 2, custom.naturalWidth * k, custom.naturalHeight * k); }
+      else { scene.back(t); for (const p of propsSorted) if (p[1] <= FAR.y) prop(p[2], p[0], p[1], hz, t);
+        // depth of field: the distance (above the horizon) gets a slight blur
+        SOFT(backC); backX.save(); backX.beginPath(); backX.rect(0, 0, W, hz - 6); backX.clip(); backX.imageSmoothingEnabled = true; backX.drawImage(SOFTC, 0, 0, W, H); backX.restore();
+        // atmospheric haze at the horizon
+        const hg = backX.createLinearGradient(0, hz - 60, 0, hz + 24); hg.addColorStop(0, dark ? 'rgba(40,30,70,0)' : 'rgba(225,238,255,0)'); hg.addColorStop(.7, dark ? 'rgba(40,30,70,.28)' : 'rgba(225,238,255,.32)'); hg.addColorStop(1, 'rgba(225,238,255,0)'); backX.fillStyle = hg; backX.fillRect(0, hz - 60, W, 84); }
+      // colour grade (warm light from above, cool shade below) and a fine painterly grain
+      backX.save(); backX.globalCompositeOperation = 'soft-light'; const cg = backX.createLinearGradient(0, 0, 0, H); cg.addColorStop(0, dark ? 'rgba(120,90,200,.35)' : 'rgba(255,220,160,.35)'); cg.addColorStop(1, dark ? 'rgba(10,10,40,.4)' : 'rgba(40,70,140,.3)'); backX.fillStyle = cg; backX.fillRect(0, 0, W, H);
+      backX.globalCompositeOperation = 'overlay'; backX.globalAlpha = .07; backX.fillStyle = backX.createPattern(GRAIN(), 'repeat'); backX.fillRect(0, 0, W, H); backX.restore();
+      SX.c = nearX2; nearX2.clearRect(0, 0, W, H); if (!useArt) for (const p of propsSorted) if (p[1] > FAR.y) prop(p[2], p[0], p[1], hz, t);
+      // foreground framing, slightly out of focus (rendered with the cache, not every frame)
       SX.c = mainC; cacheT = t;
     };
     const frame = now => {
       if (!ov.classList.contains('show')) return;
-      const t = now - S.t0, c = SX.c; c.clearRect(0, 0, W, H);
-      if (t - cacheT > 120) refreshLayers(t);
-      c.drawImage(backC, 0, 0);
+      const t = now - S.t0, c = SX.c; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height); c.setTransform(KX, 0, 0, KX, 0, 0);
+      if (t - cacheT > 2000) refreshLayers(t);
+      if (t - frontT > 500) refreshFront(t);
+      c.drawImage(backC, 0, 0, W, H);
       const slide = Math.min(1, t / 450), farX = FAR.x + (1 - slide) * -420, nearX = NEAR.x + (1 - slide) * 420;
       platform(farX, FAR.y, FAR.rx, FAR.ry, R.scene, t);
       if (!S.mon.gone) {
-        const h = 82 * S.mon.scale, bob = S.mon.bob ? Math.abs(Math.sin(t / 120)) * 4 : 0, mx = farX + S.mon.x + (S.mon.hit > now ? Math.sin(now / 25) * 5 : 0);
+        const h = MONH * S.mon.scale, bob = S.mon.bob ? Math.abs(Math.sin(t / 120)) * 4 : 0, mx = farX + S.mon.x + (S.mon.hit > now ? Math.sin(now / 25) * 5 : 0);
         Alpha(S.mon.a * .35, () => El(mx, FAR.y + 2, h * .32, 4, '#000'));
         const fr = monFrame(t), dx = Math.round(mx - h / 2), dy = Math.round(FAR.y - h + 6 - bob);
         c.save(); c.globalAlpha = S.mon.a; c.drawImage(fr.img, fr.r.x, fr.r.y, fr.r.s, fr.r.s, dx, dy, Math.round(h), Math.round(h)); c.restore();
@@ -314,13 +361,13 @@ function safariEncounter(leg) {
       if (S.ballAt) { const wob = S.wobA ? Math.sin(Math.min(1, (now - S.wobA.t0) / S.wobA.ms) * Math.PI * 2) * .55 : 0, dk = S.dropA ? Math.min(1, (now - S.dropA.t0) / S.dropA.ms) : 1; drawBall(farX, 104 + (FAR.y - 6 - 104) * dk - Math.abs(Math.sin(dk * Math.PI * 2)) * 9 * (1 - dk), wob, 1.5); }
       if (S.burstA) { const k = Math.min(1, (now - S.burstA.t0) / S.burstA.ms); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, d = k * 40; P(farX + Math.cos(a) * d, FAR.y - 24 + Math.sin(a) * d * .6, 3, 3, i % 2 ? '#ffffff' : '#ffe066'); } }
       if (S.starsA) { const k = Math.min(1, (now - S.starsA.t0) / S.starsA.ms); for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + (i - 1) * .7, d = 12 + k * 24, sx = farX + Math.cos(a) * d, sy = FAR.y - 12 + Math.sin(a) * d; P(sx - 3, sy, 7, 2, '#ffe066'); P(sx, sy - 3, 2, 7, '#ffe066'); } }
-      c.drawImage(nearC, 0, 0);
+      c.drawImage(nearC, 0, 0, W, H);
       platform(nearX, NEAR.y, NEAR.rx, NEAR.ry, R.scene, t);
       if (tr.complete && tr.naturalWidth) { const h = 170, wv = h * tr.naturalWidth / tr.naturalHeight; Alpha(.3, () => El(nearX + 6, NEAR.y + 2, wv * .45, 6, '#000')); c.drawImage(tr, Math.round(nearX - wv / 2), Math.round(NEAR.y - h + 10), Math.round(wv), Math.round(h)); }
       if (S.baitA) { const k = Math.min(1, (now - S.baitA.t0) / S.baitA.ms), x = nearX + 40 + (farX - 28 - nearX - 40) * k, y = 160 - Math.sin(k * Math.PI) * 90 + (FAR.y - 160) * k; Dk(x, y, 4, '#a8703a'); P(x - 1, y - 2, 2, 2, '#e0b070'); }
       if (S.rockA) { const k = Math.min(1, (now - S.rockA.t0) / S.rockA.ms), x = nearX + 40 + (farX - nearX - 40) * k, y = 150 - Math.sin(k * Math.PI) * 90 + (FAR.y - 50 - 150) * k; Dk(x, y, 5, '#6a6050'); Dk(x - 1, y - 1, 3, '#9a9080'); P(x - 2, y - 3, 2, 2, '#c8c0b0'); }
       if (S.ballA) { const k = Math.min(1, (now - S.ballA.t0) / S.ballA.ms), x = nearX + 40 + (farX - nearX - 40) * k, y = 150 - Math.sin(k * Math.PI) * 110 + (104 - 150) * k; drawBall(x, y, k * 14, 1.5); }
-      scene.front(t); scene.fx(t); c.drawImage(vigC, 0, 0);
+      c.drawImage(frontC, 0, 0, W, H); scene.fx(t);
       requestAnimationFrame(frame);
     };
     function drawBall(x, y, rot, k = 1) {
