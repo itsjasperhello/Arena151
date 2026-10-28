@@ -568,11 +568,13 @@ const TEAM_NAME = { A: 'Red', B: 'Blue' };
    Section 2: data — roster, types, moves
    ===================================================================== */
 // name|type1|type2|tier   tier → base stat total used for generated stats
-const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L`;
+const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L;MissingNo.|Bird|Normal|F`;
 const TIER_BST = { W: 200, b: 300, B: 310, k: 400, M: 405, g: 440, f: 480, F: 530, L: 590, X: 680 };
 const TIER_SIZE = { W: .62, b: .66, B: .64, k: .8, M: .8, g: .84, f: .92, F: .97, L: 1, X: 1 };
 const DEX = ROSTER_RAW.split(';').map((s, i) => { const p = s.split('|'); return { id: i + 1, name: p[0], types: p[2] ? [p[1], p[2]] : [p[1]], tier: p[3] }; });
 const DEX_BY_NAME = Object.fromEntries(DEX.map(d => [d.name, d]));
+// MissingNo. — the Gen 1 glitch Pokémon — is Pokédex #000 (it sits at the end of the list so everything indexed by position still lines up)
+if (DEX_BY_NAME['MissingNo.']) DEX_BY_NAME['MissingNo.'].id = 0;
 
 // Canonical base stats for well-known species (public reference values); others are generated.
 const BASE_OVERRIDE = {
@@ -584,7 +586,8 @@ const BASE_OVERRIDE = {
   Jolteon: [65, 65, 60, 110, 95, 130], Golbat: [75, 80, 70, 65, 75, 90], Pinsir: [65, 125, 100, 55, 70, 85],
   Magikarp: [20, 10, 55, 15, 20, 80], Onix: [35, 45, 160, 30, 45, 70], Machamp: [90, 130, 80, 65, 85, 55],
   Golem: [80, 120, 130, 55, 65, 45], Starmie: [60, 75, 85, 100, 85, 115], Ditto: [48, 48, 48, 48, 48, 48],
-  Eevee: [55, 55, 50, 45, 65, 55]
+  Eevee: [55, 55, 50, 45, 65, 55],
+  'MissingNo.': [33, 136, 0, 6, 6, 29]      // Red/Blue: HP 33, Attack 136, Defense 0, Special 6 (Sp. Atk and Sp. Def here), Speed 29
 };
 // Type archetype weights: hp, atk, def, spa, spd, spe
 const ARCH = {
@@ -598,7 +601,7 @@ const ARCH = {
 const TYPE_COLOR = {
   Normal: '#b9b7a3', Fire: '#ff7d3b', Water: '#4a9dff', Grass: '#4cc860', Electric: '#ffd02e', Psychic: '#ff6fb1',
   Ice: '#7fe0ea', Fighting: '#d4553d', Poison: '#b066d6', Ground: '#d9b062', Rock: '#b5a05a', Bug: '#a3c22c',
-  Ghost: '#7a6ad0', Dragon: '#6f5cf0', Fairy: '#f4a6d8', Steel: '#9db4c8', Flying: '#97b3f2', Dark: '#6e5a4e'
+  Ghost: '#7a6ad0', Dragon: '#6f5cf0', Fairy: '#f4a6d8', Steel: '#9db4c8', Flying: '#97b3f2', Dark: '#6e5a4e', Bird: '#9a8c7a'
 };
 // Full 18-type chart (attacker → defender)
 const CHART = {
@@ -706,6 +709,7 @@ M('Aerial Ace', 'Flying', 'P', 60, null, 0, 'slash');
 M('Air Slash', 'Flying', 'S', 75, 95, 0, 'wind', { fl: 30 });
 M('Drill Peck', 'Flying', 'P', 80, 100, 0, 'contact');
 M('Brave Bird', 'Flying', 'P', 120, 100, 0, 'contact', { rc: 1 / 3 });
+M('Sky Attack', 'Flying', 'P', 140, 90, 0, 'contact', { charge: 900 });   // Gen 1: 140 power, 90% accuracy, a charging turn first
 M('Hurricane', 'Flying', 'S', 110, 70, 0, 'wind', { cf: 30 });
 // Psychic
 M('Confusion', 'Psychic', 'S', 50, 100, 0, 'psy', { cf: 10 });
@@ -759,6 +763,7 @@ M('Crunch', 'Dark', 'P', 80, 100, 0, 'contact', { tg: { def: -1 }, ch: 20 });
 
 // Hand-picked movesets for signature teams; every other species gets a generated set.
 const MOVESET_OVERRIDE = {
+  'MissingNo.': ['Water Gun', 'Water Gun', 'Sky Attack'],   // exactly as in Red/Blue: three moves, Water Gun twice
   Pikachu: ['Thunderbolt', 'Volt Tackle', 'Quick Attack', 'Iron Tail'],
   Charizard: ['Flamethrower', 'Air Slash', 'Dragon Pulse', 'Earth Power'],
   Blastoise: ['Hydro Pump', 'Ice Beam', 'Flash Cannon', 'Iron Defense'],
@@ -1079,7 +1084,19 @@ function planFor(d, r) {
 const R = { base: 1, belly: 2, accent: 3, dark: 4, horn: 5, elem: 6, core: 7, membrane: 8, eyeW: 20, iris: 21, pupil: 22, shine: 23, mouth: 24, fang: 25 };
 const FLAT = new Set([20, 21, 22, 23, 24, 25, 7]);
 
+// MissingNo.'s glitch sprite: scrambled blocks in the backwards-L shape from Red/Blue. Frame 0 is the front, frame 1 the back (mirrored).
+function glitchSprite(frame, grid) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = grid; const x = cv.getContext('2d'), u = Math.max(2, Math.round(grid / 28));
+  let seed = 0x5eed1 + frame * 7; const r = () => ((seed = Math.imul(seed ^ (seed >>> 15), 2246822519) >>> 0) % 1000) / 1000;
+  const cols = ['#000000', '#404040', '#8a8a8a', '#d8d8d8', '#ffffff', '#202020'], cells = grid / u | 0;
+  for (let cy = 2; cy < cells; cy++) for (let cx = 1; cx < cells - 1; cx++) {
+    const right = cx >= cells * .55, bottom = cy >= cells * .62, inside = frame === 0 ? (right || bottom) : (cx < cells * .45 || bottom);   // the backwards L (front), a normal L (back)
+    if (!inside || r() < .12) continue; x.fillStyle = cols[(r() * cols.length) | 0]; x.fillRect(cx * u, cy * u, u, u);
+    if (r() < .25) { x.fillStyle = '#ffffff'; x.fillRect(cx * u, cy * u, Math.max(1, u >> 1), Math.max(1, u >> 1)); } }
+  return { canvas: cv, crop: { x: 0, y: 0, s: grid }, plan: null };
+}
 function generateSprite(d, frame = 0, opts = {}) {
+  if (d && d.name === 'MissingNo.') return glitchSprite(frame, opts.grid || 56);
   const SPR = opts.grid || 56, CX = SPR / 2, FEET = SPR - 3, mega = !!opts.mega;
   const seed = hashStr(d.name);
   const r = mulberry(seed * 31 + 7);              // shape decisions (identical for both frames)
@@ -1478,6 +1495,7 @@ function animFrameIndex(a, t) {
 }
 const loadImg = file => new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = spriteUrl(file); });
 async function loadAnim(base) {
+  if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(png, false); }   // MissingNo.'s front/back art is PNG
   if (!FILE_MODE) {
     try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) return { buf: await r.arrayBuffer() }; } catch (e) { }
   } else {
@@ -2427,7 +2445,7 @@ function tryCast(S, idx) {
   VFX.windup(S, mv);
   return true;
 }
-const WINDUP = mv => mv.cat === 'X' ? 260 : mv.pri > 0 ? 110 : 250;
+const WINDUP = mv => mv.e && mv.e.charge ? mv.e.charge : mv.cat === 'X' ? 260 : mv.pri > 0 ? 110 : 250;   // Sky Attack charges first
 function aimPoint(S, accOk, spread = 95) {
   const t = side(other(S));
   const ai = controlledByAI(S), lead = ai ? aiK(S, .04, .18, .26) : .18; let x = t.x + t.vx * lead, y = t.y + t.vy * lead;
@@ -3300,7 +3318,8 @@ function drawActorSprite(S) {
     let lx, ly; if (moving) { lx = sd.vx; ly = sd.vy; } else { const f = side(other(S)); lx = f.x - sd.x; ly = f.y - sd.y; }
     const len = Math.hypot(lx, ly) || 1;
     if (sd.view === 'back') { if (ly > -.15 * len) sd.view = 'front'; } else if (ly < -.45 * len) sd.view = 'back';
-    const useBack = sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
+    const glitchFlip = m.name === 'MissingNo.' && sp.back && (moving || !!sd.cast || sd.state === 'dash' || sd.state === 'zmove');   // MissingNo.: front ⇄ back every 0.33 s while walking or attacking
+    const useBack = glitchFlip ? Math.floor(clock.t / 330) % 2 === 1 : sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
     const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
     // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
     const flip = useBack ? sd.face < 0 : sd.face > 0;
@@ -3322,7 +3341,7 @@ function drawActorSprite(S) {
     c.restore();
   } else {
     const unit = cam.pz;
-    const f = frozen ? 0 : moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / (asleep ? 900 : 430)) % 2;
+    const f = frozen ? 0 : m.name === 'MissingNo.' ? ((moving || sd.cast) ? Math.floor(clock.t / 330) % 2 : 0) : moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / (asleep ? 900 : 430)) % 2;
     const dw = Math.max(1, Math.round(sp.w * unit * scale)), dh = Math.max(1, Math.round(sp.h * unit * scale));
     const dx = Math.round(sx - dw / 2), dy = Math.round(sy - (sp.h - sp.foot) * unit * scale - hopArt * cam.pz + sink * 9 * cam.pz);
     c.save(); c.imageSmoothingEnabled = false; c.globalAlpha = alpha;
@@ -4990,7 +5009,7 @@ sig('Charm', {
      XL  2.0 - 4.0 m     x1.68   Snorlax, Lapras, Dragonair, Arbok
      XXL over 4 m        x1.95   only Onix and Gyarados
    ===================================================================== */
-const HEIGHT_M = { 'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
+const HEIGHT_M = { 'MissingNo.': 3.0, 'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
 const MEGA_HEIGHT_M = { Venusaur: 2.4, Beedrill: 1.4, Pidgeot: 2.2, Slowbro: 2.0, Kangaskhan: 2.2, Aerodactyl: 2.1, Mewtwo: 2.3, Pinsir: 1.7 };
 const SIZE_CLASSES = [
   { id: 'XS', max: .4, scale: 1.00, label: 'Extra small' }, { id: 'S', max: .79, scale: 1.10, label: 'Small' }, { id: 'M', max: 1.3, scale: 1.22, label: 'Medium' },
@@ -8963,6 +8982,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function pausableSleep(ms) { let left = ms, last = performance.now(); while (left > 0) { await sleep(Math.min(30, left)); const now = performance.now(); if (!clock.paused) left -= now - last; last = now; } }   // real elapsed time, frozen while paused
 
 // Plays one Pokémon's cry and resolves when it has finished (or straight away if there is no file).
+function glitchCry() { try { const ctx = audioCtx(); if (!ctx) return Promise.resolve(false); if (ctx.state === 'suspended') ctx.resume();
+  const len = .7, buf = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate), d = buf.getChannelData(0); let hold = 0, v = 0;
+  for (let i = 0; i < d.length; i++) { if (--hold <= 0) { hold = 40 + Math.random() * 400 | 0; v = (Math.random() * 2 - 1) * (Math.random() < .3 ? .9 : .35); } d[i] = v * (1 - i / d.length) * (Math.sin(i / (30 + (i >> 9) % 40)) > 0 ? 1 : -.6); }
+  const src = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = .35 * (typeof SETTINGS !== 'undefined' && SETTINGS.sfx != null ? SETTINGS.sfx : 1); src.buffer = buf; src.connect(g); g.connect(ctx.destination); src.start();
+  return new Promise(r => { src.onended = () => r(true); }); } catch (e) { return Promise.resolve(false); } }
 function playCry(name) {
   name = pickBase(name);
   const file = spriteSlug(name) + '.mp3', vol = (window.SETTINGS && SETTINGS.sfxVol != null) ? SETTINGS.sfxVol : .7;
@@ -9030,6 +9054,10 @@ async function battleCountdown(my) {
   setTimeout(() => { if (el.firstChild && el.firstChild.classList.contains('go')) el.innerHTML = ''; }, 1250);
 }
 
+// MissingNo. plays its real cry if the file exists, otherwise a glitch cry
+const _playCryBase = playCry;
+playCry = function (name) { if (pickBase(name) !== 'MissingNo.') return _playCryBase.apply(this, arguments); return Promise.resolve(_playCryBase.apply(this, arguments)).then(ok => ok || glitchCry()); };
+
 //# sourceURL=cries.js
 </script>
 <script>
@@ -9037,7 +9065,7 @@ async function battleCountdown(my) {
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '16.3';
+const APP_VERSION = '16.4';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -10352,7 +10380,7 @@ async function ashResult(won) {
    ===================================================================== */
 const STARTERS = ['Bulbasaur', 'Charmander', 'Squirtle'];
 // Gen 1 (Red/Blue) catch rates.
-const CATCH_RATE = { Bulbasaur: 45, Ivysaur: 45, Venusaur: 45, Charmander: 45, Charmeleon: 45, Charizard: 45, Squirtle: 45, Wartortle: 45, Blastoise: 45, Caterpie: 255, Metapod: 120, Butterfree: 45,
+const CATCH_RATE = { 'MissingNo.': 29, Bulbasaur: 45, Ivysaur: 45, Venusaur: 45, Charmander: 45, Charmeleon: 45, Charizard: 45, Squirtle: 45, Wartortle: 45, Blastoise: 45, Caterpie: 255, Metapod: 120, Butterfree: 45,
   Weedle: 255, Kakuna: 120, Beedrill: 45, Pidgey: 255, Pidgeotto: 120, Pidgeot: 45, Rattata: 255, Raticate: 90, Spearow: 255, Fearow: 90, Ekans: 255, Arbok: 90, Pikachu: 190, Raichu: 75,
   Sandshrew: 255, Sandslash: 90, 'Nidoran♀': 235, Nidorina: 120, Nidoqueen: 45, 'Nidoran♂': 235, Nidorino: 120, Nidoking: 45, Clefairy: 150, Clefable: 25, Vulpix: 190, Ninetales: 75,
   Jigglypuff: 170, Wigglytuff: 50, Zubat: 255, Golbat: 90, Oddish: 255, Gloom: 120, Vileplume: 45, Paras: 190, Parasect: 75, Venonat: 190, Venomoth: 75, Diglett: 255, Dugtrio: 50,
@@ -10394,7 +10422,7 @@ const ROUTES = [
     ['Venonat', 24, 28, 4], ['Ditto', 23, 28, 3], ['Gastly', 18, 25, 6], ['Haunter', 25, 30, 1], ['Cubone', 20, 25, 4], ['Abra', 15, 20, 3], ['Kadabra', 22, 25, 1], ['Machop', 15, 20, 4], ['Onix', 13, 17, 3],
     ['Magnemite', 21, 24, 4], ['Voltorb', 21, 24, 4], ['Pikachu', 20, 24, 2], ['Electabuzz', 33, 36, .8], ['Raichu', 33, 33, .5], ['Lapras', 15, 15, .8], ['Hitmonlee', 30, 30, .6], ['Hitmonchan', 30, 30, .6],
     ['Seaking', 25, 25, 2], ['Zapdos', 50, 50, .3]] },
-  { leg: 6, name: 'Cycling Road · Sea Routes 19–20 · Seafoam Islands', scene: 'sea', mons: [['Tentacool', 25, 32, 8], ['Tentacruel', 35, 35, 1], ['Seel', 30, 35, 5], ['Dewgong', 38, 38, 1], ['Psyduck', 30, 30, 4], ['Golduck', 38, 38, 1],
+  { leg: 6, name: 'Cycling Road · Sea Routes 19–20 · Seafoam Islands', scene: 'sea', mons: [['MissingNo.', 80, 80, .05], ['Tentacool', 25, 32, 8], ['Tentacruel', 35, 35, 1], ['Seel', 30, 35, 5], ['Dewgong', 38, 38, 1], ['Psyduck', 30, 30, 4], ['Golduck', 38, 38, 1],
     ['Slowpoke', 30, 30, 4], ['Slowbro', 37, 37, 1], ['Shellder', 30, 30, 4], ['Staryu', 30, 30, 4], ['Horsea', 30, 30, 4], ['Seadra', 35, 35, 1], ['Krabby', 30, 30, 4], ['Kingler', 37, 37, 1], ['Golbat', 30, 35, 3],
     ['Grimer', 30, 34, 3], ['Muk', 38, 38, .8], ['Koffing', 30, 34, 3], ['Weezing', 38, 38, .8], ['Ponyta', 30, 34, 2], ['Rapidash', 38, 38, .8], ['Magmar', 34, 38, .8], ['Aerodactyl', 30, 30, .4], ['Articuno', 50, 50, .3]] },
   { leg: 7, name: 'Sea Route 21 · Route 22 · Victory Road', scene: 'mountain', mons: [['Tangela', 28, 32, 6], ['Pidgeotto', 25, 30, 4], ['Raticate', 25, 30, 4], ['Tentacool', 25, 30, 4], ['Shellder', 30, 30, 3],
@@ -10494,9 +10522,10 @@ function dexGainExp(sv, sp, amount) {
 /* ---------- the Pokédex pop-up (from the map and gym cards): all 151, levels, party ---------- */
 function openDex() {
   const sv = STORY.save; if (!isDexSave(sv)) return;
+  const hasMissingNo = !!(dexEntry(sv, 'MissingNo.') || dexEntry(sv, 'MissingNo.|shiny')), dexTotal = DEX.length - (hasMissingNo ? 0 : 1);   // MissingNo. stays hidden until owned
   const party = sv.team || [], owned = new Set(Object.keys(sv.dex || {}).map(pickBase)).size, shinies = Object.keys(sv.dex || {}).filter(pickShiny).length, ov = $('dexOv');
   const pic = n => { try { const el = monPic(n); return el; } catch (e) { return document.createElement('span'); } };
-  ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${DEX.length}${shinies ? ` · \u2728 ${shinies} shiny` : ''} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
+  ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${dexTotal}${shinies ? ` · \u2728 ${shinies} shiny` : ''} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
     <div class="dx-party" id="dxParty"><b>PARTY</b></div><div class="dx-grid" id="dxGrid"></div></div>`;
   ov.querySelector('.dx-close').onclick = () => { ov.classList.remove('show'); if (STORY.open) renderStory(); };
   ov.onclick = e => { if (e.target === ov) ov.querySelector('.dx-close').click(); };
@@ -10519,7 +10548,7 @@ function openDex() {
     };
     grid.appendChild(el);
   };
-  for (const d of DEX) { card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
+  for (const d of DEX) { if (d.name === 'MissingNo.' && !hasMissingNo) continue; if (d.name !== 'MissingNo.' || dexEntry(sv, d.name)) card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
   ov.classList.add('show');
 }
 
@@ -10627,7 +10656,7 @@ function pickWild(leg) {
   for (const [sp, lo, hi, w] of R.mons) { x -= w; if (x <= 0) return { sp, lv: rIn(lo, hi), rare: w < 1 }; }
   const m = R.mons[0]; return { sp: m[0], lv: m[1], rare: m[3] < 1 };
 }
-const wildSpeed = (sp, lv) => Math.floor((SPEED1[DEX_BY_NAME[sp].id - 1] + 8) * 2 * lv / 100) + 5;
+const wildSpeed = (sp, lv) => Math.floor(((SPEED1[DEX_BY_NAME[sp].id - 1] ?? (sp === 'MissingNo.' ? 29 : 60)) + 8) * 2 * lv / 100) + 5;
 const wildHP = (sp, lv) => { const b = baseStats(DEX_BY_NAME[sp]).hp; return Math.floor((b + 8) * 2 * lv / 100) + lv + 10; };
 // One Safari Ball throw (Gen 1). Returns { caught, shakes }.
 function safariBall(rate, hp) {
@@ -11194,11 +11223,11 @@ function openLocations(opts = {}) {
   const draw = () => {
     const q = LOC.q.trim().toLowerCase(), list = $('lcList'); list.innerHTML = '';
     for (const b of ov.querySelectorAll('.lc-bar button')) b.classList.toggle('on', b.dataset.s === LOC.show);
-    let rows = DEX.map(d => ({ d, I: locInfo(d.name), got: owned(d.name) || owned(d.name + '|shiny') }));
+    let rows = DEX.filter(d => d.name !== 'MissingNo.').map(d => ({ d, I: locInfo(d.name), got: owned(d.name) || owned(d.name + '|shiny') }));   // MissingNo.'s whereabouts stay a secret
     if (q) rows = rows.filter(r => r.d.name.toLowerCase().includes(q) || String(r.d.id) === q);
     if (LOC.leg !== 'all') { const L = +LOC.leg; rows = rows.filter(r => r.I.routes.some(x => x.leg === L)); rows.sort((a, b) => b.I.routes.find(x => x.leg === L).pct - a.I.routes.find(x => x.leg === L).pct); }
     if (LOC.show === 'new') rows = rows.filter(r => !r.got); else if (LOC.show === 'got') rows = rows.filter(r => r.got);
-    ov.querySelector('.lc-top small').textContent = `${rows.length} Pokémon shown · caught ${DEX.filter(d => owned(d.name) || owned(d.name + '|shiny')).length} / ${DEX.length}`;
+    ov.querySelector('.lc-top small').textContent = `${rows.length} Pokémon shown · caught ${DEX.filter(d => d.name !== 'MissingNo.' && (owned(d.name) || owned(d.name + '|shiny'))).length} / ${DEX.length - 1}`;
     if (!rows.length) { list.innerHTML = '<div class="none">No Pokémon match.</div>'; return; }
     for (const { d, I, got } of rows.slice(0, 160)) {
       const lines = [];

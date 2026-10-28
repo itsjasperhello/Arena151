@@ -62,7 +62,19 @@ function planFor(d, r) {
 const R = { base: 1, belly: 2, accent: 3, dark: 4, horn: 5, elem: 6, core: 7, membrane: 8, eyeW: 20, iris: 21, pupil: 22, shine: 23, mouth: 24, fang: 25 };
 const FLAT = new Set([20, 21, 22, 23, 24, 25, 7]);
 
+// MissingNo.'s glitch sprite: scrambled blocks in the backwards-L shape from Red/Blue. Frame 0 is the front, frame 1 the back (mirrored).
+function glitchSprite(frame, grid) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = grid; const x = cv.getContext('2d'), u = Math.max(2, Math.round(grid / 28));
+  let seed = 0x5eed1 + frame * 7; const r = () => ((seed = Math.imul(seed ^ (seed >>> 15), 2246822519) >>> 0) % 1000) / 1000;
+  const cols = ['#000000', '#404040', '#8a8a8a', '#d8d8d8', '#ffffff', '#202020'], cells = grid / u | 0;
+  for (let cy = 2; cy < cells; cy++) for (let cx = 1; cx < cells - 1; cx++) {
+    const right = cx >= cells * .55, bottom = cy >= cells * .62, inside = frame === 0 ? (right || bottom) : (cx < cells * .45 || bottom);   // the backwards L (front), a normal L (back)
+    if (!inside || r() < .12) continue; x.fillStyle = cols[(r() * cols.length) | 0]; x.fillRect(cx * u, cy * u, u, u);
+    if (r() < .25) { x.fillStyle = '#ffffff'; x.fillRect(cx * u, cy * u, Math.max(1, u >> 1), Math.max(1, u >> 1)); } }
+  return { canvas: cv, crop: { x: 0, y: 0, s: grid }, plan: null };
+}
 function generateSprite(d, frame = 0, opts = {}) {
+  if (d && d.name === 'MissingNo.') return glitchSprite(frame, opts.grid || 56);
   const SPR = opts.grid || 56, CX = SPR / 2, FEET = SPR - 3, mega = !!opts.mega;
   const seed = hashStr(d.name);
   const r = mulberry(seed * 31 + 7);              // shape decisions (identical for both frames)
@@ -461,6 +473,7 @@ function animFrameIndex(a, t) {
 }
 const loadImg = file => new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = spriteUrl(file); });
 async function loadAnim(base) {
+  if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(png, false); }   // MissingNo.'s front/back art is PNG
   if (!FILE_MODE) {
     try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) return { buf: await r.arrayBuffer() }; } catch (e) { }
   } else {

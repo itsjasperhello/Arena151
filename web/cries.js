@@ -13,6 +13,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function pausableSleep(ms) { let left = ms, last = performance.now(); while (left > 0) { await sleep(Math.min(30, left)); const now = performance.now(); if (!clock.paused) left -= now - last; last = now; } }   // real elapsed time, frozen while paused
 
 // Plays one Pokémon's cry and resolves when it has finished (or straight away if there is no file).
+function glitchCry() { try { const ctx = audioCtx(); if (!ctx) return Promise.resolve(false); if (ctx.state === 'suspended') ctx.resume();
+  const len = .7, buf = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate), d = buf.getChannelData(0); let hold = 0, v = 0;
+  for (let i = 0; i < d.length; i++) { if (--hold <= 0) { hold = 40 + Math.random() * 400 | 0; v = (Math.random() * 2 - 1) * (Math.random() < .3 ? .9 : .35); } d[i] = v * (1 - i / d.length) * (Math.sin(i / (30 + (i >> 9) % 40)) > 0 ? 1 : -.6); }
+  const src = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = .35 * (typeof SETTINGS !== 'undefined' && SETTINGS.sfx != null ? SETTINGS.sfx : 1); src.buffer = buf; src.connect(g); g.connect(ctx.destination); src.start();
+  return new Promise(r => { src.onended = () => r(true); }); } catch (e) { return Promise.resolve(false); } }
 function playCry(name) {
   name = pickBase(name);
   const file = spriteSlug(name) + '.mp3', vol = (window.SETTINGS && SETTINGS.sfxVol != null) ? SETTINGS.sfxVol : .7;
@@ -79,3 +84,7 @@ async function battleCountdown(my) {
   el.innerHTML = '<span class="go">GO!</span>'; playSfx(CD_SFX.go, 500);
   setTimeout(() => { if (el.firstChild && el.firstChild.classList.contains('go')) el.innerHTML = ''; }, 1250);
 }
+
+// MissingNo. plays its real cry if the file exists, otherwise a glitch cry
+const _playCryBase = playCry;
+playCry = function (name) { if (pickBase(name) !== 'MissingNo.') return _playCryBase.apply(this, arguments); return Promise.resolve(_playCryBase.apply(this, arguments)).then(ok => ok || glitchCry()); };

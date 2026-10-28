@@ -11,7 +11,7 @@
    ===================================================================== */
 const STARTERS = ['Bulbasaur', 'Charmander', 'Squirtle'];
 // Gen 1 (Red/Blue) catch rates.
-const CATCH_RATE = { Bulbasaur: 45, Ivysaur: 45, Venusaur: 45, Charmander: 45, Charmeleon: 45, Charizard: 45, Squirtle: 45, Wartortle: 45, Blastoise: 45, Caterpie: 255, Metapod: 120, Butterfree: 45,
+const CATCH_RATE = { 'MissingNo.': 29, Bulbasaur: 45, Ivysaur: 45, Venusaur: 45, Charmander: 45, Charmeleon: 45, Charizard: 45, Squirtle: 45, Wartortle: 45, Blastoise: 45, Caterpie: 255, Metapod: 120, Butterfree: 45,
   Weedle: 255, Kakuna: 120, Beedrill: 45, Pidgey: 255, Pidgeotto: 120, Pidgeot: 45, Rattata: 255, Raticate: 90, Spearow: 255, Fearow: 90, Ekans: 255, Arbok: 90, Pikachu: 190, Raichu: 75,
   Sandshrew: 255, Sandslash: 90, 'Nidoran♀': 235, Nidorina: 120, Nidoqueen: 45, 'Nidoran♂': 235, Nidorino: 120, Nidoking: 45, Clefairy: 150, Clefable: 25, Vulpix: 190, Ninetales: 75,
   Jigglypuff: 170, Wigglytuff: 50, Zubat: 255, Golbat: 90, Oddish: 255, Gloom: 120, Vileplume: 45, Paras: 190, Parasect: 75, Venonat: 190, Venomoth: 75, Diglett: 255, Dugtrio: 50,
@@ -53,7 +53,7 @@ const ROUTES = [
     ['Venonat', 24, 28, 4], ['Ditto', 23, 28, 3], ['Gastly', 18, 25, 6], ['Haunter', 25, 30, 1], ['Cubone', 20, 25, 4], ['Abra', 15, 20, 3], ['Kadabra', 22, 25, 1], ['Machop', 15, 20, 4], ['Onix', 13, 17, 3],
     ['Magnemite', 21, 24, 4], ['Voltorb', 21, 24, 4], ['Pikachu', 20, 24, 2], ['Electabuzz', 33, 36, .8], ['Raichu', 33, 33, .5], ['Lapras', 15, 15, .8], ['Hitmonlee', 30, 30, .6], ['Hitmonchan', 30, 30, .6],
     ['Seaking', 25, 25, 2], ['Zapdos', 50, 50, .3]] },
-  { leg: 6, name: 'Cycling Road · Sea Routes 19–20 · Seafoam Islands', scene: 'sea', mons: [['Tentacool', 25, 32, 8], ['Tentacruel', 35, 35, 1], ['Seel', 30, 35, 5], ['Dewgong', 38, 38, 1], ['Psyduck', 30, 30, 4], ['Golduck', 38, 38, 1],
+  { leg: 6, name: 'Cycling Road · Sea Routes 19–20 · Seafoam Islands', scene: 'sea', mons: [['MissingNo.', 80, 80, .05], ['Tentacool', 25, 32, 8], ['Tentacruel', 35, 35, 1], ['Seel', 30, 35, 5], ['Dewgong', 38, 38, 1], ['Psyduck', 30, 30, 4], ['Golduck', 38, 38, 1],
     ['Slowpoke', 30, 30, 4], ['Slowbro', 37, 37, 1], ['Shellder', 30, 30, 4], ['Staryu', 30, 30, 4], ['Horsea', 30, 30, 4], ['Seadra', 35, 35, 1], ['Krabby', 30, 30, 4], ['Kingler', 37, 37, 1], ['Golbat', 30, 35, 3],
     ['Grimer', 30, 34, 3], ['Muk', 38, 38, .8], ['Koffing', 30, 34, 3], ['Weezing', 38, 38, .8], ['Ponyta', 30, 34, 2], ['Rapidash', 38, 38, .8], ['Magmar', 34, 38, .8], ['Aerodactyl', 30, 30, .4], ['Articuno', 50, 50, .3]] },
   { leg: 7, name: 'Sea Route 21 · Route 22 · Victory Road', scene: 'mountain', mons: [['Tangela', 28, 32, 6], ['Pidgeotto', 25, 30, 4], ['Raticate', 25, 30, 4], ['Tentacool', 25, 30, 4], ['Shellder', 30, 30, 3],
@@ -153,9 +153,10 @@ function dexGainExp(sv, sp, amount) {
 /* ---------- the Pokédex pop-up (from the map and gym cards): all 151, levels, party ---------- */
 function openDex() {
   const sv = STORY.save; if (!isDexSave(sv)) return;
+  const hasMissingNo = !!(dexEntry(sv, 'MissingNo.') || dexEntry(sv, 'MissingNo.|shiny')), dexTotal = DEX.length - (hasMissingNo ? 0 : 1);   // MissingNo. stays hidden until owned
   const party = sv.team || [], owned = new Set(Object.keys(sv.dex || {}).map(pickBase)).size, shinies = Object.keys(sv.dex || {}).filter(pickShiny).length, ov = $('dexOv');
   const pic = n => { try { const el = monPic(n); return el; } catch (e) { return document.createElement('span'); } };
-  ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${DEX.length}${shinies ? ` · \u2728 ${shinies} shiny` : ''} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
+  ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${dexTotal}${shinies ? ` · \u2728 ${shinies} shiny` : ''} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
     <div class="dx-party" id="dxParty"><b>PARTY</b></div><div class="dx-grid" id="dxGrid"></div></div>`;
   ov.querySelector('.dx-close').onclick = () => { ov.classList.remove('show'); if (STORY.open) renderStory(); };
   ov.onclick = e => { if (e.target === ov) ov.querySelector('.dx-close').click(); };
@@ -178,7 +179,7 @@ function openDex() {
     };
     grid.appendChild(el);
   };
-  for (const d of DEX) { card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
+  for (const d of DEX) { if (d.name === 'MissingNo.' && !hasMissingNo) continue; if (d.name !== 'MissingNo.' || dexEntry(sv, d.name)) card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
   ov.classList.add('show');
 }
 

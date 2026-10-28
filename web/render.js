@@ -220,7 +220,8 @@ function drawActorSprite(S) {
     let lx, ly; if (moving) { lx = sd.vx; ly = sd.vy; } else { const f = side(other(S)); lx = f.x - sd.x; ly = f.y - sd.y; }
     const len = Math.hypot(lx, ly) || 1;
     if (sd.view === 'back') { if (ly > -.15 * len) sd.view = 'front'; } else if (ly < -.45 * len) sd.view = 'back';
-    const useBack = sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
+    const glitchFlip = m.name === 'MissingNo.' && sp.back && (moving || !!sd.cast || sd.state === 'dash' || sd.state === 'zmove');   // MissingNo.: front ⇄ back every 0.33 s while walking or attacking
+    const useBack = glitchFlip ? Math.floor(clock.t / 330) % 2 === 1 : sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
     const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
     // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
     const flip = useBack ? sd.face < 0 : sd.face > 0;
@@ -242,7 +243,7 @@ function drawActorSprite(S) {
     c.restore();
   } else {
     const unit = cam.pz;
-    const f = frozen ? 0 : moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / (asleep ? 900 : 430)) % 2;
+    const f = frozen ? 0 : m.name === 'MissingNo.' ? ((moving || sd.cast) ? Math.floor(clock.t / 330) % 2 : 0) : moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / (asleep ? 900 : 430)) % 2;
     const dw = Math.max(1, Math.round(sp.w * unit * scale)), dh = Math.max(1, Math.round(sp.h * unit * scale));
     const dx = Math.round(sx - dw / 2), dy = Math.round(sy - (sp.h - sp.foot) * unit * scale - hopArt * cam.pz + sink * 9 * cam.pz);
     c.save(); c.imageSmoothingEnabled = false; c.globalAlpha = alpha;

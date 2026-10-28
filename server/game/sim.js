@@ -189,7 +189,7 @@ function tryCast(S, idx) {
   VFX.windup(S, mv);
   return true;
 }
-const WINDUP = mv => mv.cat === 'X' ? 260 : mv.pri > 0 ? 110 : 250;
+const WINDUP = mv => mv.e && mv.e.charge ? mv.e.charge : mv.cat === 'X' ? 260 : mv.pri > 0 ? 110 : 250;   // Sky Attack charges first
 function aimPoint(S, accOk, spread = 95) {
   const t = side(other(S));
   const ai = controlledByAI(S), lead = ai ? aiK(S, .04, .18, .26) : .18; let x = t.x + t.vx * lead, y = t.y + t.vy * lead;

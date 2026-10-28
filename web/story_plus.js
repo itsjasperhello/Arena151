@@ -92,11 +92,11 @@ function openLocations(opts = {}) {
   const draw = () => {
     const q = LOC.q.trim().toLowerCase(), list = $('lcList'); list.innerHTML = '';
     for (const b of ov.querySelectorAll('.lc-bar button')) b.classList.toggle('on', b.dataset.s === LOC.show);
-    let rows = DEX.map(d => ({ d, I: locInfo(d.name), got: owned(d.name) || owned(d.name + '|shiny') }));
+    let rows = DEX.filter(d => d.name !== 'MissingNo.').map(d => ({ d, I: locInfo(d.name), got: owned(d.name) || owned(d.name + '|shiny') }));   // MissingNo.'s whereabouts stay a secret
     if (q) rows = rows.filter(r => r.d.name.toLowerCase().includes(q) || String(r.d.id) === q);
     if (LOC.leg !== 'all') { const L = +LOC.leg; rows = rows.filter(r => r.I.routes.some(x => x.leg === L)); rows.sort((a, b) => b.I.routes.find(x => x.leg === L).pct - a.I.routes.find(x => x.leg === L).pct); }
     if (LOC.show === 'new') rows = rows.filter(r => !r.got); else if (LOC.show === 'got') rows = rows.filter(r => r.got);
-    ov.querySelector('.lc-top small').textContent = `${rows.length} Pokémon shown · caught ${DEX.filter(d => owned(d.name) || owned(d.name + '|shiny')).length} / ${DEX.length}`;
+    ov.querySelector('.lc-top small').textContent = `${rows.length} Pokémon shown · caught ${DEX.filter(d => d.name !== 'MissingNo.' && (owned(d.name) || owned(d.name + '|shiny'))).length} / ${DEX.length - 1}`;
     if (!rows.length) { list.innerHTML = '<div class="none">No Pokémon match.</div>'; return; }
     for (const { d, I, got } of rows.slice(0, 160)) {
       const lines = [];

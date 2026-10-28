@@ -21,7 +21,7 @@ function pickWild(leg) {
   for (const [sp, lo, hi, w] of R.mons) { x -= w; if (x <= 0) return { sp, lv: rIn(lo, hi), rare: w < 1 }; }
   const m = R.mons[0]; return { sp: m[0], lv: m[1], rare: m[3] < 1 };
 }
-const wildSpeed = (sp, lv) => Math.floor((SPEED1[DEX_BY_NAME[sp].id - 1] + 8) * 2 * lv / 100) + 5;
+const wildSpeed = (sp, lv) => Math.floor(((SPEED1[DEX_BY_NAME[sp].id - 1] ?? (sp === 'MissingNo.' ? 29 : 60)) + 8) * 2 * lv / 100) + 5;
 const wildHP = (sp, lv) => { const b = baseStats(DEX_BY_NAME[sp]).hp; return Math.floor((b + 8) * 2 * lv / 100) + lv + 10; };
 // One Safari Ball throw (Gen 1). Returns { caught, shakes }.
 function safariBall(rate, hp) {
