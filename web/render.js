@@ -224,7 +224,7 @@ function drawActorSprite(S) {
     const useBack = glitchFlip ? Math.floor(clock.t / 330) % 2 === 1 : sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
     const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
     // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
-    const flip = useBack ? sd.face < 0 : sd.face > 0;
+    const flip = m.name === 'MissingNo.' ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0;   // MissingNo.'s back art faces the same way as its front
     const unit = (cam.pz >= 2 ? Math.round(cam.pz / 2) : cam.pz / 2) * scale, still = a.frames.length < 2 && !a.live;   // shrinks with the camera when zoomed out
     const bob = still && !frozen ? (moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / 430) % 2) * unit : 0;
     const dw = Math.max(1, Math.round(a.w * unit)), dh = Math.max(1, Math.round(a.h * unit));

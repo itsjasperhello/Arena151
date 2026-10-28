@@ -472,8 +472,40 @@ function animFrameIndex(a, t) {
   return lo;
 }
 const loadImg = file => new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = spriteUrl(file); });
+/* Clean up sprite art that has a painted-on "transparency" checkerboard (white and grey squares that are really pixels):
+   detect the checker's square size and two colours from the corner, clear only pixels that match the expected checker colour
+   at their position and connect to the edge (so the sprite's own white and grey blocks survive), crop to the sprite, and scale
+   it to a standard sprite size (about 60 px of content in a 96 px frame, like the GIF sprites) with crisp pixel scaling. */
+function cleanSpriteArt(img) {
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height; if (!W || !H) return img;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+  const id = x.getImageData(0, 0, W, H), d = id.data, at = (px, py) => (py * W + px) * 4;
+  const col = (px, py) => { const k = at(px, py); return [d[k], d[k + 1], d[k + 2], d[k + 3]]; };
+  const near = (a, b, t = 22) => Math.abs(a[0] - b[0]) <= t && Math.abs(a[1] - b[1]) <= t && Math.abs(a[2] - b[2]) <= t;
+  const light = p => p[3] > 200 && Math.min(p[0], p[1], p[2]) > 140 && Math.max(p[0], p[1], p[2]) - Math.min(p[0], p[1], p[2]) < 30;
+  const A = col(0, 0);
+  if (A[3] > 200 && light(A)) {
+    // the checker: colour A at the corner, colour B in the next square; square size from the first run along the top row
+    let s = 1; while (s < W && near(col(s, 0), A, 10)) s++;
+    const B = s < W ? col(s, 0) : A, isChecker = s < W / 2 && light(B) && !near(A, B, 6);
+    const expect = (px, py) => !isChecker ? A : ((Math.floor(px / s) + Math.floor(py / s)) % 2 === 0 ? A : B);
+    const bg = (px, py) => { const p = col(px, py); return p[3] < 16 || near(p, expect(px, py), 26) || (!isChecker && (near(p, A, 26))); };
+    const seen = new Uint8Array(W * H), stack = [];
+    for (let px = 0; px < W; px++) stack.push(px, 0, px, H - 1); for (let py = 0; py < H; py++) stack.push(0, py, W - 1, py);
+    while (stack.length) { const py = stack.pop(), px = stack.pop(); if (px < 0 || py < 0 || px >= W || py >= H) continue; const n = py * W + px; if (seen[n]) continue; seen[n] = 1; if (!bg(px, py)) continue;
+      d[n * 4 + 3] = 0; stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1); }
+    x.putImageData(id, 0, 0);
+  }
+  // crop to the sprite
+  let x0 = W, y0 = H, x1 = -1, y1 = -1; for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) if (d[at(px, py) + 3] > 16) { if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py; }
+  if (x1 < 0) return img;
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, k = 56 / Math.max(cw, ch), ow = Math.max(1, Math.round(cw * k)), oh = Math.max(1, Math.round(ch * k));
+  const out = document.createElement('canvas'); out.width = out.height = 96; const o = out.getContext('2d'); o.imageSmoothingEnabled = k > 1 ? false : true; o.imageSmoothingQuality = 'high';
+  o.drawImage(c, x0, y0, cw, ch, Math.round((96 - ow) / 2), 96 - 4 - oh, ow, oh);
+  out.naturalWidth = 96; out.naturalHeight = 96; return out;
+}
 async function loadAnim(base) {
-  if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(png, false); }   // MissingNo.'s front/back art is PNG
+  if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(cleanSpriteArt(png), false); }   // MissingNo.'s front/back art is PNG (cleaned up)
   if (!FILE_MODE) {
     try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) return { buf: await r.arrayBuffer() }; } catch (e) { }
   } else {

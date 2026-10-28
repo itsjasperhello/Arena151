@@ -372,3 +372,7 @@ function syncShinyPicker() {
   sw.textContent = START.shiny ? '\u2728 Shiny: ON' : '\u2728 Shiny: OFF'; sw.setAttribute('aria-pressed', String(!!START.shiny)); sw.classList.toggle('on', !!START.shiny);
   for (const b of grid.querySelectorAll('button[data-n]')) { const want = b.dataset.n + (START.shiny ? '|shiny' : ''); if (b.dataset.shown !== want) { const pic = b.querySelector('.pic'); if (pic) pic.replaceWith(monPic(want)); b.dataset.shown = want; } }
 }
+
+// MissingNo. stays out of the Pokémon chooser until a saved Pokédex story has caught it
+{ const _openMonPicker = openMonPicker; openMonPicker = function () { const r = _openMonPicker.apply(this, arguments); const show = missingnoUnlocked();
+  for (const b of document.querySelectorAll('#stGridPk button[data-n="MissingNo."]')) b.hidden = !show; return r; }; }

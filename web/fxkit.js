@@ -98,7 +98,7 @@
     t = document.createElement('canvas'); t.width = src.width; t.height = src.height; const x = t.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = col; x.globalAlpha = .65; x.fillRect(0, 0, t.width, t.height); if (m.size > 24) m.clear(); m.set(col, t); return t; }
   function ghost(S, col = '#bfe0ff', ms = 260, a0 = .55) {
     try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front), src = an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))];
-      const flip = useBack ? sd.face < 0 : sd.face > 0, unit = .5 * L.scale, img = tinted(src, col), x = bx(sd.x), y = by(sd.y);
+      const flip = (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0, unit = .5 * L.scale, img = tinted(src, col), x = bx(sd.x), y = by(sd.y);
       fx({ max: ms / 1000, draw: (c, q) => { c.save(); c.globalAlpha = a0 * (1 - q); c.translate(x, y); c.scale(flip ? -1 : 1, 1); c.imageSmoothingEnabled = false; c.drawImage(img, -an.cx * unit, -(an.h - an.foot) * unit, an.w * unit, an.h * unit); c.restore(); } });
     } catch (e) { }
   }
@@ -142,6 +142,6 @@
 
   // a Pokémon's current animation frame, for avatars: { an, src, unit, flip }
   function actorFrame(S) { try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return null; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front);
-    return { an, src: an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
+    return { an, src: an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
   window.FXK = { tinted, actorFrame, body, foe, dim, flash, shake, scar, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, ease, rnd, N, T };
 })();

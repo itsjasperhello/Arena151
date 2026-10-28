@@ -1494,8 +1494,40 @@ function animFrameIndex(a, t) {
   return lo;
 }
 const loadImg = file => new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = spriteUrl(file); });
+/* Clean up sprite art that has a painted-on "transparency" checkerboard (white and grey squares that are really pixels):
+   detect the checker's square size and two colours from the corner, clear only pixels that match the expected checker colour
+   at their position and connect to the edge (so the sprite's own white and grey blocks survive), crop to the sprite, and scale
+   it to a standard sprite size (about 60 px of content in a 96 px frame, like the GIF sprites) with crisp pixel scaling. */
+function cleanSpriteArt(img) {
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height; if (!W || !H) return img;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+  const id = x.getImageData(0, 0, W, H), d = id.data, at = (px, py) => (py * W + px) * 4;
+  const col = (px, py) => { const k = at(px, py); return [d[k], d[k + 1], d[k + 2], d[k + 3]]; };
+  const near = (a, b, t = 22) => Math.abs(a[0] - b[0]) <= t && Math.abs(a[1] - b[1]) <= t && Math.abs(a[2] - b[2]) <= t;
+  const light = p => p[3] > 200 && Math.min(p[0], p[1], p[2]) > 140 && Math.max(p[0], p[1], p[2]) - Math.min(p[0], p[1], p[2]) < 30;
+  const A = col(0, 0);
+  if (A[3] > 200 && light(A)) {
+    // the checker: colour A at the corner, colour B in the next square; square size from the first run along the top row
+    let s = 1; while (s < W && near(col(s, 0), A, 10)) s++;
+    const B = s < W ? col(s, 0) : A, isChecker = s < W / 2 && light(B) && !near(A, B, 6);
+    const expect = (px, py) => !isChecker ? A : ((Math.floor(px / s) + Math.floor(py / s)) % 2 === 0 ? A : B);
+    const bg = (px, py) => { const p = col(px, py); return p[3] < 16 || near(p, expect(px, py), 26) || (!isChecker && (near(p, A, 26))); };
+    const seen = new Uint8Array(W * H), stack = [];
+    for (let px = 0; px < W; px++) stack.push(px, 0, px, H - 1); for (let py = 0; py < H; py++) stack.push(0, py, W - 1, py);
+    while (stack.length) { const py = stack.pop(), px = stack.pop(); if (px < 0 || py < 0 || px >= W || py >= H) continue; const n = py * W + px; if (seen[n]) continue; seen[n] = 1; if (!bg(px, py)) continue;
+      d[n * 4 + 3] = 0; stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1); }
+    x.putImageData(id, 0, 0);
+  }
+  // crop to the sprite
+  let x0 = W, y0 = H, x1 = -1, y1 = -1; for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) if (d[at(px, py) + 3] > 16) { if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py; }
+  if (x1 < 0) return img;
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, k = 56 / Math.max(cw, ch), ow = Math.max(1, Math.round(cw * k)), oh = Math.max(1, Math.round(ch * k));
+  const out = document.createElement('canvas'); out.width = out.height = 96; const o = out.getContext('2d'); o.imageSmoothingEnabled = k > 1 ? false : true; o.imageSmoothingQuality = 'high';
+  o.drawImage(c, x0, y0, cw, ch, Math.round((96 - ow) / 2), 96 - 4 - oh, ow, oh);
+  out.naturalWidth = 96; out.naturalHeight = 96; return out;
+}
 async function loadAnim(base) {
-  if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(png, false); }   // MissingNo.'s front/back art is PNG
+  if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(cleanSpriteArt(png), false); }   // MissingNo.'s front/back art is PNG (cleaned up)
   if (!FILE_MODE) {
     try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) return { buf: await r.arrayBuffer() }; } catch (e) { }
   } else {
@@ -3322,7 +3354,7 @@ function drawActorSprite(S) {
     const useBack = glitchFlip ? Math.floor(clock.t / 330) % 2 === 1 : sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
     const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
     // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
-    const flip = useBack ? sd.face < 0 : sd.face > 0;
+    const flip = m.name === 'MissingNo.' ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0;   // MissingNo.'s back art faces the same way as its front
     const unit = (cam.pz >= 2 ? Math.round(cam.pz / 2) : cam.pz / 2) * scale, still = a.frames.length < 2 && !a.live;   // shrinks with the camera when zoomed out
     const bob = still && !frozen ? (moving ? Math.floor(sd.walk / 16) % 2 : Math.floor(clock.t / 430) % 2) * unit : 0;
     const dw = Math.max(1, Math.round(a.w * unit)), dh = Math.max(1, Math.round(a.h * unit));
@@ -5009,7 +5041,7 @@ sig('Charm', {
      XL  2.0 - 4.0 m     x1.68   Snorlax, Lapras, Dragonair, Arbok
      XXL over 4 m        x1.95   only Onix and Gyarados
    ===================================================================== */
-const HEIGHT_M = { 'MissingNo.': 3.0, 'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
+const HEIGHT_M = { 'MissingNo.': 1.0, 'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
 const MEGA_HEIGHT_M = { Venusaur: 2.4, Beedrill: 1.4, Pidgeot: 2.2, Slowbro: 2.0, Kangaskhan: 2.2, Aerodactyl: 2.1, Mewtwo: 2.3, Pinsir: 1.7 };
 const SIZE_CLASSES = [
   { id: 'XS', max: .4, scale: 1.00, label: 'Extra small' }, { id: 'S', max: .79, scale: 1.10, label: 'Small' }, { id: 'M', max: 1.3, scale: 1.22, label: 'Medium' },
@@ -6433,7 +6465,7 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
     t = document.createElement('canvas'); t.width = src.width; t.height = src.height; const x = t.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = col; x.globalAlpha = .65; x.fillRect(0, 0, t.width, t.height); if (m.size > 24) m.clear(); m.set(col, t); return t; }
   function ghost(S, col = '#bfe0ff', ms = 260, a0 = .55) {
     try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front), src = an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))];
-      const flip = useBack ? sd.face < 0 : sd.face > 0, unit = .5 * L.scale, img = tinted(src, col), x = bx(sd.x), y = by(sd.y);
+      const flip = (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0, unit = .5 * L.scale, img = tinted(src, col), x = bx(sd.x), y = by(sd.y);
       fx({ max: ms / 1000, draw: (c, q) => { c.save(); c.globalAlpha = a0 * (1 - q); c.translate(x, y); c.scale(flip ? -1 : 1, 1); c.imageSmoothingEnabled = false; c.drawImage(img, -an.cx * unit, -(an.h - an.foot) * unit, an.w * unit, an.h * unit); c.restore(); } });
     } catch (e) { }
   }
@@ -6477,7 +6509,7 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
 
   // a Pokémon's current animation frame, for avatars: { an, src, unit, flip }
   function actorFrame(S) { try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return null; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front);
-    return { an, src: an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
+    return { an, src: an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
   window.FXK = { tinted, actorFrame, body, foe, dim, flash, shake, scar, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, ease, rnd, N, T };
 })();
 
@@ -7570,7 +7602,9 @@ function buildPickers() {
 }
 function setPickers(a, b) { a.forEach((n, i) => { if ($('pickA' + i)) $('pickA' + i).value = n; }); b.forEach((n, i) => { if ($('pickB' + i)) $('pickB' + i).value = n; }); }
 const readPickers = S => Array.from({ length: 6 }, (_, i) => $(`pick${S}${i}`).value);
-const randomTeam = () => DEX.map(d => d.name).sort(() => Math.random() - .5).slice(0, 6);
+// MissingNo. only appears in Local and Online once a saved Pokédex story has caught it (regular or shiny)
+function missingnoUnlocked() { try { for (let i = 1; i <= 9; i++) { const v = localStorage.getItem('arena151.story.' + i); if (!v) continue; const s = JSON.parse(v); if (s && s.dex && (s.dex['MissingNo.'] || s.dex['MissingNo.|shiny'])) return true; } } catch (e) { } return false; }
+const randomTeam = () => DEX.filter(d => d.name !== 'MissingNo.' || missingnoUnlocked()).map(d => d.name).sort(() => Math.random() - .5).slice(0, 6);
 function randomize() { setPickers(randomTeam(), randomTeam()); }
 function togglePause() { if (!G || !['battle', 'pick', 'intro'].includes(G.phase)) return; clock.paused = !clock.paused; $('pausedTag').classList.toggle('show', clock.paused); $('bPause').textContent = clock.paused ? 'Resume' : 'Pause'; rosterKey = ''; }
 function toggleSpeed() { clock.speed = clock.speed === 1 ? 2 : 1; $('bSpeed').textContent = `Speed ${clock.speed}×`; }
@@ -8962,6 +8996,10 @@ function syncShinyPicker() {
   sw.textContent = START.shiny ? '\u2728 Shiny: ON' : '\u2728 Shiny: OFF'; sw.setAttribute('aria-pressed', String(!!START.shiny)); sw.classList.toggle('on', !!START.shiny);
   for (const b of grid.querySelectorAll('button[data-n]')) { const want = b.dataset.n + (START.shiny ? '|shiny' : ''); if (b.dataset.shown !== want) { const pic = b.querySelector('.pic'); if (pic) pic.replaceWith(monPic(want)); b.dataset.shown = want; } }
 }
+
+// MissingNo. stays out of the Pokémon chooser until a saved Pokédex story has caught it
+{ const _openMonPicker = openMonPicker; openMonPicker = function () { const r = _openMonPicker.apply(this, arguments); const show = missingnoUnlocked();
+  for (const b of document.querySelectorAll('#stGridPk button[data-n="MissingNo."]')) b.hidden = !show; return r; }; }
 
 //# sourceURL=startscreen.js
 </script>

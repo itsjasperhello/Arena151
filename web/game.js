@@ -356,7 +356,9 @@ function buildPickers() {
 }
 function setPickers(a, b) { a.forEach((n, i) => { if ($('pickA' + i)) $('pickA' + i).value = n; }); b.forEach((n, i) => { if ($('pickB' + i)) $('pickB' + i).value = n; }); }
 const readPickers = S => Array.from({ length: 6 }, (_, i) => $(`pick${S}${i}`).value);
-const randomTeam = () => DEX.map(d => d.name).sort(() => Math.random() - .5).slice(0, 6);
+// MissingNo. only appears in Local and Online once a saved Pokédex story has caught it (regular or shiny)
+function missingnoUnlocked() { try { for (let i = 1; i <= 9; i++) { const v = localStorage.getItem('arena151.story.' + i); if (!v) continue; const s = JSON.parse(v); if (s && s.dex && (s.dex['MissingNo.'] || s.dex['MissingNo.|shiny'])) return true; } } catch (e) { } return false; }
+const randomTeam = () => DEX.filter(d => d.name !== 'MissingNo.' || missingnoUnlocked()).map(d => d.name).sort(() => Math.random() - .5).slice(0, 6);
 function randomize() { setPickers(randomTeam(), randomTeam()); }
 function togglePause() { if (!G || !['battle', 'pick', 'intro'].includes(G.phase)) return; clock.paused = !clock.paused; $('pausedTag').classList.toggle('show', clock.paused); $('bPause').textContent = clock.paused ? 'Resume' : 'Pause'; rosterKey = ''; }
 function toggleSpeed() { clock.speed = clock.speed === 1 ? 2 : 1; $('bSpeed').textContent = `Speed ${clock.speed}×`; }
