@@ -74,8 +74,10 @@ const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s !== 'A');   // 
 // AI difficulty 1–10 per side (G.aiLevel). Level 6 is the classic AI exactly; nothing set = classic.
 // aiK(S, atLevel1, atLevel6, atLevel10) blends a setting between those three points.
 const AI_CLASSIC = 6;
-function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l >= 1 && l <= 13 ? l : AI_CLASSIC; }
-// Levels 11–13 exist only for story secrets: they keep sharpening every setting past level 10.
+// AI difficulty runs 1–13. It is scaled down: level 13 plays like the old level 10, level 1 like the old level 1, evenly in
+// between (each step is 3/4 of an old step). This returns the level on the original 1–10 curve that the settings use.
+// Labels 1–13 map to an effective strength: level 1 stays the floor; 13 (Ash) now plays like the old level 10, and every level in between scales by the same factor
+function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l >= 1 && l <= 13 ? 1 + (l - 1) * 6.75 / 12 : AI_CLASSIC; }
 function aiK(S, lo, base, hi) { const l = aiLv(S); if (l > 10) return hi + (hi - base) * (l - 10) / 8; return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
 

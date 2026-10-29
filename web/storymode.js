@@ -472,7 +472,7 @@ function openGymCard(i) {
     <div><div style="font:800 12px var(--ui);letter-spacing:.16em;color:${orderColor(g.n)}">${stageName(g)} · ${g.city.toUpperCase()}</div>
       <h3>${g.secret && !sv.ash ? '???' : g.leader}</h3>
       <div class="meta"><span class="chip" style="background:${typeCol(g.type)};color:#111">${g.typeLabel || g.type}</span><span class="chip" style="display:inline-flex;align-items:center;gap:5px"><img src="${badgeUrl(g)}" alt="" style="width:18px;height:18px">${g.badge}</span><span class="chip">${state === 'done' ? '✔ Badge earned' : state === 'locked' ? '🔒 Locked' : 'Next challenge'}</span></div>
-      <div class="lv">DIFFICULTY ${lvl} <span style="margin-left:6px">AI level ${lvN}${lvN > 10 ? ' of 10' : ''}</span></div>
+      <div class="lv">DIFFICULTY ${lvl} <span style="margin-left:6px">AI level ${lvN} of 13</span></div>
       <div class="quote" id="syQuote"></div>
       ${g.secret && !sv.ash ? '<div class="quote" style="min-height:0">A silent trainer waits at the summit. You will only get <b>one</b> chance.</div>' : ''}
       <div class="foes" style="${g.secret && !sv.ash ? 'filter:brightness(0) drop-shadow(0 0 1px #fff)' : ''}">${teamOf(g).map((n, k) => `<div class="m"><div class="p" data-mon="${escapeHtml(n)}"></div>${g.secret && !sv.ash ? '???' : escapeHtml(n)}${levelsOf(g) ? ` <span style="color:#ffd84a">Lv${levelsOf(g)[k]}</span>` : ''}</div>`).join('')}</div>

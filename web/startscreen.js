@@ -279,8 +279,8 @@ $('stBack').onclick = () => { hideStart(); clock.paused = false; };
 $('stHelp').onclick = () => { const b = $('bHelp'); if (b) b.click(); };
 function syncTrainerPickers() { for (const S of ['A', 'B']) { const s = $('trSel' + S); if (s) s.value = TRSEL[S]; } if (typeof refreshTrainerLabels === 'function') refreshTrainerLabels(); try { drawMinis(); } catch (e) { } }
 $('stContinue').onclick = () => { hideStart(); loadKey('auto'); };
-/* ---------- AI difficulty 1–10 per side (6 = classic) ---------- */
-const AI_LEVEL_NAMES = ['Rookie', 'Novice', 'Beginner', 'Casual', 'Trainer', 'Skilled', 'Veteran', 'Expert', 'Elite', 'Champion'];
+/* ---------- AI difficulty 1–13 per side (13 plays like the old level 10) ---------- */
+const AI_LEVEL_NAMES = ['Rookie', 'Novice', 'Beginner', 'Casual', 'Amateur', 'Trainer', 'Capable', 'Skilled', 'Veteran', 'Expert', 'Ace', 'Elite', 'Champion'];   // 1–13 (13 plays like the old level 10)
 START.lvl = Object.assign({ A: 6, B: 6 }, (() => { try { return JSON.parse(localStorage.getItem('arena151.ailevel')) || {}; } catch (e) { return {}; } })());
 const saveLevels = () => { try { localStorage.setItem('arena151.ailevel', JSON.stringify({ A: START.lvl.A, B: START.lvl.B })); } catch (e) { } };
 function renderAiLevels() {
@@ -288,11 +288,11 @@ function renderAiLevels() {
     const box = $('stLvl' + S); if (!box) continue;
     box.hidden = START.ctrl[S] !== 'ai';
     const n = START.lvl[S]; $('stLvlTxt' + S).innerHTML = `AI LV ${n} <span class="nm">· ${AI_LEVEL_NAMES[n - 1]}</span>`;
-    box.title = `AI difficulty ${n} of 10 (${AI_LEVEL_NAMES[n - 1]})`;
+    box.title = `AI difficulty ${n} of 13 (${AI_LEVEL_NAMES[n - 1]})`;
   }
 }
 for (const b of document.querySelectorAll('#startOv .st-lvl button')) b.onclick = () => {
-  const S = b.dataset.lv; START.lvl[S] = Math.max(1, Math.min(10, START.lvl[S] + +b.dataset.d)); saveLevels(); renderAiLevels(); syncSettingsLevels();
+  const S = b.dataset.lv; START.lvl[S] = Math.max(1, Math.min(13, START.lvl[S] + +b.dataset.d)); saveLevels(); renderAiLevels(); syncSettingsLevels();
 };
 // What the next battle uses: Blue's level always (Blue is the AI); Red's only when Red is AI too (AI vs AI).
 function currentAiLevels() {

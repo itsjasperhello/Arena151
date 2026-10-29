@@ -145,7 +145,7 @@ async function startBattle(picksA, picksB, stageId) {
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
     ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}) });   // four parties in Local doubles
-  G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
+  G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–13 (story mode sets the gym's)
   if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
   // two players on one phone or tablet: both sides human (Local only)
   if (typeof NET !== 'undefined' && NET.mode === 'local' && typeof START !== 'undefined' && START.ctrl && START.ctrl.B === 'human' && typeof duoCapable === 'function' && duoCapable()) G.human = { A: START.ctrl.A === 'human', B: true };

@@ -2416,8 +2416,10 @@ const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s !== 'A');   // 
 // AI difficulty 1–10 per side (G.aiLevel). Level 6 is the classic AI exactly; nothing set = classic.
 // aiK(S, atLevel1, atLevel6, atLevel10) blends a setting between those three points.
 const AI_CLASSIC = 6;
-function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l >= 1 && l <= 13 ? l : AI_CLASSIC; }
-// Levels 11–13 exist only for story secrets: they keep sharpening every setting past level 10.
+// AI difficulty runs 1–13. It is scaled down: level 13 plays like the old level 10, level 1 like the old level 1, evenly in
+// between (each step is 3/4 of an old step). This returns the level on the original 1–10 curve that the settings use.
+// Labels 1–13 map to an effective strength: level 1 stays the floor; 13 (Ash) now plays like the old level 10, and every level in between scales by the same factor
+function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l >= 1 && l <= 13 ? 1 + (l - 1) * 6.75 / 12 : AI_CLASSIC; }
 function aiK(S, lo, base, hi) { const l = aiLv(S); if (l > 10) return hi + (hi - base) * (l - 10) / 8; return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
 
@@ -7471,7 +7473,7 @@ async function startBattle(picksA, picksB, stageId) {
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
     ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}) });   // four parties in Local doubles
-  G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
+  G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–13 (story mode sets the gym's)
   if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
   // two players on one phone or tablet: both sides human (Local only)
   if (typeof NET !== 'undefined' && NET.mode === 'local' && typeof START !== 'undefined' && START.ctrl && START.ctrl.B === 'human' && typeof duoCapable === 'function' && duoCapable()) G.human = { A: START.ctrl.A === 'human', B: true };
@@ -8997,8 +8999,8 @@ $('stBack').onclick = () => { hideStart(); clock.paused = false; };
 $('stHelp').onclick = () => { const b = $('bHelp'); if (b) b.click(); };
 function syncTrainerPickers() { for (const S of ['A', 'B']) { const s = $('trSel' + S); if (s) s.value = TRSEL[S]; } if (typeof refreshTrainerLabels === 'function') refreshTrainerLabels(); try { drawMinis(); } catch (e) { } }
 $('stContinue').onclick = () => { hideStart(); loadKey('auto'); };
-/* ---------- AI difficulty 1–10 per side (6 = classic) ---------- */
-const AI_LEVEL_NAMES = ['Rookie', 'Novice', 'Beginner', 'Casual', 'Trainer', 'Skilled', 'Veteran', 'Expert', 'Elite', 'Champion'];
+/* ---------- AI difficulty 1–13 per side (13 plays like the old level 10) ---------- */
+const AI_LEVEL_NAMES = ['Rookie', 'Novice', 'Beginner', 'Casual', 'Amateur', 'Trainer', 'Capable', 'Skilled', 'Veteran', 'Expert', 'Ace', 'Elite', 'Champion'];   // 1–13 (13 plays like the old level 10)
 START.lvl = Object.assign({ A: 6, B: 6 }, (() => { try { return JSON.parse(localStorage.getItem('arena151.ailevel')) || {}; } catch (e) { return {}; } })());
 const saveLevels = () => { try { localStorage.setItem('arena151.ailevel', JSON.stringify({ A: START.lvl.A, B: START.lvl.B })); } catch (e) { } };
 function renderAiLevels() {
@@ -9006,11 +9008,11 @@ function renderAiLevels() {
     const box = $('stLvl' + S); if (!box) continue;
     box.hidden = START.ctrl[S] !== 'ai';
     const n = START.lvl[S]; $('stLvlTxt' + S).innerHTML = `AI LV ${n} <span class="nm">· ${AI_LEVEL_NAMES[n - 1]}</span>`;
-    box.title = `AI difficulty ${n} of 10 (${AI_LEVEL_NAMES[n - 1]})`;
+    box.title = `AI difficulty ${n} of 13 (${AI_LEVEL_NAMES[n - 1]})`;
   }
 }
 for (const b of document.querySelectorAll('#startOv .st-lvl button')) b.onclick = () => {
-  const S = b.dataset.lv; START.lvl[S] = Math.max(1, Math.min(10, START.lvl[S] + +b.dataset.d)); saveLevels(); renderAiLevels(); syncSettingsLevels();
+  const S = b.dataset.lv; START.lvl[S] = Math.max(1, Math.min(13, START.lvl[S] + +b.dataset.d)); saveLevels(); renderAiLevels(); syncSettingsLevels();
 };
 // What the next battle uses: Blue's level always (Blue is the AI); Red's only when Red is AI too (AI vs AI).
 function currentAiLevels() {
@@ -10317,7 +10319,7 @@ function openGymCard(i) {
     <div><div style="font:800 12px var(--ui);letter-spacing:.16em;color:${orderColor(g.n)}">${stageName(g)} · ${g.city.toUpperCase()}</div>
       <h3>${g.secret && !sv.ash ? '???' : g.leader}</h3>
       <div class="meta"><span class="chip" style="background:${typeCol(g.type)};color:#111">${g.typeLabel || g.type}</span><span class="chip" style="display:inline-flex;align-items:center;gap:5px"><img src="${badgeUrl(g)}" alt="" style="width:18px;height:18px">${g.badge}</span><span class="chip">${state === 'done' ? '✔ Badge earned' : state === 'locked' ? '🔒 Locked' : 'Next challenge'}</span></div>
-      <div class="lv">DIFFICULTY ${lvl} <span style="margin-left:6px">AI level ${lvN}${lvN > 10 ? ' of 10' : ''}</span></div>
+      <div class="lv">DIFFICULTY ${lvl} <span style="margin-left:6px">AI level ${lvN} of 13</span></div>
       <div class="quote" id="syQuote"></div>
       ${g.secret && !sv.ash ? '<div class="quote" style="min-height:0">A silent trainer waits at the summit. You will only get <b>one</b> chance.</div>' : ''}
       <div class="foes" style="${g.secret && !sv.ash ? 'filter:brightness(0) drop-shadow(0 0 1px #fff)' : ''}">${teamOf(g).map((n, k) => `<div class="m"><div class="p" data-mon="${escapeHtml(n)}"></div>${g.secret && !sv.ash ? '???' : escapeHtml(n)}${levelsOf(g) ? ` <span style="color:#ffd84a">Lv${levelsOf(g)[k]}</span>` : ''}</div>`).join('')}</div>
