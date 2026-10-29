@@ -207,7 +207,9 @@ function renderStartTrainers() {
     sel.value = TRSEL[S]; $('stName' + S).textContent = trainerTitle(TRSEL[S]).toUpperCase(); loadTrainer(TRSEL[S]);
     for (const btn of document.querySelectorAll(`#startOv .st-ctrl button[data-c="${S}"]`)) { btn.classList.toggle('on', START.ctrl[S] === btn.dataset.v); btn.setAttribute('aria-pressed', String(START.ctrl[S] === btn.dataset.v)); }
   }
-  document.querySelector('#startOv .st-ctrl button[data-c="B"][data-v="human"]').disabled = true;
+  // player 2 can be human on a phone or tablet in Local play (two players, one device)
+  const p2 = document.querySelector('#startOv .st-ctrl button[data-c="B"][data-v="human"]'); p2.disabled = !(typeof duoCapable === 'function' && duoCapable() && typeof NET !== 'undefined' && NET.mode === 'local');
+  if (p2.disabled && START.ctrl.B === 'human') { START.ctrl.B = 'ai'; p2.classList.remove('on'); const ai = document.querySelector('#startOv .st-ctrl button[data-c="B"][data-v="ai"]'); if (ai) ai.classList.add('on'); }
   $('stNoteA').textContent = START.ctrl.A === 'human' ? 'You control Red' : 'AI vs AI — watch the battle';
   $('stNoteB').textContent = 'Blue is played by the AI';
 }

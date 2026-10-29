@@ -480,22 +480,60 @@ function cleanSpriteArt(img) {
   const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height; if (!W || !H) return img;
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
   const id = x.getImageData(0, 0, W, H), d = id.data, at = (px, py) => (py * W + px) * 4;
-  const col = (px, py) => { const k = at(px, py); return [d[k], d[k + 1], d[k + 2], d[k + 3]]; };
-  const near = (a, b, t = 22) => Math.abs(a[0] - b[0]) <= t && Math.abs(a[1] - b[1]) <= t && Math.abs(a[2] - b[2]) <= t;
-  const light = p => p[3] > 200 && Math.min(p[0], p[1], p[2]) > 140 && Math.max(p[0], p[1], p[2]) - Math.min(p[0], p[1], p[2]) < 30;
-  const A = col(0, 0);
-  if (A[3] > 200 && light(A)) {
-    // the checker: colour A at the corner, colour B in the next square; square size from the first run along the top row
-    let s = 1; while (s < W && near(col(s, 0), A, 10)) s++;
-    const B = s < W ? col(s, 0) : A, isChecker = s < W / 2 && light(B) && !near(A, B, 6);
-    const expect = (px, py) => !isChecker ? A : ((Math.floor(px / s) + Math.floor(py / s)) % 2 === 0 ? A : B);
-    const bg = (px, py) => { const p = col(px, py); return p[3] < 16 || near(p, expect(px, py), 26) || (!isChecker && (near(p, A, 26))); };
-    const seen = new Uint8Array(W * H), stack = [];
+  const lightK = k => d[k + 3] > 200 && Math.min(d[k], d[k + 1], d[k + 2]) > 140 && Math.max(d[k], d[k + 1], d[k + 2]) - Math.min(d[k], d[k + 1], d[k + 2]) < 30;
+  const lum = k => (d[k] + d[k + 1] + d[k + 2]) / 3;
+  if (lightK(at(0, 0))) {
+    // the checker's two shades: the lightest and darkest common light shades along the edges
+    const edge = []; for (let px = 0; px < W; px++) edge.push(at(px, 0), at(px, H - 1)); for (let py = 0; py < H; py++) edge.push(at(0, py), at(W - 1, py));
+    const hist = new Map(); for (const k of edge) if (lightK(k)) { const v = Math.round(lum(k) / 4) * 4; hist.set(v, (hist.get(v) || 0) + 1); }
+    const peaks = [...hist.entries()].sort((a, b) => b[1] - a[1]); const hi = peaks[0] ? peaks[0][0] : 255; let loL = hi; for (const [v, n] of peaks) if (Math.abs(v - hi) >= 16 && n > peaks[0][1] * .15) { loL = v; break; }
+    const Lh = Math.max(hi, loL), Ll = Math.min(hi, loL), isChecker = Lh - Ll >= 16, mid = (Lh + Ll) / 2;
+    // the square size (fractional, survives resizing) and offset, from where the shade flips along the top row and left column
+    const flips = (len, get) => { const out = []; let prev = null; for (let t = 0; t < len; t++) { const k = get(t); if (!lightK(k)) { prev = null; continue; } const cls = lum(k) >= mid; if (prev !== null && cls !== prev) out.push(t - .5); prev = cls; } return out; };
+    const fx = flips(W, t => at(t, 0)), fy = flips(H, t => at(0, t));
+    const sizeOf = f => { if (f.length < 3) return 0; const gaps = []; for (let k = 1; k < f.length; k++) gaps.push(f[k] - f[k - 1]); gaps.sort((a, b) => a - b); const med = gaps[gaps.length >> 1]; const ok = gaps.filter(g => Math.abs(g - med) <= Math.max(1.5, med * .12)); return (f[f.length - 1] - f[0]) / Math.round((f[f.length - 1] - f[0]) / med) || med; };
+    const S = sizeOf(fx) || sizeOf(fy) || 0, ox = fx.length ? fx[0] : 0, oy = fy.length ? fy[0] : 0;
+    const darkFirst = !(lum(at(0, 0)) >= mid);   // the shade of the corner square
+    const parity = (px, py) => (Math.floor((px - ox) / S) + Math.floor((py - oy) / S) + 4000) % 2, p0 = S ? parity(0, 0) : 0, cornerLight = !darkFirst;
+    const expectLight = (px, py) => (parity(px, py) === p0 ? cornerLight : !cornerLight);   // squares with the corner's parity share its shade
+    const nearEdge = (px, py) => { if (!S) return false; const ex = ((px - ox) % S + S) % S, ey = ((py - oy) % S + S) % S; return Math.min(ex, S - ex) < 1.6 || Math.min(ey, S - ey) < 1.6; };
+    const matches = (px, py) => { const k = at(px, py); if (d[k + 3] < 16) return true; if (!lightK(k)) return false; const L = lum(k);
+      if (!isChecker || !S) return Math.abs(L - Lh) < 14 || Math.abs(L - Ll) < 14;
+      if (L < Ll - 14 || L > Lh + 14) return false;
+      if (nearEdge(px, py)) {                     // near a square boundary: accept only a genuine blend, not a solid block crossing the line
+        if (L > Ll + 6 && L < Lh - 6) return true;
+        let sawHi = false, sawLo = false; for (let ay = Math.max(0, py - 2); ay <= Math.min(H - 1, py + 2); ay++) for (let ax = Math.max(0, px - 2); ax <= Math.min(W - 1, px + 2); ax++) { const kk = at(ax, ay); if (!lightK(kk)) continue; const LL = lum(kk); if (Math.abs(LL - Lh) < 10) sawHi = true; else if (Math.abs(LL - Ll) < 10) sawLo = true; }
+        if (sawHi && sawLo) return true; }
+      const wantLight = expectLight(px, py); return wantLight ? Math.abs(L - Lh) < 14 : Math.abs(L - Ll) < 14; };
+    // first pass: clear the checker from the edges inward
+    const gone = new Uint8Array(W * H), stack = [];
     for (let px = 0; px < W; px++) stack.push(px, 0, px, H - 1); for (let py = 0; py < H; py++) stack.push(0, py, W - 1, py);
-    while (stack.length) { const py = stack.pop(), px = stack.pop(); if (px < 0 || py < 0 || px >= W || py >= H) continue; const n = py * W + px; if (seen[n]) continue; seen[n] = 1; if (!bg(px, py)) continue;
-      d[n * 4 + 3] = 0; stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1); }
+    while (stack.length) { const py = stack.pop(), px = stack.pop(); if (px < 0 || py < 0 || px >= W || py >= H) continue; const n = py * W + px; if (gone[n]) continue; if (!matches(px, py)) continue;
+      gone[n] = 1; stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1); }
+    for (let n = 0; n < W * H; n++) if (gone[n]) d[n * 4 + 3] = 0;
+    // second pass: holes inside the sprite where the checker shows through. Among the light pixels that match the predicted
+    // pattern, group neighbours; a group holding both checker shades (in their alternating places) is real checkerboard and goes.
+    // A sprite block is one solid shade, so a group made only from it stays.
+    if (isChecker && S) { const mark = new Uint8Array(W * H);
+      for (let n0 = 0; n0 < W * H; n0++) { if (mark[n0] || d[n0 * 4 + 3] < 16) continue; const px0 = n0 % W, py0 = n0 / W | 0; if (!matches(px0, py0)) continue;
+        const list = [], q = [n0]; mark[n0] = 1; let nh = 0, nl = 0;
+        while (q.length) { const n = q.pop(); list.push(n); const L = lum(n * 4); if (Math.abs(L - Lh) < 10) nh++; else if (Math.abs(L - Ll) < 10) nl++; const px = n % W, py = n / W | 0;
+          for (const [ax, ay] of [[px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]]) { if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue; const m = ay * W + ax; if (!mark[m] && d[m * 4 + 3] >= 16 && matches(ax, ay)) { mark[m] = 1; q.push(m); } } }
+        const tot = list.length; if (tot >= 24 && nh >= tot * .12 && nl >= tot * .12) for (const n of list) d[n * 4 + 3] = 0; } }
+    { const comp = new Uint8Array(W * H);                // tiny leftover light specks
+      for (let n0 = 0; n0 < W * H; n0++) { if (comp[n0] || d[n0 * 4 + 3] < 16 || !lightK(n0 * 4)) continue; const list = [], q = [n0]; comp[n0] = 1; let hit = 0;
+        while (q.length) { const n = q.pop(); list.push(n); const px = n % W, py = n / W | 0; if (matches(px, py)) hit++;
+          for (const [ax, ay] of [[px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]]) { if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue; const m = ay * W + ax; if (!comp[m] && d[m * 4 + 3] >= 16 && lightK(m * 4)) { comp[m] = 1; q.push(m); } } }
+        if (list.length < W * H * .002 && hit >= list.length * .5) for (const n of list) d[n * 4 + 3] = 0; } }
+    // last pass: peel up to two layers of in-between (blended) light pixels off the cleared area — the halo resizing leaves around the
+    // sprite. A solid white or grey sprite pixel is one of the two pure shades, so it is not peeled.
+    for (let it = 0; it < 2; it++) { const peel = [];
+      for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) { const k = at(px, py); if (d[k + 3] < 16 || !lightK(k)) continue; const L = lum(k); if (!(L > Ll + 4 && L < Lh - 4) && !(L > Lh + 4)) continue;
+        if ((px > 0 && d[k - 4 + 3] < 16) || (px < W - 1 && d[k + 4 + 3] < 16) || (py > 0 && d[k - W * 4 + 3] < 16) || (py < H - 1 && d[k + W * 4 + 3] < 16)) peel.push(k); }
+      for (const k of peel) d[k + 3] = 0; }
     x.putImageData(id, 0, 0);
   }
+  cleanSpriteArt.last = c;   // kept for checking the cleanup
   // crop to the sprite
   let x0 = W, y0 = H, x1 = -1, y1 = -1; for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) if (d[at(px, py) + 3] > 16) { if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py; }
   if (x1 < 0) return img;

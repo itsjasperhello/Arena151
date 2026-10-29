@@ -1502,22 +1502,60 @@ function cleanSpriteArt(img) {
   const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height; if (!W || !H) return img;
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
   const id = x.getImageData(0, 0, W, H), d = id.data, at = (px, py) => (py * W + px) * 4;
-  const col = (px, py) => { const k = at(px, py); return [d[k], d[k + 1], d[k + 2], d[k + 3]]; };
-  const near = (a, b, t = 22) => Math.abs(a[0] - b[0]) <= t && Math.abs(a[1] - b[1]) <= t && Math.abs(a[2] - b[2]) <= t;
-  const light = p => p[3] > 200 && Math.min(p[0], p[1], p[2]) > 140 && Math.max(p[0], p[1], p[2]) - Math.min(p[0], p[1], p[2]) < 30;
-  const A = col(0, 0);
-  if (A[3] > 200 && light(A)) {
-    // the checker: colour A at the corner, colour B in the next square; square size from the first run along the top row
-    let s = 1; while (s < W && near(col(s, 0), A, 10)) s++;
-    const B = s < W ? col(s, 0) : A, isChecker = s < W / 2 && light(B) && !near(A, B, 6);
-    const expect = (px, py) => !isChecker ? A : ((Math.floor(px / s) + Math.floor(py / s)) % 2 === 0 ? A : B);
-    const bg = (px, py) => { const p = col(px, py); return p[3] < 16 || near(p, expect(px, py), 26) || (!isChecker && (near(p, A, 26))); };
-    const seen = new Uint8Array(W * H), stack = [];
+  const lightK = k => d[k + 3] > 200 && Math.min(d[k], d[k + 1], d[k + 2]) > 140 && Math.max(d[k], d[k + 1], d[k + 2]) - Math.min(d[k], d[k + 1], d[k + 2]) < 30;
+  const lum = k => (d[k] + d[k + 1] + d[k + 2]) / 3;
+  if (lightK(at(0, 0))) {
+    // the checker's two shades: the lightest and darkest common light shades along the edges
+    const edge = []; for (let px = 0; px < W; px++) edge.push(at(px, 0), at(px, H - 1)); for (let py = 0; py < H; py++) edge.push(at(0, py), at(W - 1, py));
+    const hist = new Map(); for (const k of edge) if (lightK(k)) { const v = Math.round(lum(k) / 4) * 4; hist.set(v, (hist.get(v) || 0) + 1); }
+    const peaks = [...hist.entries()].sort((a, b) => b[1] - a[1]); const hi = peaks[0] ? peaks[0][0] : 255; let loL = hi; for (const [v, n] of peaks) if (Math.abs(v - hi) >= 16 && n > peaks[0][1] * .15) { loL = v; break; }
+    const Lh = Math.max(hi, loL), Ll = Math.min(hi, loL), isChecker = Lh - Ll >= 16, mid = (Lh + Ll) / 2;
+    // the square size (fractional, survives resizing) and offset, from where the shade flips along the top row and left column
+    const flips = (len, get) => { const out = []; let prev = null; for (let t = 0; t < len; t++) { const k = get(t); if (!lightK(k)) { prev = null; continue; } const cls = lum(k) >= mid; if (prev !== null && cls !== prev) out.push(t - .5); prev = cls; } return out; };
+    const fx = flips(W, t => at(t, 0)), fy = flips(H, t => at(0, t));
+    const sizeOf = f => { if (f.length < 3) return 0; const gaps = []; for (let k = 1; k < f.length; k++) gaps.push(f[k] - f[k - 1]); gaps.sort((a, b) => a - b); const med = gaps[gaps.length >> 1]; const ok = gaps.filter(g => Math.abs(g - med) <= Math.max(1.5, med * .12)); return (f[f.length - 1] - f[0]) / Math.round((f[f.length - 1] - f[0]) / med) || med; };
+    const S = sizeOf(fx) || sizeOf(fy) || 0, ox = fx.length ? fx[0] : 0, oy = fy.length ? fy[0] : 0;
+    const darkFirst = !(lum(at(0, 0)) >= mid);   // the shade of the corner square
+    const parity = (px, py) => (Math.floor((px - ox) / S) + Math.floor((py - oy) / S) + 4000) % 2, p0 = S ? parity(0, 0) : 0, cornerLight = !darkFirst;
+    const expectLight = (px, py) => (parity(px, py) === p0 ? cornerLight : !cornerLight);   // squares with the corner's parity share its shade
+    const nearEdge = (px, py) => { if (!S) return false; const ex = ((px - ox) % S + S) % S, ey = ((py - oy) % S + S) % S; return Math.min(ex, S - ex) < 1.6 || Math.min(ey, S - ey) < 1.6; };
+    const matches = (px, py) => { const k = at(px, py); if (d[k + 3] < 16) return true; if (!lightK(k)) return false; const L = lum(k);
+      if (!isChecker || !S) return Math.abs(L - Lh) < 14 || Math.abs(L - Ll) < 14;
+      if (L < Ll - 14 || L > Lh + 14) return false;
+      if (nearEdge(px, py)) {                     // near a square boundary: accept only a genuine blend, not a solid block crossing the line
+        if (L > Ll + 6 && L < Lh - 6) return true;
+        let sawHi = false, sawLo = false; for (let ay = Math.max(0, py - 2); ay <= Math.min(H - 1, py + 2); ay++) for (let ax = Math.max(0, px - 2); ax <= Math.min(W - 1, px + 2); ax++) { const kk = at(ax, ay); if (!lightK(kk)) continue; const LL = lum(kk); if (Math.abs(LL - Lh) < 10) sawHi = true; else if (Math.abs(LL - Ll) < 10) sawLo = true; }
+        if (sawHi && sawLo) return true; }
+      const wantLight = expectLight(px, py); return wantLight ? Math.abs(L - Lh) < 14 : Math.abs(L - Ll) < 14; };
+    // first pass: clear the checker from the edges inward
+    const gone = new Uint8Array(W * H), stack = [];
     for (let px = 0; px < W; px++) stack.push(px, 0, px, H - 1); for (let py = 0; py < H; py++) stack.push(0, py, W - 1, py);
-    while (stack.length) { const py = stack.pop(), px = stack.pop(); if (px < 0 || py < 0 || px >= W || py >= H) continue; const n = py * W + px; if (seen[n]) continue; seen[n] = 1; if (!bg(px, py)) continue;
-      d[n * 4 + 3] = 0; stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1); }
+    while (stack.length) { const py = stack.pop(), px = stack.pop(); if (px < 0 || py < 0 || px >= W || py >= H) continue; const n = py * W + px; if (gone[n]) continue; if (!matches(px, py)) continue;
+      gone[n] = 1; stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1); }
+    for (let n = 0; n < W * H; n++) if (gone[n]) d[n * 4 + 3] = 0;
+    // second pass: holes inside the sprite where the checker shows through. Among the light pixels that match the predicted
+    // pattern, group neighbours; a group holding both checker shades (in their alternating places) is real checkerboard and goes.
+    // A sprite block is one solid shade, so a group made only from it stays.
+    if (isChecker && S) { const mark = new Uint8Array(W * H);
+      for (let n0 = 0; n0 < W * H; n0++) { if (mark[n0] || d[n0 * 4 + 3] < 16) continue; const px0 = n0 % W, py0 = n0 / W | 0; if (!matches(px0, py0)) continue;
+        const list = [], q = [n0]; mark[n0] = 1; let nh = 0, nl = 0;
+        while (q.length) { const n = q.pop(); list.push(n); const L = lum(n * 4); if (Math.abs(L - Lh) < 10) nh++; else if (Math.abs(L - Ll) < 10) nl++; const px = n % W, py = n / W | 0;
+          for (const [ax, ay] of [[px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]]) { if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue; const m = ay * W + ax; if (!mark[m] && d[m * 4 + 3] >= 16 && matches(ax, ay)) { mark[m] = 1; q.push(m); } } }
+        const tot = list.length; if (tot >= 24 && nh >= tot * .12 && nl >= tot * .12) for (const n of list) d[n * 4 + 3] = 0; } }
+    { const comp = new Uint8Array(W * H);                // tiny leftover light specks
+      for (let n0 = 0; n0 < W * H; n0++) { if (comp[n0] || d[n0 * 4 + 3] < 16 || !lightK(n0 * 4)) continue; const list = [], q = [n0]; comp[n0] = 1; let hit = 0;
+        while (q.length) { const n = q.pop(); list.push(n); const px = n % W, py = n / W | 0; if (matches(px, py)) hit++;
+          for (const [ax, ay] of [[px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]]) { if (ax < 0 || ay < 0 || ax >= W || ay >= H) continue; const m = ay * W + ax; if (!comp[m] && d[m * 4 + 3] >= 16 && lightK(m * 4)) { comp[m] = 1; q.push(m); } } }
+        if (list.length < W * H * .002 && hit >= list.length * .5) for (const n of list) d[n * 4 + 3] = 0; } }
+    // last pass: peel up to two layers of in-between (blended) light pixels off the cleared area — the halo resizing leaves around the
+    // sprite. A solid white or grey sprite pixel is one of the two pure shades, so it is not peeled.
+    for (let it = 0; it < 2; it++) { const peel = [];
+      for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) { const k = at(px, py); if (d[k + 3] < 16 || !lightK(k)) continue; const L = lum(k); if (!(L > Ll + 4 && L < Lh - 4) && !(L > Lh + 4)) continue;
+        if ((px > 0 && d[k - 4 + 3] < 16) || (px < W - 1 && d[k + 4 + 3] < 16) || (py > 0 && d[k - W * 4 + 3] < 16) || (py < H - 1 && d[k + W * 4 + 3] < 16)) peel.push(k); }
+      for (const k of peel) d[k + 3] = 0; }
     x.putImageData(id, 0, 0);
   }
+  cleanSpriteArt.last = c;   // kept for checking the cleanup
   // crop to the sprite
   let x0 = W, y0 = H, x1 = -1, y1 = -1; for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) if (d[at(px, py) + 3] > 16) { if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py; }
   if (x1 < 0) return img;
@@ -7389,6 +7427,8 @@ async function startBattle(picksA, picksB, stageId) {
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
   G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
+  // two players on one phone or tablet: both sides human (Local only)
+  if (typeof NET !== 'undefined' && NET.mode === 'local' && typeof START !== 'undefined' && START.ctrl && START.ctrl.B === 'human' && typeof duoCapable === 'function' && duoCapable()) G.human = { A: START.ctrl.A === 'human', B: true };
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
   $('log').innerHTML = ''; $('timer').textContent = '0:00'; movesKey = ''; rosterKey = '';
   logLine(`${TEAM_NAME.A} and ${TEAM_NAME.B} meet in the ${STAGE.name}. Live battle — six Pokémon each.`, 't');
@@ -8831,7 +8871,9 @@ function renderStartTrainers() {
     sel.value = TRSEL[S]; $('stName' + S).textContent = trainerTitle(TRSEL[S]).toUpperCase(); loadTrainer(TRSEL[S]);
     for (const btn of document.querySelectorAll(`#startOv .st-ctrl button[data-c="${S}"]`)) { btn.classList.toggle('on', START.ctrl[S] === btn.dataset.v); btn.setAttribute('aria-pressed', String(START.ctrl[S] === btn.dataset.v)); }
   }
-  document.querySelector('#startOv .st-ctrl button[data-c="B"][data-v="human"]').disabled = true;
+  // player 2 can be human on a phone or tablet in Local play (two players, one device)
+  const p2 = document.querySelector('#startOv .st-ctrl button[data-c="B"][data-v="human"]'); p2.disabled = !(typeof duoCapable === 'function' && duoCapable() && typeof NET !== 'undefined' && NET.mode === 'local');
+  if (p2.disabled && START.ctrl.B === 'human') { START.ctrl.B = 'ai'; p2.classList.remove('on'); const ai = document.querySelector('#startOv .st-ctrl button[data-c="B"][data-v="ai"]'); if (ai) ai.classList.add('on'); }
   $('stNoteA').textContent = START.ctrl.A === 'human' ? 'You control Red' : 'AI vs AI — watch the battle';
   $('stNoteB').textContent = 'Blue is played by the AI';
 }
@@ -12259,6 +12301,137 @@ window.doDodge = doDodge;
 })();
 
 //# sourceURL=zfx2.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 29: on-screen controls editor + two players on one device
+   1) Settings → "Customize controls": drag the joystick, the move panel,
+      the team bar and the pause bar anywhere; tap one and use the slider
+      (or pinch) to resize it. Saved on the device as screen fractions.
+   2) Local battle on a phone or tablet with both sides HUMAN: the players
+      sit at the two short ends facing each other. Each gets a panel along
+      their end, rotated to face them: four big move buttons nearest them,
+      and right above them their six Pokémon (avatar, HP, knocked out,
+      current one marked) plus a Z button. No joystick or dodge — both
+      Pokémon move on their own; players choose moves and switches.
+      After a knockout, the player whose Pokémon fainted picks the next
+      one from their own row.
+   ===================================================================== */
+window.duoCapable = () => document.documentElement.classList.contains('appmode') || !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+(function duoAndControls() {
+  const $ = id => document.getElementById(id);
+  const css = document.createElement('style'); css.textContent = `
+  /* ---------- controls editor ---------- */
+  html.ctl-editing .touch-ui{display:block!important;z-index:9001!important}
+  html.ctl-editing #stick,html.ctl-editing #touchUI .tright,html.ctl-editing #tRosterSlot,html.ctl-editing #touchUI .tbar{visibility:visible!important;outline:2px dashed rgba(255,216,74,.85);outline-offset:4px;cursor:grab;touch-action:none}
+  html.ctl-editing #touchUI .tright{min-width:150px;min-height:110px}
+  html.ctl-editing #tRosterSlot{min-width:200px;min-height:44px}
+  html.ctl-editing .ctl-sel{outline:3px solid #ffd84a!important;box-shadow:0 0 0 6px rgba(255,216,74,.25)}
+  #ctlEdit{position:fixed;inset:0;z-index:9002;background:rgba(5,8,20,.55);pointer-events:none;display:none}
+  #ctlEdit.show{display:block}
+  #ctlEdit .bar{position:fixed;z-index:9003;left:50%;top:38%;transform:translate(-50%,-50%);pointer-events:auto;background:#141c34;border:2px solid #ffd84a;border-radius:14px;padding:10px 14px;color:#fff;font:600 13px Rubik,sans-serif;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;max-width:94vw;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  #ctlEdit .bar b{color:#ffd84a}
+  #ctlEdit input[type=range]{width:140px;accent-color:#ffd84a}
+  #ctlEdit button{border:0;border-radius:10px;padding:8px 14px;font:800 13px Rubik,sans-serif;cursor:pointer}
+  #ctlEdit .done{background:#ffd84a;color:#141c34}#ctlEdit .reset{background:#2a3456;color:#fff}
+  /* ---------- two players on one device ---------- */
+  html.duo #stick,html.duo #touchUI .tright,html.duo #tRosterSlot,html.duo #ovSwitch{display:none!important}
+  .duo-pad{--P:172px;position:fixed;top:0;left:0;width:100vh;height:var(--P);transform-origin:0 0;z-index:7;display:none;flex-direction:column;justify-content:flex-end;gap:6px;padding:6px 10px calc(6px + env(safe-area-inset-left,0px));box-sizing:border-box;
+    background:linear-gradient(0deg,rgba(8,12,30,.92),rgba(8,12,30,.55) 70%,rgba(8,12,30,0));pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;font-family:Rubik,sans-serif}
+  html.duo .duo-pad{display:flex}
+  #duoA{transform:translate(var(--P),0) rotate(90deg)}
+  #duoB{transform:translate(calc(100vw - var(--P)),100vh) rotate(-90deg)}
+  .duo-top{display:flex;gap:6px;align-items:stretch}
+  .duo-team{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+  .duo-mon{position:relative;border:2px solid rgba(255,255,255,.25);border-radius:10px;background:#101830;padding:2px 2px 6px;display:flex;align-items:center;justify-content:center;min-height:44px;cursor:pointer}
+  .duo-mon canvas{width:34px;height:34px;image-rendering:pixelated}
+  .duo-mon .hp{position:absolute;left:4px;right:4px;bottom:3px;height:3px;border-radius:2px;background:#2a3050;overflow:hidden}.duo-mon .hp i{display:block;height:100%;background:#5ce07a}
+  .duo-mon.act{border-color:#ffd84a;box-shadow:0 0 8px rgba(255,216,74,.6)}
+  .duo-mon.ko{filter:grayscale(1) brightness(.5)}.duo-mon.ko::after{content:'✕';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ff5a5a;font:900 24px Rubik,sans-serif}
+  .duo-mon.pickme{animation:duoPulse .8s infinite alternate;border-color:#7ad7ff}
+  @keyframes duoPulse{to{box-shadow:0 0 14px #7ad7ff}}
+  .duo-z{width:58px;border:0;border-radius:12px;font:900 20px "Lilita One",Rubik,sans-serif;color:#141c34;background:linear-gradient(0deg,#ffd84a var(--z,0%),#3a4366 var(--z,0%));cursor:pointer}
+  .duo-z:disabled{opacity:.55}
+  .duo-moves{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .duo-move{position:relative;overflow:hidden;min-height:70px;border:0;border-radius:14px;color:#fff;font:800 14px Rubik,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.7);cursor:pointer;padding:4px}
+  .duo-move small{display:block;font-size:10px;font-weight:600;opacity:.85}
+  .duo-move .cd{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.55);pointer-events:none}
+  .duo-move.queued{outline:3px solid #fff}
+  .duo-name{font:800 11px Rubik,sans-serif;color:#ffd84a;letter-spacing:.06em;text-align:center}
+  .duo-msg{position:absolute;left:0;right:0;top:-22px;text-align:center;font:800 13px Rubik,sans-serif;color:#7ad7ff;text-shadow:0 1px 3px #000;pointer-events:none}`;
+  document.head.appendChild(css);
+
+  /* ---------- 1) the controls editor ---------- */
+  const LAYOUT_KEY = 'arena151.ctlLayout';
+  const ITEMS = [['stick', '#stick', 'Joystick'], ['moves', '#touchUI .tright', 'Moves & Z'], ['team', '#tRosterSlot', 'Team'], ['bar', '#touchUI .tbar', 'Pause & menu']];
+  let layout = {}; try { layout = JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}') || {}; } catch (e) { layout = {}; }
+  const elOf = sel => document.querySelector(sel);
+  function applyLayout() { for (const [k, sel] of ITEMS) { const el = elOf(sel); if (!el) continue; const L = layout[k] || { dx: 0, dy: 0, s: 1 }; el.style.translate = `${Math.round(L.dx * innerWidth)}px ${Math.round(L.dy * innerHeight)}px`; el.style.scale = String(L.s || 1); } }
+  const saveLayout = () => { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch (e) { } };
+  addEventListener('resize', applyLayout); setTimeout(applyLayout, 0);
+  const ed = document.createElement('div'); ed.id = 'ctlEdit';
+  ed.innerHTML = `<div class="bar"><span>Drag a control to move it · tap one, then resize · pinch works too</span><span>Selected: <b id="ctlSelName">none</b></span>
+    <label>Size <input id="ctlSize" type="range" min="0.6" max="1.8" step="0.05" value="1" disabled></label><button class="reset" id="ctlReset" type="button">Reset</button><button class="done" id="ctlDone" type="button">Done</button></div>`;
+  document.body.appendChild(ed);
+  let editing = false, sel = null, drag = null; const pts = new Map();
+  function select(k) { sel = k; for (const [kk, s2] of ITEMS) { const el = elOf(s2); if (el) el.classList.toggle('ctl-sel', kk === k); } $('ctlSelName').textContent = k ? ITEMS.find(i => i[0] === k)[2] : 'none'; const r = $('ctlSize'); r.disabled = !k; if (k) r.value = String((layout[k] || {}).s || 1); }
+  function openEditor() { if (typeof setOv !== 'undefined' && setOv.classList) setOv.classList.remove('show'); editing = true; document.documentElement.classList.add('ctl-editing'); ed.classList.add('show'); select(null); applyLayout(); }
+  function closeEditor() { editing = false; document.documentElement.classList.remove('ctl-editing'); ed.classList.remove('show'); select(null); saveLayout(); }
+  window.openControlsEditor = openEditor;
+  $('ctlDone').onclick = closeEditor;
+  $('ctlReset').onclick = () => { layout = {}; saveLayout(); applyLayout(); select(sel); };
+  $('ctlSize').oninput = e => { if (!sel) return; const L = layout[sel] || (layout[sel] = { dx: 0, dy: 0, s: 1 }); L.s = +e.target.value; applyLayout(); };
+  const itemAt = target => { for (const [k, s2] of ITEMS) { const el = elOf(s2); if (el && el.contains(target)) return k; } return null; };
+  document.addEventListener('pointerdown', e => { if (!editing) return; const k = itemAt(e.target); if (!k) return; e.preventDefault(); e.stopPropagation();
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); select(k); const L = layout[k] || (layout[k] = { dx: 0, dy: 0, s: 1 });
+    if (pts.size === 1) drag = { k, x: e.clientX, y: e.clientY, dx: L.dx, dy: L.dy }; else { const [a, b] = [...pts.values()]; drag = { k, pinch: Math.hypot(a.x - b.x, a.y - b.y), s: L.s }; } }, true);
+  document.addEventListener('pointermove', e => { if (!editing || !drag || !pts.has(e.pointerId)) return; e.preventDefault(); e.stopPropagation(); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); const L = layout[drag.k];
+    if (drag.pinch && pts.size >= 2) { const [a, b] = [...pts.values()]; L.s = Math.max(.6, Math.min(1.8, drag.s * Math.hypot(a.x - b.x, a.y - b.y) / (drag.pinch || 1))); $('ctlSize').value = String(L.s); }
+    else if (!drag.pinch) { L.dx = drag.dx + (e.clientX - drag.x) / innerWidth; L.dy = drag.dy + (e.clientY - drag.y) / innerHeight; }
+    applyLayout(); }, true);
+  const endPtr = e => { if (!editing) return; if (pts.has(e.pointerId)) { e.preventDefault(); e.stopPropagation(); } pts.delete(e.pointerId); if (!pts.size) { drag = null; saveLayout(); } };
+  document.addEventListener('pointerup', endPtr, true); document.addEventListener('pointercancel', endPtr, true);
+  // the Settings button (phones and tablets)
+  (function addSettingsButton() { const help = $('setHelp'); if (!help) return; const b = document.createElement('button'); b.className = 'btn'; b.id = 'setCtl'; b.type = 'button'; b.textContent = 'Customize controls';
+    b.onclick = openEditor; help.parentNode.insertBefore(b, help.nextSibling); const sync = () => { b.hidden = !document.documentElement.classList.contains('appmode'); }; sync(); setInterval(sync, 1500); })();
+
+  /* ---------- 2) two players on one device ---------- */
+  const duoActive = () => !!(typeof G !== 'undefined' && G && G.human && G.human.A && G.human.B && typeof NET !== 'undefined' && NET.mode === 'local' && duoCapable() && ['intro', 'battle', 'pick'].includes(G.phase));
+  const pads = {}; for (const S of ['A', 'B']) { const p = document.createElement('div'); p.className = 'duo-pad'; p.id = 'duo' + S;
+    p.innerHTML = `<div class="duo-msg"></div><div class="duo-top"><div class="duo-team"></div><button class="duo-z" type="button" disabled>Z</button></div><div class="duo-moves"></div><div class="duo-name"></div>`; document.body.appendChild(p); pads[S] = p; }
+  let builtKey = { A: '', B: '' };
+  function pressMove(S, i) { if (!duoActive() || G.phase !== 'battle' || clock.paused) return; const sd = side(S), m = act(S); if (!m || i >= m.moves.length) return; if (!tryCast(S, i)) { sd.queued = i; sd.queuedT = 600; } }
+  function pressMon(S, i) { if (!duoActive()) return; const sd = side(S), m = sd.team[i]; if (!m || m.hp <= 0) return;
+    if (G.phase === 'pick' && sd.state === 'wait') { spawnIn(S, i); const other = side(S === 'A' ? 'B' : 'A'); if (other.state !== 'wait') { G.phase = 'battle'; try { showOverlay('ovSwitch', false); } catch (e) { } } try { updateHUD(); } catch (e) { } return; }
+    if (G.phase === 'battle' && i !== sd.active) requestSwitch(S, i); }
+  function pressZ(S) { if (!duoActive() || G.phase !== 'battle') return; try { if (canZ(S)) zMove(S); } catch (e) { } }
+  function build(S) { const p = pads[S], sd = side(S), key = sd.team.map(m => m.pick || m.name).join(',') + '|' + act(S).moves.join(','); if (builtKey[S] === key) return; builtKey[S] = key;
+    const team = p.querySelector('.duo-team'); team.innerHTML = ''; sd.team.forEach((m, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'duo-mon'; b.dataset.i = i; const c = document.createElement('canvas'); c.width = c.height = 48; try { drawSpriteTo(c, m.pick || m.name, {}); } catch (e) { }
+      b.appendChild(c); b.insertAdjacentHTML('beforeend', '<div class="hp"><i></i></div>'); b.onpointerdown = e => { e.preventDefault(); pressMon(S, i); }; team.appendChild(b); });
+    p.querySelector('.duo-z').onpointerdown = e => { e.preventDefault(); pressZ(S); };
+    p.querySelector('.duo-name').textContent = (S === 'A' ? 'PLAYER 1' : 'PLAYER 2') + (typeof TRSEL !== 'undefined' && typeof trainerTitle === 'function' ? ' · ' + trainerTitle(TRSEL[S]).toUpperCase() : ''); }
+  function buildMoves(S) { const p = pads[S], m = act(S), box = p.querySelector('.duo-moves'), key = (m.pick || m.name) + '|' + m.moves.join(','); if (box.dataset.k === key) return; box.dataset.k = key; box.innerHTML = '';
+    m.moves.forEach((n, i) => { const mv = MOVES[n], col = (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[mv.type]) || '#556'; const b = document.createElement('button'); b.type = 'button'; b.className = 'duo-move'; b.style.background = `linear-gradient(180deg,${col},${col}cc)`;
+      b.innerHTML = `${n}<small>${mv.type}${mv.pow ? ' · ' + mv.pow : ''}</small><div class="cd"></div>`; b.onpointerdown = e => { e.preventDefault(); pressMove(S, i); }; box.appendChild(b); }); }
+  function update() {
+    const on = duoActive(); document.documentElement.classList.toggle('duo', on); if (!on) return;
+    for (const S of ['A', 'B']) { const p = pads[S], sd = side(S), m = act(S); build(S); if (m) buildMoves(S);
+      p.querySelectorAll('.duo-mon').forEach((b, i) => { const t = sd.team[i]; b.classList.toggle('act', i === sd.active && t.hp > 0); b.classList.toggle('ko', t.hp <= 0); b.classList.toggle('pickme', G.phase === 'pick' && sd.state === 'wait' && t.hp > 0); b.querySelector('.hp i').style.width = Math.max(0, t.hp / t.max * 100) + '%'; });
+      if (m) p.querySelectorAll('.duo-move').forEach((b, i) => { const cd = m.cd[i] || 0, full = cooldownOf(MOVES[m.moves[i]]) || 1; b.querySelector('.cd').style.width = Math.min(100, cd / full * 100) + '%'; b.classList.toggle('queued', sd.queued === i); });
+      const z = p.querySelector('.duo-z'); z.style.setProperty('--z', Math.round(sd.zCharge || 0) + '%'); let ok = false; try { ok = canZ(S); } catch (e) { } z.disabled = !ok;
+      p.querySelector('.duo-msg').textContent = G.phase === 'pick' && sd.state === 'wait' ? 'Choose your next Pokémon' : ''; }
+  }
+  setInterval(update, 100);
+  // the one-sided pick screen is replaced by each player's own row
+  if (typeof onNeedPick === 'function') { const _onNeedPick = onNeedPick; onNeedPick = function () { const r = _onNeedPick.apply(this, arguments); if (duoActive()) try { showOverlay('ovSwitch', false); } catch (e) { } return r; }; }
+  // player 2's HUMAN button follows the mode (Local only)
+  if (typeof syncOnlineUi === 'function') { const _sync = syncOnlineUi; syncOnlineUi = function () { const r = _sync.apply(this, arguments); try { renderStartTrainers(); } catch (e) { } return r; }; }
+  try { renderStartTrainers(); } catch (e) { }
+  window.DUO = { duoActive, pressMove, pressMon, pressZ, applyLayout, openEditor, closeEditor, layout: () => layout };
+})();
+
+//# sourceURL=duo.js
 </script>
 <script>
 'use strict';
