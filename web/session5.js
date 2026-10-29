@@ -45,9 +45,8 @@ function updateCamera(dt) {
   const mode = activeCamMode(), e = EXT(STAGE_ID);
   let tx = toArtX(500), ty = toArtY(290), level = 0;
   if (G && ['battle', 'pick', 'intro', 'over'].includes(G.phase)) {
-    const a = side('A'), b = side('B'), va = !['out', 'wait'].includes(a.state), vb = !['out', 'wait'].includes(b.state);
-    if (va && vb) { tx = toArtX((a.x + b.x) / 2); ty = toArtY((a.y + b.y) / 2 - 25); }
-    else if (va) { tx = toArtX(a.x); ty = toArtY(a.y - 25); } else if (vb) { tx = toArtX(b.x); ty = toArtY(b.y - 25); }
+    const vis = SLOTS().map(side).filter(s => s && !['out', 'wait', 'empty'].includes(s.state));   // every Pokémon on the field (four in doubles)
+    if (vis.length) { tx = toArtX(vis.reduce((a, s) => a + s.x, 0) / vis.length); ty = toArtY(vis.reduce((a, s) => a + s.y, 0) / vis.length - 25); }
     if (G.phase === 'over' && G.winner && G.winner !== 'draw') { const w = side(G.winner); tx = toArtX(w.x); ty = toArtY(w.y - 30); level = 1; }
   }
   if (clock.t < cam.punchT && cam.fx && mode !== 'wide' && mode !== 'free') { tx = toArtX(cam.fx.x); ty = toArtY(cam.fx.y); level = Math.max(level, cam.fx.lv); }

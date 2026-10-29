@@ -74,7 +74,7 @@
   /* ---------- beam geometry ---------- */
   // muzzle and aim in art pixels; the beam reaches a little past the target
   function geo(b) {
-    const i = bx(b.x), j = by(b.y), tS = side(b.owner === 'A' ? 'B' : 'A'), ti = bx(tS.x), tj = by(tS.y - 30);
+    const i = bx(b.x), j = by(b.y), tS = side(b.tgt && G.sides[b.tgt] ? b.tgt : other(b.owner)), ti = bx(tS.x), tj = by(tS.y - 30);
     const ang = b.ang, ca = Math.cos(ang), sa = Math.sin(ang), len = Math.max(90, Math.hypot(ti - i, tj - j) + 26);
     return { i, j, ang, ca, sa, nx: -sa, ny: ca, len, q: b.t / b.life };
   }

@@ -156,7 +156,7 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
     <header class="st-head"><div class="st-logo">ARENA <b>151</b></div><div class="st-sub">Live 6v6 Pokémon battles · set up your match</div></header>
     <div class="st-grid">${side('A', 'red', 'Red')}<div class="st-vs"><div class="st-vsball"><span>VS</span></div></div>${side('B', 'blue', 'Blue')}</div>
     <div class="st-sec">Choose your arena</div><div class="st-arenas" id="stArenas"></div>
-    <div class="st-foot"><label>Time limit <select id="stTime"><option value="0">None</option><option value="180">3:00</option><option value="300">5:00</option><option value="600">10:00</option></select></label>
+    <div class="st-foot"><label id="stFormatL">Format <select id="stFormat"><option value="1">Singles · 1v1</option><option value="2">Doubles · 2v2</option></select></label><label>Time limit <select id="stTime"><option value="0">None</option><option value="180">3:00</option><option value="300">5:00</option><option value="600">10:00</option></select></label>
       <button class="st-go" id="stGo">BATTLE!</button>
       <button class="st-btn" id="stContinue" type="button" hidden>Continue last battle</button>
       <button class="st-btn" id="stBack" hidden>Back to battle</button><button class="st-btn" id="stSettings">Settings</button><button class="st-btn" id="stHelp">Controls</button></div>
@@ -378,3 +378,8 @@ function syncShinyPicker() {
 // MissingNo. stays out of the Pokémon chooser until a saved Pokédex story has caught it
 { const _openMonPicker = openMonPicker; openMonPicker = function () { const r = _openMonPicker.apply(this, arguments); const show = missingnoUnlocked();
   for (const b of document.querySelectorAll('#stGridPk button[data-n="MissingNo."]')) b.hidden = !show; return r; }; }
+
+// Format: singles or doubles (Local and Online; story battles stay singles)
+{ const f = $('stFormat'); if (f) { try { f.value = localStorage.getItem('arena151.format') || '1'; } catch (e) { } f.onchange = () => { try { localStorage.setItem('arena151.format', f.value); } catch (e) { } }; }
+  const syncFmt = () => { const l = $('stFormatL'); if (l) l.hidden = typeof NET !== 'undefined' && NET.mode === 'story'; }; syncFmt(); setInterval(syncFmt, 800); }
+window.battleDoubles = () => { const f = $('stFormat'); return !!(f && f.value === '2' && typeof NET !== 'undefined' && NET.mode !== 'story'); };

@@ -6,7 +6,7 @@
    so motion stays smooth. You always play Red, on the left.
    ===================================================================== */
 const NET = { ws: null, active: false, mode: 'local', url: '', status: '', code: null, over: false, pickShown: false, steerOn: false, lastSteer: 0, prevTrsel: null,
-  latest: null, evq: [], lastRx: 0, lastSnap: 0, predicting: false, hist: [], corr: { x: 0, y: 0 }, interp: { A: [], B: [] }, clockOff: null, offs: [], token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
+  latest: null, evq: [], lastRx: 0, lastSnap: 0, predicting: false, hist: [], corr: { x: 0, y: 0 }, interp: { A: [], B: [], C: [], D: [] }, clockOff: null, offs: [], token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
 try { NET.url = localStorage.getItem('arena151.server') || ''; NET.mode = localStorage.getItem('arena151.mode') === 'online' ? 'online' : 'local'; } catch (e) { }
 const netSend = msg => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(msg)); };
 const WEB_DEFAULT_SERVER = 'poke.itsjasperhello.com';
@@ -51,7 +51,7 @@ function netConnect() {
     .catch(() => { netStatus('No answer from ' + urls.join(' or ') + '. Is the server running and reachable?', 'err'); return Promise.reject(); });
 }
 function myInfo() { return { trainer: trainerTitle(TRSEL.A), trainerFile: TRSEL.A, team: readPickers('A').filter(Boolean) }; }
-async function hostGame() { try { await netConnect(); } catch (e) { return; } netSend({ t: 'host', ...myInfo(), arena: START.arena, timeLimit: +$('stTime').value || 0 }); netStatus('Creating a game…'); }
+async function hostGame() { try { await netConnect(); } catch (e) { return; } netSend({ t: 'host', ...myInfo(), arena: START.arena, timeLimit: +$('stTime').value || 0, doubles: typeof battleDoubles === 'function' && battleDoubles() }); netStatus('Creating a game…'); }
 async function joinGame() {
   const code = $('olCode').value.trim().toUpperCase(); if (code.length !== 4) { netStatus('Enter the 4-letter code from the host.', 'err'); return; }
   try { await netConnect(); } catch (e) { return; } netSend({ t: 'join', code, ...myInfo() }); netStatus('Joining ' + code + '…');
@@ -83,7 +83,7 @@ function onNetMessage(m) {
   }
 }
 async function beginOnline(m) {
-  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.predicting = false; NET.hist = []; NET.interp = { A: [], B: [] }; NET.offs = []; NET.clockOff = null; NET.lastRx = NET.lastSnap = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
+  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.predicting = false; NET.hist = []; NET.interp = { A: [], B: [], C: [], D: [] }; NET.offs = []; NET.clockOff = null; NET.lastRx = NET.lastSnap = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
   if (!NET.prevTrsel) NET.prevTrsel = { ...TRSEL };
   NET.active = true; NET.over = false; NET.pickShown = false; NET.steerOn = false;
   hideStart();
@@ -93,7 +93,8 @@ async function beginOnline(m) {
   watchMode = false; syncWatchButton();
   setStage(m.arena); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show');
-  G = newBattle(m.me.team, m.opp.team, { auto: false, timeLimit: m.timeLimit || 0 }); G.phase = 'intro'; G.online = true;
+  G = newBattle(m.me.team, m.opp.team, { auto: false, timeLimit: m.timeLimit || 0, doubles: !!m.doubles }); G.phase = 'intro'; G.online = true;
+  if (typeof placeTrainers === 'function') placeTrainers();
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
   $('log').innerHTML = ''; $('timer').textContent = '0:00'; movesKey = ''; rosterKey = '';
   logLine(`Online battle: ${m.me.trainer} vs ${m.opp.trainer} in the ${STAGE.name}.`, 't');
@@ -113,7 +114,8 @@ function applySnap(s, events) {
   const wasPhase = G.phase; NET.lastHold = s.hold || null;
   if (s.sw) clockSample(s.sw);
   if (G.phase !== 'over') G.phase = s.ph; G.time = s.time; G.elapsed = s.el; G.overtime = s.ot; G.lastDmgT = s.lastDmgT;
-  for (const S of ['A', 'B']) {
+  for (const S of SLOTS()) {
+    if (!s.sides[S]) continue;
     const sd = G.sides[S], o = dec(s.sides[S]), tx = o.x, ty = o.y; delete o.x; delete o.y;
     if (S === 'A') { delete o.manual; delete o.manualT; if (NET.predicting) { delete o.vx; delete o.vy; } }   // this phone owns its own steering and, while predicting, its velocity: the server's copy is a round trip old
     const activeChanged = o.active !== sd.active;
@@ -345,8 +347,7 @@ function predictOrInterpolate(dt) {
     if (NET.predicting) { NET.predicting = false; NET.hist = []; }
     const p = interpAt(NET.interp.A, renderT); if (p) { const k = 1 - Math.exp(-dt / 60); a.x += (p.x - a.x) * k; a.y += (p.y - a.y) * k; }
   }
-  const b = G.sides.B, p = interpAt(NET.interp.B, renderT);
-  if (p) { b.x = p.x; b.y = p.y; }
+  for (const S of SLOTS()) { if (S === 'A') continue; const o = G.sides[S], p = interpAt(NET.interp[S] || [], renderT); if (o && p) { o.x = p.x; o.y = p.y; } }   // everyone but you: smooth server positions
 }
 // The server's position is where you were about one round trip ago: compare against that moment and correct the difference.
 function reconcile(tx, ty) {

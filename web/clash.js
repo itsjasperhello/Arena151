@@ -61,7 +61,7 @@ function drawClash() {
 
   // muzzle flares and the glow on each Pokémon
   for (const [b, r] of [[bA, rA], [bB, rB]]) {
-    const oi = bx(b.x), oj = by(b.y), pr = 7 + Math.sin(t / 45 + (b.owner === 'A' ? 0 : 2)) * 1.5 + e * 3;
+    const oi = bx(b.x), oj = by(b.y), pr = 7 + Math.sin(t / 45 + (slotTeam(b.owner) === 'A' ? 0 : 2)) * 1.5 + e * 3;
     glow(oi, oj, pr * 1.8, r[3], .65); aDisc(oi, oj, pr * .6, r[2]); aDisc(oi, oj, pr * .3, '#ffffff');
     ACTOR_GLOW[b.owner] = { col: r[2], a: .22 + e * .3, until: t + 140 };
   }

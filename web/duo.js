@@ -97,14 +97,14 @@ window.duoCapable = () => document.documentElement.classList.contains('appmode')
   let builtKey = { A: '', B: '' };
   function pressMove(S, i) { if (!duoActive() || G.phase !== 'battle' || clock.paused) return; const sd = side(S), m = act(S); if (!m || i >= m.moves.length) return; if (!tryCast(S, i)) { sd.queued = i; sd.queuedT = 600; } }
   function pressMon(S, i) { if (!duoActive()) return; const sd = side(S), m = sd.team[i]; if (!m || m.hp <= 0) return;
-    if (G.phase === 'pick' && sd.state === 'wait') { spawnIn(S, i); const other = side(S === 'A' ? 'B' : 'A'); if (other.state !== 'wait') { G.phase = 'battle'; try { showOverlay('ovSwitch', false); } catch (e) { } } try { updateHUD(); } catch (e) { } return; }
+    if (G.phase === 'pick' && sd.state === 'wait') { spawnIn(S, i); const other = sideother(S); if (other.state !== 'wait') { G.phase = 'battle'; try { showOverlay('ovSwitch', false); } catch (e) { } } try { updateHUD(); } catch (e) { } return; }
     if (G.phase === 'battle' && i !== sd.active) requestSwitch(S, i); }
   function pressZ(S) { if (!duoActive() || G.phase !== 'battle') return; try { if (canZ(S)) zMove(S); } catch (e) { } }
   function build(S) { const p = pads[S], sd = side(S), key = sd.team.map(m => m.pick || m.name).join(',') + '|' + act(S).moves.join(','); if (builtKey[S] === key) return; builtKey[S] = key;
     const team = p.querySelector('.duo-team'); team.innerHTML = ''; sd.team.forEach((m, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'duo-mon'; b.dataset.i = i; const c = document.createElement('canvas'); c.width = c.height = 48; try { drawSpriteTo(c, m.pick || m.name, {}); } catch (e) { }
       b.appendChild(c); b.insertAdjacentHTML('beforeend', '<div class="hp"><i></i></div>'); b.onpointerdown = e => { e.preventDefault(); pressMon(S, i); }; team.appendChild(b); });
     p.querySelector('.duo-z').onpointerdown = e => { e.preventDefault(); pressZ(S); };
-    p.querySelector('.duo-name').textContent = (S === 'A' ? 'PLAYER 1' : 'PLAYER 2') + (typeof TRSEL !== 'undefined' && typeof trainerTitle === 'function' ? ' · ' + trainerTitle(TRSEL[S]).toUpperCase() : ''); }
+    p.querySelector('.duo-name').textContent = (slotTeam(S) === 'A' ? 'PLAYER 1' : 'PLAYER 2') + (typeof TRSEL !== 'undefined' && typeof trainerTitle === 'function' ? ' · ' + trainerTitle(TRSEL[S]).toUpperCase() : ''); }
   function buildMoves(S) { const p = pads[S], m = act(S), box = p.querySelector('.duo-moves'), key = (m.pick || m.name) + '|' + m.moves.join(','); if (box.dataset.k === key) return; box.dataset.k = key; box.innerHTML = '';
     m.moves.forEach((n, i) => { const mv = MOVES[n], col = (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[mv.type]) || '#556'; const b = document.createElement('button'); b.type = 'button'; b.className = 'duo-move'; b.style.background = `linear-gradient(180deg,${col},${col}cc)`;
       b.innerHTML = `${n}<small>${mv.type}${mv.pow ? ' · ' + mv.pow : ''}</small><div class="cd"></div>`; b.onpointerdown = e => { e.preventDefault(); pressMove(S, i); }; box.appendChild(b); }); }

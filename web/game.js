@@ -19,11 +19,11 @@ function updateHUD(force) {
     if ($('chips' + S).innerHTML !== chips) $('chips' + S).innerHTML = chips;
     const bar = $('bar' + S); bar.style.width = (f * 100) + '%'; bar.style.backgroundColor = hpColor(f);
     $('hp' + S).textContent = `${m.hp}`;
-    const port = $('portrait' + S), pk = m.name + (m.mega ? '#M' : '') + (m.shiny ? '#S' : '') + (spriteOf(m.name, m.mega, m.shiny).custom ? 'C' : ''); if (port.dataset.mon !== pk || force) { drawSpriteTo(port, m.name, { portrait: true, mega: m.mega, shiny: m.shiny, faceRight: S === 'A', bg: mix(TYPE_COLOR[m.types[0]], '#20284a', .55) }); port.dataset.mon = pk; }
+    const port = $('portrait' + S), pk = m.name + (m.mega ? '#M' : '') + (m.shiny ? '#S' : '') + (spriteOf(m.name, m.mega, m.shiny).custom ? 'C' : ''); if (port.dataset.mon !== pk || force) { drawSpriteTo(port, m.name, { portrait: true, mega: m.mega, shiny: m.shiny, faceRight: slotTeam(S) === 'A', bg: mix(TYPE_COLOR[m.types[0]], '#20284a', .55) }); port.dataset.mon = pk; }
     $('port' + S).classList.toggle('fnt', m.hp <= 0);
-    const toks = (S === 'B' ? `<span class="team-tag">${trainerLabel('B')}</span>` : '') +
+    const toks = (slotTeam(S) === 'B' ? `<span class="team-tag">${trainerLabel('B')}</span>` : '') +
       sd.team.map((t, i) => `<span class="tok ${t.hp <= 0 ? 'fnt' : ''} ${t.status ? 'st' : ''} ${i === sd.active ? 'active' : ''}" title="${t.name} ${t.hp}/${t.max}"></span>`).join('') +
-      (S === 'A' ? `<span class="team-tag">${trainerLabel('A')}</span>` : '');
+      (slotTeam(S) === 'A' ? `<span class="team-tag">${trainerLabel('A')}</span>` : '');
     if (hudKey[S] !== toks) { $('tok' + S).innerHTML = toks; hudKey[S] = toks; }
   }
   renderRosters();
@@ -84,7 +84,7 @@ function updateCooldowns() {
 function rosterCard(m, i, S, opts = {}) {
   const el = document.createElement(opts.button ? 'button' : 'div'), isActive = G && i === side(S).active && !['title'].includes(G.phase);
   el.className = `card ${m.hp <= 0 ? 'fnt' : ''} ${isActive ? 'active' : ''} ${opts.pickable ? 'pickable' : ''}`;
-  const cv = document.createElement('canvas'); cv.width = cv.height = 56; drawSpriteTo(cv, m.name, { mega: m.mega, faceRight: S === 'A' });
+  const cv = document.createElement('canvas'); cv.width = cv.height = 56; drawSpriteTo(cv, m.name, { mega: m.mega, faceRight: slotTeam(S) === 'A' });
   const f = m.hp / m.max, badge = m.hp <= 0 ? 'FNT' : isActive ? 'ACTIVE' : m.status ? STATUS_INFO[m.status].label : '';
   if (badge) el.insertAdjacentHTML('beforeend', `<span class="badge">${badge}</span>`);
   el.appendChild(cv);
@@ -141,8 +141,9 @@ async function startBattle(picksA, picksB, stageId) {
   picksA = filledTeam(picksA); picksB = filledTeam(picksB);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
-  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
+  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle) });
   G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
+  if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
   // two players on one phone or tablet: both sides human (Local only)
   if (typeof NET !== 'undefined' && NET.mode === 'local' && typeof START !== 'undefined' && START.ctrl && START.ctrl.B === 'human' && typeof duoCapable === 'function' && duoCapable()) G.human = { A: START.ctrl.A === 'human', B: true };
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
@@ -153,16 +154,18 @@ async function startBattle(picksA, picksB, stageId) {
     await playIntro(my); guard(my);
     // Red comes out and cries, then Blue; the battle waits for both, then counts down 3 · 2 · 1 · GO!
     spawnIn('A', 0); await sendOutDone('A'); guard(my);
+    if (G.doubles && side('C').state !== 'empty') { spawnIn('C', side('C').active); await sendOutDone('C'); guard(my); }
     spawnIn('B', 0); await sendOutDone('B'); guard(my);
+    if (G.doubles && side('D').state !== 'empty') { spawnIn('D', side('D').active); await sendOutDone('D'); guard(my); }
     await battleCountdown(my); guard(my);
     G.phase = 'battle'; G.lastDmgT = G.time; updateHUD(); autosave();
   } catch (e) { if (!(e instanceof Cancelled)) console.error(e); }
 }
 async function playIntro(my) {
   const vs = $('ovVs');
-  const big = (id, S) => { const c = $(id), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, c.width, c.height); x.save(); if (S === 'B') { x.translate(c.width, 0); x.scale(-1, 1); } x.drawImage(trainerCanvas(S), 0, 0, c.width, c.height); x.restore(); };
+  const big = (id, S) => { const c = $(id), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, c.width, c.height); x.save(); if (slotTeam(S) === 'B') { x.translate(c.width, 0); x.scale(-1, 1); } x.drawImage(trainerCanvas(S), 0, 0, c.width, c.height); x.restore(); };
   big('vsTrainerA', 'A'); big('vsTrainerB', 'B');
-  for (const S of ['A', 'B']) { const el = $('vsTeam' + S); el.innerHTML = ''; side(S).team.forEach(m => { const c = document.createElement('canvas'); c.width = c.height = SPR; drawSpriteTo(c, m.name, { faceRight: S === 'A' }); c.title = m.name; el.appendChild(c); }); }
+  for (const S of ['A', 'B']) { const el = $('vsTeam' + S); el.innerHTML = ''; side(S).team.forEach(m => { const c = document.createElement('canvas'); c.width = c.height = SPR; drawSpriteTo(c, m.name, { faceRight: slotTeam(S) === 'A' }); c.title = m.name; el.appendChild(c); }); }
   vs.querySelectorAll('.vs-card,.vs-mark').forEach(n => { n.style.animation = 'none'; void n.offsetWidth; n.style.animation = ''; });
   showOverlay('ovVs', true);
   let skipped = false; introSkip = () => { skipped = true; }; vs.onclick = introSkip;
@@ -173,12 +176,13 @@ async function playIntro(my) {
 }
 function onNeedPick() {
   const grid = $('pickGrid'); grid.innerHTML = '';
-  side('A').team.forEach((m, i) => { if (m.hp > 0) grid.appendChild(rosterCard(m, i, 'A', { button: true, pickable: true, onPick: forcePick })); });
+  const busy = G.doubles && slotLive('C') ? side('C').active : -1;   // doubles: the partner's Pokémon is already out
+  side('A').team.forEach((m, i) => { if (m.hp > 0 && i !== busy) grid.appendChild(rosterCard(m, i, 'A', { button: true, pickable: true, onPick: forcePick })); });
   showOverlay('ovSwitch', true); updateHUD(); autosave();
   const first = grid.querySelector('button'); if (first) first.focus();
 }
 function forcePick(i) {
-  if (!G || G.phase !== 'pick' || side('A').team[i].hp <= 0) return;
+  if (!G || G.phase !== 'pick' || side('A').team[i].hp <= 0 || (G.doubles && slotLive('C') && side('C').active === i)) return;
   showOverlay('ovSwitch', false); G.phase = 'battle'; spawnIn('A', i); updateHUD();
 }
 async function onBattleEnd(w, bigTxt) {
@@ -479,7 +483,7 @@ function initAppMode() {
   document.addEventListener('contextmenu', e => { if (e.target.closest('.arena,.touch-ui')) e.preventDefault(); });
   // haptics on big moments
   const wrap = (k, fn) => { const o = VFX[k]; VFX[k] = function () { const r = o.apply(this, arguments); fn.apply(this, arguments); return r; }; };
-  wrap('hit', (S, mv, dmg, eff, crit) => { if (S === 'A' && (crit || eff > 1)) haptic(crit ? 45 : 25); });
+  wrap('hit', (S, mv, dmg, eff, crit) => { if (slotTeam(S) === 'A' && (crit || eff > 1)) haptic(crit ? 45 : 25); });
   wrap('faint', () => haptic(90)); wrap('megaDone', () => haptic(60)); wrap('plotArmor', () => haptic(120));
   requestAnimationFrame(() => resizeScene());
 }
@@ -492,7 +496,7 @@ function boot() {
   if (legacy && !store.get(SAVE_PREFIX + 'auto')) { try { store.set(SAVE_PREFIX + 'auto', JSON.stringify(validateSave(legacy))); } catch { } }
   renderSlots();
   G = newBattle(DEFAULT_A, DEFAULT_B); G.phase = 'title'; trainerWalk.A = trainerWalk.B = 0;
-  for (const S of ['A', 'B']) { const sd = side(S); sd.state = 'idle'; sd.x = S === 'A' ? 330 : 670; sd.y = S === 'A' ? 330 : 250; sd.face = S === 'A' ? 1 : -1; }
+  for (const S of ['A', 'B']) { const sd = side(S); sd.state = 'idle'; sd.x = slotTeam(S) === 'A' ? 330 : 670; sd.y = slotTeam(S) === 'A' ? 330 : 250; sd.face = slotTeam(S) === 'A' ? 1 : -1; }
   updateHUD(true);
   loadCustomPack();
   requestAnimationFrame(t => { clock.last = t; frame(t); });

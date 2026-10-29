@@ -60,24 +60,24 @@ function loadTrainer(name) {
 const customTrainer = S => TR_ANIM[TRSEL[S]] || null;
 function trainerAnimFor(S) { return customTrainer(S); }
 const trainerFacesRight = name => name in TRSEL.flip ? !!TRSEL.flip[name] : FACES_RIGHT_BY_DEFAULT.has(name);
-const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? S === 'B' : S === 'A';   // Red faces right, Blue faces left
+const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? slotTeam(S) === 'B' : slotTeam(S) === 'A';   // Red faces right, Blue faces left
 loadTrainer(TRSEL.A); loadTrainer(TRSEL.B);
 
 drawTrainer = function (S) {          // the sprite is drawn on the screen layer; the ground layer only gets its shadow
   hookTrainerFx(); if (!customTrainer(S)) return;
-  const t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140); aEllFill(bx(t.x + off), by(t.y), 10, 3, '#0b0f1a', .35);
+  const t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140); aEllFill(bx(t.x + off), by(t.y), 10, 3, '#0b0f1a', .35);
 };
 // Same pixel scale as the Pokémon sprites, feet on the trainer spot. Poses add motion:
 // lean and hop to throw or command, bounce to cheer, sink and dim when beaten.
 function drawCustomTrainers(c) {
   for (const S of ['A', 'B']) {
     const a = customTrainer(S); if (!a || !a.frames) continue;
-    const pose = trainerPose(S), dir = S === 'A' ? 1 : -1, t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140); let dx = 0, dy = 0, dim = 0;
+    const pose = trainerPose(S), dir = slotTeam(S) === 'A' ? 1 : -1, t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140); let dx = 0, dy = 0, dim = 0;
     if (pose === 'throw' || pose === 'point') { dx = 3 * dir; dy = -Math.round(Math.abs(Math.sin(clock.t / 90)) * 2); }
     else if (pose === 'cheer') dy = -Math.round(Math.abs(Math.sin(clock.t / 140)) * 5);
     else if (pose === 'slump') { dy = 2; dim = .35; }
     else if (pose === 'walk') dy = -(Math.floor(clock.t / 130) % 2);
-    const x = toScreenX(t.x + off + dx * 2), y = toScreenY(t.y + dy * 2), src = a.frames[animFrameIndex(a, clock.t + (S === 'B' ? 333 : 0))];
+    const x = toScreenX(t.x + off + dx * 2), y = toScreenY(t.y + dy * 2), src = a.frames[animFrameIndex(a, clock.t + (slotTeam(S) === 'B' ? 333 : 0))];
     const tall = a.h - a.foot, unit = Math.max(1, Math.round(cam.pz / 2)), sc = tall > 160 ? 75 / tall * unit : unit;
     c.save(); c.imageSmoothingEnabled = tall > 160; c.translate(Math.round(x), Math.round(y)); if (mirrorTrainer(S)) c.scale(-1, 1);
     const X0 = Math.round(-a.cx * sc), Y0 = Math.round(-tall * sc), W = Math.round(a.w * sc), H = Math.round(a.h * sc);

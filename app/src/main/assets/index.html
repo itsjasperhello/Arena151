@@ -561,8 +561,24 @@ function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePoin
 function mulberry(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const rnd = () => Math.random();
 const randInt = (a, b) => a + Math.floor(rnd() * (b - a + 1));
-const other = s => (s === 'A' ? 'B' : 'A');
+/* Battle slots. Singles: A (player 1) and B (player 2). Doubles add C (player 1's second Pokémon) and D (player 2's second).
+   teamOf maps a slot to its team; other(s) is the opponent to face and attack: in singles the one opponent, in doubles the
+   nearest opponent still standing (or, while a move or hit is resolving, the one it is aimed at: G.forceFoe). */
+const slotTeam = s => (s === 'C' ? 'A' : s === 'D' ? 'B' : s);
+const foeTeam = s => (slotTeam(s) === 'A' ? 'B' : 'A');
+const partnerOf = s => ({ A: 'C', C: 'A', B: 'D', D: 'B' })[s];
+const SLOTS = () => (typeof G !== 'undefined' && G && G.doubles ? ['A', 'B', 'C', 'D'] : ['A', 'B']);
+const foeSlots = s => (typeof G !== 'undefined' && G && G.doubles ? (slotTeam(s) === 'A' ? ['B', 'D'] : ['A', 'C']) : [slotTeam(s) === 'A' ? 'B' : 'A']);
+const slotLive = s => { const sd = G && G.sides[s]; if (!sd || sd.state === 'empty') return false; const m = sd.team[sd.active]; return !!m && m.hp > 0; };
+function nearestFoe(s) { const me = G.sides[s], foes = foeSlots(s).filter(slotLive); if (!foes.length) return foeSlots(s)[0];
+  let best = foes[0], bd = Infinity; for (const f of foes) { const o = G.sides[f], d = Math.hypot(o.x - me.x, o.y - me.y); if (d < bd) { bd = d; best = f; } } return best; }
+const other = s => {
+  if (typeof G === 'undefined' || !G || !G.doubles) return s === 'A' ? 'B' : 'A';
+  if (G.forceFoe && slotTeam(G.forceFoe) !== slotTeam(s) && G.sides[G.forceFoe]) return G.forceFoe;
+  return nearestFoe(s);
+};
 const TEAM_NAME = { A: 'Red', B: 'Blue' };
+Object.defineProperty(TEAM_NAME, 'C', { get() { return TEAM_NAME.A; }, enumerable: false }); Object.defineProperty(TEAM_NAME, 'D', { get() { return TEAM_NAME.B; }, enumerable: false });
 
 /* =====================================================================
    Section 2: data — roster, types, moves
@@ -2363,15 +2379,23 @@ function makeBattleMon(pick) {
   m.ability = PINCH[m.types[0]] || ''; m.pinchShown = false;
   return m;
 }
-function newSide(key, picks) {
-  return { key, team: picks.map(makeBattleMon), active: 0, x: ENTRY[key].x, y: ENTRY[key].y, vx: 0, vy: 0, face: key === 'A' ? 1 : -1,
+// Where a slot's Pokémon enters: the stage's entry spot; in doubles the team's two Pokémon enter 75 units above and below it.
+function entryOf(S, doubles) { const d = doubles != null ? doubles : !!(G && G.doubles), E = ENTRY[slotTeam(S)]; if (!d) return E;
+  const off = (S === 'A' || S === 'B') ? -75 : 75; return { x: E.x, y: Math.max(150, Math.min(WH - 50, E.y + off)) }; }
+function newSide(key, picks, doubles) {
+  const E = entryOf(key, doubles);
+  return { key, team: picks.map(makeBattleMon), active: 0, x: E.x, y: E.y, vx: 0, vy: 0, face: slotTeam(key) === 'A' ? 1 : -1,
     state: 'out', stateT: 0, cast: null, stun: 0, stunKind: '', gcd: 0, switchCd: 0, aiT: 500, strafe: 1, strafeT: 0,
     manual: { x: 0, y: 0 }, manualT: 0, queued: null, queuedT: 0, pendingSwitch: null, kbx: 0, kby: 0, hit: 0, hop: 0, dig: false,
     throwT: -9999, pillT: 0, pill: '', walk: 0, prefDist: 260, megaUsed: false, plotUsed: false, sinceIn: 0, dodgeT: 0, dodgeCd: 0, zCharge: 0, zUsed: false, zInfo: null, zHit: false };
 }
 function newBattle(picksA, picksB, opts = {}) {
+  const doubles = !!opts.doubles, sides = { A: newSide('A', picksA, doubles), B: newSide('B', picksB, doubles) };
+  if (doubles) for (const [S, T] of [['C', 'A'], ['D', 'B']]) {          // the second slot shares its team's six, starting with the second Pokémon
+    const sd = newSide(S, [], true); sd.team = sides[T].team; const second = sd.team.findIndex((m, i) => i !== sides[T].active && m && m.hp > 0);
+    if (second >= 0) sd.active = second; else { sd.active = sides[T].active; sd.state = 'empty'; } sides[S] = sd; }
   return {
-    picks: { A: picksA.slice(), B: picksB.slice() }, sides: { A: newSide('A', picksA), B: newSide('B', picksB) },
+    doubles, picks: { A: picksA.slice(), B: picksB.slice() }, sides,
     shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
@@ -2385,11 +2409,11 @@ const accMult = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
 const effSpe = m => m.stats.spe * stageMult(m.stages.spe) * (m.status === 'par' ? .5 : 1);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const present = s => { const sd = side(s); return sd.state === 'idle' && !sd.dig && !(sd.dodgeT > 0) && act(s).hp > 0; };
-const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s === 'B');   // online battles mark both sides human
+const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s !== 'A');   // doubles: each team's second Pokémon (C, D) fights under the AI   // online battles mark both sides human
 // AI difficulty 1–10 per side (G.aiLevel). Level 6 is the classic AI exactly; nothing set = classic.
 // aiK(S, atLevel1, atLevel6, atLevel10) blends a setting between those three points.
 const AI_CLASSIC = 6;
-function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[S]; return l >= 1 && l <= 13 ? l : AI_CLASSIC; }
+function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l >= 1 && l <= 13 ? l : AI_CLASSIC; }
 // Levels 11–13 exist only for story secrets: they keep sharpening every setting past level 10.
 function aiK(S, lo, base, hi) { const l = aiLv(S); if (l > 10) return hi + (hi - base) * (l - 10) / 8; return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
@@ -2468,7 +2492,7 @@ function applyHit(S, mv, u, opts = {}) {
   if (!opts.z) { const us = side(S); us.zCharge = Math.min(100, (us.zCharge || 0) + dmg / t.max * 85); ts.zCharge = Math.min(100, (ts.zCharge || 0) + dmg / t.max * 45); }
   if (opts.combo) VFX.combo(fs, opts.combo);
   if (crit || eff > 1 || t.hp <= 0) VFX.crowd(t.hp <= 0 ? 2 : 1);
-  const st = G.stats[S]; st.dmg += dmg; u.dmg += dmg; if (crit) st.crits++;
+  const st = G.stats[slotTeam(S)]; st.dmg += dmg; u.dmg += dmg; if (crit) st.crits++;
   if (!G.stats.best || dmg > G.stats.best.amt) G.stats.best = { amt: dmg, mon: u.name, move: mv.name, side: S };
   G.lastDmgT = G.time; G.hudDirty = true;
   // knockback away from the attacker
@@ -2510,7 +2534,7 @@ function tryCast(S, idx) {
   const t = side(fs);
   const accOk = mv.acc == null || Math.random() * 100 < mv.acc * accMult(m.stages.acc - (present(fs) ? act(fs).stages.eva : 0));
   sd.cast = { idx, mv, t: 0, phase: 'wind', accOk, landed: false, aim: { x: t.x, y: t.y }, spawn: 0, group: G.nextShotGroup++ };
-  sd.pill = mv.name; sd.pillT = 1200; G.stats[S].moves++;
+  sd.pill = mv.name; sd.pillT = 1200; G.stats[slotTeam(S)].moves++;
   logLine(`${m.name} used ${mv.name}!`);
   VFX.windup(S, mv);
   return true;
@@ -2532,6 +2556,10 @@ function shoot(S, mv, opts) {
     scale: opts.scale, burst: opts.burst, dest: opts.burst ? to : null, t: 0, combo: opts.combo || null });
 }
 function updateCast(S, dt) {
+  if (G.doubles) { const c = side(S).cast; if (c && !c.tgt) c.tgt = other(S); const keep = G.forceFoe; G.forceFoe = c && c.tgt && slotLive(c.tgt) ? c.tgt : null; try { return updateCastCore(S, dt); } finally { G.forceFoe = keep; } }
+  return updateCastCore(S, dt);
+}
+function updateCastCore(S, dt) {
   const sd = side(S), c = sd.cast, mv = c.mv, m = act(S), fs = other(S), t = side(fs);
   c.t += dt;
   if (c.phase === 'wind') { if (c.t < WINDUP(mv)) return; c.phase = 'go'; c.t = 0; c.aim = aimPoint(S, c.accOk); startExec(S, c); return; }
@@ -2567,8 +2595,8 @@ function updateCast(S, dt) {
         G.beams.push(b); c._beam = b;
         if (mv.e && mv.e.rch) { sd.kbx -= sd.face * 360; }   // the user is pushed back by the force of the beam (Hyper Beam style recoil)
         if (present(fs) && along > 0 && perp < 44) {
-          b.pend = true;                           // damage lands after a short grace so a beam fired back can still meet it
-          const rival = G.clash ? null : G.beams.find(o => o !== b && o.owner === fs && o.pend && !o.cl);
+          b.pend = true; b.tgt = fs;                           // damage lands after a short grace so a beam fired back can still meet it
+          const rival = (G.clash || G.doubles) ? null : G.beams.find(o => o !== b && o.owner === fs && o.pend && !o.cl);
           if (rival) startClash(rival, b);
         } else missAt(t.x, t.y - 50, S);
         c.phase = 'fire'; c.t = 0; return; }
@@ -2631,12 +2659,11 @@ function updateWorld(dt) {
     p.x += p.vx * k; p.y += p.vy * k;
     if (p.burst && p.dest && Math.hypot(p.dest.x - p.x, p.dest.y - 30 - p.y) < 22) {
       VFX.explode(p.x, p.y, p.mv);
-      if (present(fs) && Math.hypot(t.x - p.x, t.y - 30 - p.y) < 82) groupHit(p); else groupMiss(p);
+      { const hitSlot = foeSlots(p.owner).find(f => present(f) && Math.hypot(side(f).x - p.x, side(f).y - 30 - p.y) < 82); if (hitSlot) { const keep = G.forceFoe; G.forceFoe = hitSlot; try { groupHit(p); } finally { G.forceFoe = keep; } } else groupMiss(p); }
       G.shots.splice(i, 1); continue;
     }
-    if (present(fs) && Math.hypot(t.x - p.x, t.y - 32 - p.y) < p.r + 26) {
-      if (p.damage) groupHit(p); VFX.impactAt(p.x, p.y, p.mv); G.shots.splice(i, 1); continue;
-    }
+    { const hitSlot = foeSlots(p.owner).find(f => present(f) && Math.hypot(side(f).x - p.x, side(f).y - 32 - p.y) < p.r + 26);
+      if (hitSlot) { const keep = G.forceFoe; G.forceFoe = hitSlot; try { if (p.damage) groupHit(p); } finally { G.forceFoe = keep; } VFX.impactAt(p.x, p.y, p.mv); G.shots.splice(i, 1); continue; } }
     if (p.ttl <= 0 || p.x < -40 || p.x > WW + 40 || p.y < -60 || p.y > WH + 40) { groupMiss(p); G.shots.splice(i, 1); }
   }
   for (let i = G.marks.length - 1; i >= 0; i--) {
@@ -2644,7 +2671,8 @@ function updateWorld(dt) {
     if (mk.t >= mk.delay) {
       const fs = other(mk.owner), t = side(fs);
       VFX.markFire(mk);
-      if (present(fs) && Math.hypot(t.x - mk.x, t.y - mk.y) < mk.r) { const sd = side(mk.owner); if (applyHit(mk.owner, mk.mv, mk.u)) { if (sd.cast && sd.cast.mv === mk.mv) sd.cast.landed = true; } }
+      const hitSlot = foeSlots(mk.owner).find(f => present(f) && Math.hypot(side(f).x - mk.x, side(f).y - mk.y) < mk.r);
+      if (hitSlot) { const sd = side(mk.owner), keep = G.forceFoe; G.forceFoe = hitSlot; let ok = false; try { ok = applyHit(mk.owner, mk.mv, mk.u); } finally { G.forceFoe = keep; } if (ok && sd.cast && sd.cast.mv === mk.mv) sd.cast.landed = true; }
       else missAt(mk.x, mk.y - 40, mk.owner);
       G.marks.splice(i, 1);
     }
@@ -2652,7 +2680,8 @@ function updateWorld(dt) {
   for (let i = G.waves.length - 1; i >= 0; i--) {
     const w = G.waves[i]; w.r += w.speed * k;
     const fs = other(w.owner), t = side(fs);
-    if (!w.hit && present(fs)) { const d = Math.hypot(t.x - w.x, (t.y - w.y) * 1.6); if (Math.abs(d - w.r) < 34 || d < w.r) { w.hit = true; applyHit(w.owner, w.mv, w.u); } }
+    for (const f of foeSlots(w.owner)) { if (!present(f) || (w.hitSet && w.hitSet[f])) continue; const tt = side(f), d = Math.hypot(tt.x - w.x, (tt.y - w.y) * 1.6);   // a wave can sweep both opponents
+      if (Math.abs(d - w.r) < 34 || d < w.r) { w.hit = true; (w.hitSet || (w.hitSet = {}))[f] = 1; const keep = G.forceFoe; G.forceFoe = f; try { applyHit(w.owner, w.mv, w.u); } finally { G.forceFoe = keep; } } }
     if (w.r >= w.maxR) { if (!w.hit) missAt(t.x, t.y - 40, w.owner); G.waves.splice(i, 1); }
   }
   updateClash(dt);
@@ -2697,7 +2726,7 @@ function beamRivalSoon(S, c, window) {
 }
 function landBeam(b) {
   if (!b.pend) return; b.pend = false;
-  const sd = side(b.owner), landed = applyHit(b.owner, b.mv, b.u);
+  const sd = side(b.owner), keep = G.forceFoe; if (G.doubles && b.tgt) G.forceFoe = b.tgt; let landed = false; try { landed = applyHit(b.owner, b.mv, b.u); } finally { G.forceFoe = keep; }
   if (sd.cast && sd.cast._beam === b) sd.cast.landed = landed;
 }
 function startClash(b1, b2) {
@@ -2893,6 +2922,7 @@ function move(S, dt, rooted) {
   [sd.x, sd.y] = clampWalk(sd.x, sd.y);
   const sp = Math.hypot(sd.vx, sd.vy); sd.walk += sp * k;
   if (!sd.cast || sd.cast.phase === 'after') sd.face = foe.x >= sd.x ? 1 : -1;
+  else if (G.doubles && sd.cast.tgt && G.sides[sd.cast.tgt]) sd.face = side(sd.cast.tgt).x >= sd.x ? 1 : -1;   // doubles: keep facing the opponent the move is aimed at
   else if (Math.abs(sd.vx) > 20) sd.face = sd.vx > 0 ? 1 : -1;
   if (sp > 150 && Math.random() < dt / 90) VFX.dust(S);
 }
@@ -2940,7 +2970,7 @@ function aiThink(S) {
 function bestSwitchFor(S) {
   const foe = act(other(S)); let best = null, bestV = -Infinity;
   side(S).team.forEach((m, i) => {
-    if (m.hp <= 0 || i === side(S).active) return;
+    if (m.hp <= 0 || i === side(S).active || (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i)) return;
     const off = Math.max(0, ...m.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, foe.types)));
     const def = Math.max(0, ...foe.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, m.types)));
     const v = off * 2 - def + m.hp / m.max;
@@ -2975,6 +3005,10 @@ function zMove(S) {
   logLine(`${m.name} unleashed its full-force Z-Move: ${z.name}!`, 't'); VFX.zStart(S, m.name, z.name, z.type); G.hudDirty = true; return true;
 }
 function zMoveTick(S, dt) {
+  if (G.doubles) { const sd = side(S); if (!sd.zTgt || !slotLive(sd.zTgt)) sd.zTgt = other(S); const keep = G.forceFoe; G.forceFoe = sd.zTgt; try { return zMoveTickCore(S, dt); } finally { G.forceFoe = keep; } }
+  return zMoveTickCore(S, dt);
+}
+function zMoveTickCore(S, dt) {
   const sd = side(S); sd.stateT += dt; sd.vx = sd.vy = 0;
   if (!sd.zHit && sd.stateT >= Z_HIT) {
     sd.zHit = true; const u = act(S), z = sd.zInfo;
@@ -3006,6 +3040,7 @@ function requestSwitch(S, idx) {
   const sd = side(S);
   if (G.phase !== 'battle' || sd.state !== 'idle' || sd.cast || sd.switchCd > 0 || sd.stun > 0) return false;
   if (idx === sd.active || !sd.team[idx] || sd.team[idx].hp <= 0) return false;
+  if (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === idx) return false;   // already out with the partner
   sd.state = 'leaving'; sd.stateT = 0; sd.pendingSwitch = idx; sd.switchCd = 5000;
   logLine(`${TEAM_NAME[S]} recalled ${act(S).name}!`);
   return true;
@@ -3014,8 +3049,8 @@ function resetOnLeave(m) { m.stages = zeroStages(); m.conf = 0; m.vol.recharge =
 function completeSwitch(S) { const sd = side(S); resetOnLeave(act(S)); spawnIn(S, sd.pendingSwitch); sd.pendingSwitch = null; }
 function spawnIn(S, idx) {
   const sd = side(S); sd.active = idx; sd.state = 'entering'; sd.stateT = 0; sd.cast = null; sd.stun = 0; sd.gcd = 600; sd.dig = false;
-  sd.x = ENTRY[S].x; sd.y = ENTRY[S].y + (Math.random() - .5) * 80; sd.vx = sd.vy = sd.kbx = sd.kby = 0; sd.throwT = G.time; sd.aiT = 700;
-  sd.face = S === 'A' ? 1 : -1;
+  const E = entryOf(S); sd.x = E.x; sd.y = E.y + (Math.random() - .5) * (G.doubles ? 40 : 80); sd.vx = sd.vy = sd.kbx = sd.kby = 0; sd.throwT = G.time; sd.aiT = 700;
+  sd.face = slotTeam(S) === 'A' ? 1 : -1; sd.zTgt = null;
   logLine(`${TEAM_NAME[S]} sent out ${act(S).name}!`); G.hudDirty = true; sd.sinceIn = 0;
   if (typeof VFX !== 'undefined') VFX.call(S, `Go, ${act(S).name}!`);
   if (typeof VFX !== 'undefined') VFX.sendOut(S);
@@ -3026,12 +3061,14 @@ function startFaint(S) {
   logLine(`${m.name} fainted!`); VFX.faint(S); G.hudDirty = true;
 }
 function teamAlive(S) { return side(S).team.some(m => m.hp > 0); }
+function benchFor(S) { return side(S).team.map((m, i) => (m.hp > 0 && i !== side(S).active && !(G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i) ? i : -1)).filter(i => i >= 0); }
 function afterFaint(S) {
-  if (!teamAlive(S)) { endBattle(teamAlive(other(S)) ? other(S) : 'draw'); return; }
+  if (!teamAlive(S)) { endBattle(teamAlive(foeTeam(S)) ? foeTeam(S) : 'draw'); return; }
+  if (G.doubles && !benchFor(S).length) { side(S).state = 'empty'; G.hudDirty = true; return; }   // no one left to send: the partner fights on alone
   if (controlledByAI(S)) {
     const healthy = side(S).team.map((m, i) => (m.hp > 0 ? i : -1)).filter(i => i >= 0);
     const sloppy = healthy.length && Math.random() < aiK(S, .85, 0, 0);
-    spawnIn(S, sloppy ? healthy[Math.floor(Math.random() * healthy.length)] : bestSwitchFor(S));
+    const pool = G.doubles ? benchFor(S) : healthy; spawnIn(S, sloppy && pool.length ? pool[Math.floor(Math.random() * pool.length)] : (bestSwitchFor(S) ?? pool[0]));
   }
   else { side(S).state = 'wait'; G.phase = 'pick'; if (typeof onNeedPick === 'function') onNeedPick(); }
 }
@@ -3050,7 +3087,7 @@ function endBattle(w, big) {
 function simStep(dt) {
   if (!G || G.phase === 'pick' || G.phase === 'over' || G.phase === 'title') return;
   G.time += dt; if (G.phase === 'battle') G.elapsed += dt;
-  updateSide('A', dt); updateSide('B', dt);
+  for (const S of SLOTS()) { if (side(S).state === 'empty') continue; updateSide(S, dt); }
   if (G.phase === 'battle') {
     updateWorld(dt);
     // Sudden Death: after 5:00, damage grows 25% every 30 seconds; at 10:00 the battle is decided on HP
@@ -3300,7 +3337,7 @@ const VFX = {
   banner(t, col) { banner.text = t; banner.t = clock.t; banner.color = col || '#ffb347'; },
   aura(S, col) { const h = head(S); fx.push({ kind: 'aura', x: h.x, y: h.y + 10, color: col, t0: clock.t, life: 700 }); },
   sendOut(S) { fx.push({ kind: 'capsule', S, t0: clock.t, life: 320 }); },
-  call(S, text) { const t = TRAINER_POS[S]; screenFx.push({ kind: 'call', x: t.x + (S === 'A' ? -6 : 6), y: t.y - 62, text, align: S === 'A' ? 'left' : 'right', t0: clock.t, life: 1600 }); },
+  call(S, text) { const t = TRAINER_POS[slotTeam(S)]; screenFx.push({ kind: 'call', x: t.x + (slotTeam(S) === 'A' ? -6 : 6), y: t.y - 62, text, align: slotTeam(S) === 'A' ? 'left' : 'right', t0: clock.t, life: 1600 }); },
   faint(S) { slide.text = `${displayName(act(S))} FAINTED!`; slide.t = clock.t; portraitShake(S); punch(side(S).x, side(S).y - 30, 1300, 2); },
   plotArmor(S) { bigText.text = 'ANIME PLOT ARMOR ACTIVATE!'; bigText.t = clock.t; bigText.life = 1700; bigText.color = '#ffb347'; punch(side(S).x, side(S).y - 30, 1600, 2); VFX.shake(10, 400); },
   combo(S, n) { const h = head(S), old = fx.find(f => f.id === 'combo' + S && clock.t - f.t0 < 900); if (old) { old.text = `${n} HIT COMBO!`; old.t0 = clock.t; return; } fx.push({ kind: 'text', x: h.x - 60, y: h.y - 80, text: `${n} HIT COMBO!`, t0: clock.t, life: 1100, color: '#ffe066', size: 40, vy: 0, stroke: '#3a2606', italic: true, id: 'combo' + S }); },
@@ -3315,9 +3352,8 @@ function portraitShake(S) { const el = $('port' + S); if (!el) return; el.classL
 function updateCamera(dt) {
   let tx = toArtX(500), ty = toArtY(290), level = 0;
   if (G && ['battle', 'pick', 'intro', 'over'].includes(G.phase)) {
-    const a = side('A'), b = side('B'), va = !['out', 'wait'].includes(a.state), vb = !['out', 'wait'].includes(b.state);
-    if (va && vb) { tx = toArtX((a.x + b.x) / 2); ty = toArtY((a.y + b.y) / 2 - 25); }
-    else if (va) { tx = toArtX(a.x); ty = toArtY(a.y - 25); } else if (vb) { tx = toArtX(b.x); ty = toArtY(b.y - 25); }
+    const vis = SLOTS().map(side).filter(s => s && !['out', 'wait', 'empty'].includes(s.state));   // every Pokémon on the field (four in doubles)
+    if (vis.length) { tx = toArtX(vis.reduce((a, s) => a + s.x, 0) / vis.length); ty = toArtY(vis.reduce((a, s) => a + s.y, 0) / vis.length - 25); }
     if (G.phase === 'over' && G.winner && G.winner !== 'draw') { const w = side(G.winner); tx = toArtX(w.x); ty = toArtY(w.y - 30); level = 1; }
   }
   if (clock.t < cam.punchT && cam.fx) { tx = toArtX(cam.fx.x); ty = toArtY(cam.fx.y); level = Math.max(level, cam.fx.lv); }
@@ -3337,11 +3373,11 @@ const toScreenX = x => (ax(x) - OX) * cam.pz, toScreenY = y => (ay(y) - OY) * ca
 /* ---------- drawing ---------- */
 const DISPLAY_FONT = () => getComputedStyle(document.body).getPropertyValue('--display') || 'Arial Black';
 function drawTrainer(S) {
-  const img = trainerCanvas(S), t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140);
+  const img = trainerCanvas(S), t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140);
   const sd = G ? side(S) : null, lift = sd && G.time >= sd.throwT && G.time - sd.throwT < 300 ? Math.round(Math.sin((G.time - sd.throwT) / 300 * Math.PI) * 2) : 0;
   const i = bx(t.x + off), j = by(t.y);
   aEllFill(i, j, 7, 2, '#0b0f1a', .3);
-  bctx.save(); if (S === 'B') { bctx.translate(i + 8, j - 24 - lift); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 8, j - 24 - lift); bctx.restore();
+  bctx.save(); if (slotTeam(S) === 'B') { bctx.translate(i + 8, j - 24 - lift); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 8, j - 24 - lift); bctx.restore();
 }
 function drawCrowd() {
   if (crowdState.length !== STAGE.crowd.length || crowdState.stage !== STAGE_ID) { crowdState.length = 0; crowdState.stage = STAGE_ID; STAGE.crowd.forEach(([x, y], k) => crowdState.push({ x, y, pal: CROWD_PALS[k % CROWD_PALS.length], react: -9999, mark: '!', ph: Math.random() * 6 })); }
@@ -3390,7 +3426,7 @@ function drawActorSprite(S) {
     if (sd.view === 'back') { if (ly > -.15 * len) sd.view = 'front'; } else if (ly < -.45 * len) sd.view = 'back';
     const glitchFlip = m.name === 'MissingNo.' && sp.back && (moving || !!sd.cast || sd.state === 'dash' || sd.state === 'zmove');   // MissingNo.: front ⇄ back every 0.33 s while walking or attacking
     const useBack = glitchFlip ? Math.floor(clock.t / 330) % 2 === 1 : sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
-    const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
+    const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (slotTeam(S) === 'B' ? 777 : 0)), src = a.frames[fi];
     // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
     const flip = m.name === 'MissingNo.' ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0;   // MissingNo.'s back art faces the same way as its front
     const unit = (cam.pz >= 2 ? Math.round(cam.pz / 2) : cam.pz / 2) * scale, still = a.frames.length < 2 && !a.live;   // shrinks with the camera when zoomed out
@@ -3475,7 +3511,7 @@ function drawBeamDefault(b) {
   for (let k = 0; k < n; k++) { const s = Math.sin(k / 6 - clock.t / 40) * (w + 2); aRect(i0 + di * k + nx * s, j0 + dj * k + ny * s, 1, 1, '#ffffff', fade); }
 }
 function drawAimLines() {
-  for (const S of ['A', 'B']) { const sd = side(S), c = sd.cast; if (!c || c.mv.anim !== 'beam' || c.phase !== 'go') continue; aLine(bx(sd.x + sd.face * 18), by(sd.y - 32), bx(c.aim.x), by(c.aim.y - 32), '#ff3b4b', .75 * Math.min(1, c.t / 200), 1); }
+  for (const S of SLOTS()) { const sd = side(S), c = sd.cast; if (!c || c.mv.anim !== 'beam' || c.phase !== 'go') continue; aLine(bx(sd.x + sd.face * 18), by(sd.y - 32), bx(c.aim.x), by(c.aim.y - 32), '#ff3b4b', .75 * Math.min(1, c.t / 200), 1); }
 }
 function drawWorldFx() {
   for (let k = fx.length - 1; k >= 0; k--) {
@@ -3488,7 +3524,7 @@ function drawWorldFx() {
     else if (f.kind === 'psy') { for (let s = 0; s < 3; s++) { const qq = (q + s / 3) % 1, r = (10 + qq * 55) / 2; aRing(bx(f.x), by(f.y), r, r * .6, f.color, (1 - qq) * .9); } }
     else if (f.kind === 'aura') { bctx.globalCompositeOperation = 'lighter'; for (let r = 30; r > 0; r -= 6) aDisc(bx(f.x), by(f.y), r * (1 - q * .3), f.color, .08 * (1 - q)); bctx.globalCompositeOperation = 'source-over'; }
     else if (f.kind === 'arrows') { for (let s = 0; s < 5; s++) { const ox = f.x - 36 + s * 18, oy = f.y + (f.up ? -1 : 1) * ((q * 60 + s * 13) % 60) - 6; for (let t = 0; t < 3; t++) aRect(bx(ox) - t, by(oy) + (f.up ? t : -t), t * 2 + 1, 1, f.color, 1 - q); } }
-    else if (f.kind === 'capsule') { if (!G) continue; const S = f.S, from = TRAINER_POS[S], to = side(S), x = lerp(from.x, to.x, q), y = lerp(from.y - 30, to.y - 20, q) - Math.sin(q * Math.PI) * 70, col = S === 'A' ? '#ff4b55' : '#4aa6ff', i = bx(x), j = by(y); aRect(i - 3, j - 3, 6, 6, '#141a2c'); aRect(i - 2, j - 2, 4, 4, col); aRect(i - 2, j - 2, 2, 2, '#ffffff'); if (q > .92) { burstAt(to.x, to.y - 20, '#ffffff', 20, 280, 1); ringFx(to.x, to.y - 10, col, 6, 70, 400); fx.splice(k, 1); } }
+    else if (f.kind === 'capsule') { if (!G) continue; const S = f.S, from = TRAINER_POS[slotTeam(S)], to = side(S), x = lerp(from.x, to.x, q), y = lerp(from.y - 30, to.y - 20, q) - Math.sin(q * Math.PI) * 70, col = slotTeam(S) === 'A' ? '#ff4b55' : '#4aa6ff', i = bx(x), j = by(y); aRect(i - 3, j - 3, 6, 6, '#141a2c'); aRect(i - 2, j - 2, 4, 4, col); aRect(i - 2, j - 2, 2, 2, '#ffffff'); if (q > .92) { burstAt(to.x, to.y - 20, '#ffffff', 20, 280, 1); ringFx(to.x, to.y - 10, col, 6, 70, 400); fx.splice(k, 1); } }
   }
   for (let k = parts.length - 1; k >= 0; k--) if (!drawParticle(parts[k])) parts.splice(k, 1);
   bctx.globalAlpha = 1;
@@ -3521,7 +3557,7 @@ function draw(dt) {
   b.clearRect(0, 0, buf.width, buf.height);   // the arena itself is painted in HD on the screen layer
   drawCrowd();
   drawTrainer('A'); drawTrainer('B');
-  const order = G ? ['A', 'B'].sort((p, q) => side(p).y - side(q).y) : [];
+  const order = G ? SLOTS().filter(S => side(S).state !== 'empty').sort((p, q) => side(p).y - side(q).y) : [];
   if (G) { drawAimLines(); for (const S of order) drawActorGround(S); }
   // ground effects: marks, shockwaves, lingering ground effects (full resolution)
   bctx = uctx; hiBegin(uctx);
@@ -5160,7 +5196,7 @@ function drawClash() {
 
   // muzzle flares and the glow on each Pokémon
   for (const [b, r] of [[bA, rA], [bB, rB]]) {
-    const oi = bx(b.x), oj = by(b.y), pr = 7 + Math.sin(t / 45 + (b.owner === 'A' ? 0 : 2)) * 1.5 + e * 3;
+    const oi = bx(b.x), oj = by(b.y), pr = 7 + Math.sin(t / 45 + (slotTeam(b.owner) === 'A' ? 0 : 2)) * 1.5 + e * 3;
     glow(oi, oj, pr * 1.8, r[3], .65); aDisc(oi, oj, pr * .6, r[2]); aDisc(oi, oj, pr * .3, '#ffffff');
     ACTOR_GLOW[b.owner] = { col: r[2], a: .22 + e * .3, until: t + 140 };
   }
@@ -6266,7 +6302,7 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
   /* ---------- beam geometry ---------- */
   // muzzle and aim in art pixels; the beam reaches a little past the target
   function geo(b) {
-    const i = bx(b.x), j = by(b.y), tS = side(b.owner === 'A' ? 'B' : 'A'), ti = bx(tS.x), tj = by(tS.y - 30);
+    const i = bx(b.x), j = by(b.y), tS = side(b.tgt && G.sides[b.tgt] ? b.tgt : other(b.owner)), ti = bx(tS.x), tj = by(tS.y - 30);
     const ang = b.ang, ca = Math.cos(ang), sa = Math.sin(ang), len = Math.max(90, Math.hypot(ti - i, tj - j) + 26);
     return { i, j, ang, ca, sa, nx: -sa, ny: ca, len, q: b.t / b.life };
   }
@@ -6429,7 +6465,7 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
     h = Math.max(22, Math.min(90, h));
     return { i: bx(sd.x), j: by(sd.y) - h * .5, feet: by(sd.y), h, w: h * .8, face: sd.face || 1, k: Math.max(.75, Math.min(1.7, h / 40)), wx: sd.x, wy: sd.y };
   }
-  const foe = S => (S === 'A' ? 'B' : 'A');
+  const foe = S => other(S);
 
   /* ---------- the scene ---------- */
   // darken the arena (over the Pokémon and stage, under the effects) so the glow pops
@@ -6502,7 +6538,7 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
   function tinted(src, col) { let m = TINT.get(src); if (!m) { m = new Map(); TINT.set(src, m); } let t = m.get(col); if (t) return t;
     t = document.createElement('canvas'); t.width = src.width; t.height = src.height; const x = t.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = col; x.globalAlpha = .65; x.fillRect(0, 0, t.width, t.height); if (m.size > 24) m.clear(); m.set(col, t); return t; }
   function ghost(S, col = '#bfe0ff', ms = 260, a0 = .55) {
-    try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front), src = an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))];
+    try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front), src = an.frames[animFrameIndex(an, clock.t + (slotTeam(S) === 'B' ? 777 : 0))];
       const flip = (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0, unit = .5 * L.scale, img = tinted(src, col), x = bx(sd.x), y = by(sd.y);
       fx({ max: ms / 1000, draw: (c, q) => { c.save(); c.globalAlpha = a0 * (1 - q); c.translate(x, y); c.scale(flip ? -1 : 1, 1); c.imageSmoothingEnabled = false; c.drawImage(img, -an.cx * unit, -(an.h - an.foot) * unit, an.w * unit, an.h * unit); c.restore(); } });
     } catch (e) { }
@@ -6547,7 +6583,7 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
 
   // a Pokémon's current animation frame, for avatars: { an, src, unit, flip }
   function actorFrame(S) { try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return null; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front);
-    return { an, src: an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
+    return { an, src: an.frames[animFrameIndex(an, clock.t + (slotTeam(S) === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
   window.FXK = { tinted, actorFrame, body, foe, dim, flash, shake, scar, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, ease, rnd, N, T };
 })();
 
@@ -7303,11 +7339,11 @@ function updateHUD(force) {
     if ($('chips' + S).innerHTML !== chips) $('chips' + S).innerHTML = chips;
     const bar = $('bar' + S); bar.style.width = (f * 100) + '%'; bar.style.backgroundColor = hpColor(f);
     $('hp' + S).textContent = `${m.hp}`;
-    const port = $('portrait' + S), pk = m.name + (m.mega ? '#M' : '') + (m.shiny ? '#S' : '') + (spriteOf(m.name, m.mega, m.shiny).custom ? 'C' : ''); if (port.dataset.mon !== pk || force) { drawSpriteTo(port, m.name, { portrait: true, mega: m.mega, shiny: m.shiny, faceRight: S === 'A', bg: mix(TYPE_COLOR[m.types[0]], '#20284a', .55) }); port.dataset.mon = pk; }
+    const port = $('portrait' + S), pk = m.name + (m.mega ? '#M' : '') + (m.shiny ? '#S' : '') + (spriteOf(m.name, m.mega, m.shiny).custom ? 'C' : ''); if (port.dataset.mon !== pk || force) { drawSpriteTo(port, m.name, { portrait: true, mega: m.mega, shiny: m.shiny, faceRight: slotTeam(S) === 'A', bg: mix(TYPE_COLOR[m.types[0]], '#20284a', .55) }); port.dataset.mon = pk; }
     $('port' + S).classList.toggle('fnt', m.hp <= 0);
-    const toks = (S === 'B' ? `<span class="team-tag">${trainerLabel('B')}</span>` : '') +
+    const toks = (slotTeam(S) === 'B' ? `<span class="team-tag">${trainerLabel('B')}</span>` : '') +
       sd.team.map((t, i) => `<span class="tok ${t.hp <= 0 ? 'fnt' : ''} ${t.status ? 'st' : ''} ${i === sd.active ? 'active' : ''}" title="${t.name} ${t.hp}/${t.max}"></span>`).join('') +
-      (S === 'A' ? `<span class="team-tag">${trainerLabel('A')}</span>` : '');
+      (slotTeam(S) === 'A' ? `<span class="team-tag">${trainerLabel('A')}</span>` : '');
     if (hudKey[S] !== toks) { $('tok' + S).innerHTML = toks; hudKey[S] = toks; }
   }
   renderRosters();
@@ -7368,7 +7404,7 @@ function updateCooldowns() {
 function rosterCard(m, i, S, opts = {}) {
   const el = document.createElement(opts.button ? 'button' : 'div'), isActive = G && i === side(S).active && !['title'].includes(G.phase);
   el.className = `card ${m.hp <= 0 ? 'fnt' : ''} ${isActive ? 'active' : ''} ${opts.pickable ? 'pickable' : ''}`;
-  const cv = document.createElement('canvas'); cv.width = cv.height = 56; drawSpriteTo(cv, m.name, { mega: m.mega, faceRight: S === 'A' });
+  const cv = document.createElement('canvas'); cv.width = cv.height = 56; drawSpriteTo(cv, m.name, { mega: m.mega, faceRight: slotTeam(S) === 'A' });
   const f = m.hp / m.max, badge = m.hp <= 0 ? 'FNT' : isActive ? 'ACTIVE' : m.status ? STATUS_INFO[m.status].label : '';
   if (badge) el.insertAdjacentHTML('beforeend', `<span class="badge">${badge}</span>`);
   el.appendChild(cv);
@@ -7425,8 +7461,9 @@ async function startBattle(picksA, picksB, stageId) {
   picksA = filledTeam(picksA); picksB = filledTeam(picksB);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
-  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value) });
+  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle) });
   G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
+  if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
   // two players on one phone or tablet: both sides human (Local only)
   if (typeof NET !== 'undefined' && NET.mode === 'local' && typeof START !== 'undefined' && START.ctrl && START.ctrl.B === 'human' && typeof duoCapable === 'function' && duoCapable()) G.human = { A: START.ctrl.A === 'human', B: true };
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
@@ -7437,16 +7474,18 @@ async function startBattle(picksA, picksB, stageId) {
     await playIntro(my); guard(my);
     // Red comes out and cries, then Blue; the battle waits for both, then counts down 3 · 2 · 1 · GO!
     spawnIn('A', 0); await sendOutDone('A'); guard(my);
+    if (G.doubles && side('C').state !== 'empty') { spawnIn('C', side('C').active); await sendOutDone('C'); guard(my); }
     spawnIn('B', 0); await sendOutDone('B'); guard(my);
+    if (G.doubles && side('D').state !== 'empty') { spawnIn('D', side('D').active); await sendOutDone('D'); guard(my); }
     await battleCountdown(my); guard(my);
     G.phase = 'battle'; G.lastDmgT = G.time; updateHUD(); autosave();
   } catch (e) { if (!(e instanceof Cancelled)) console.error(e); }
 }
 async function playIntro(my) {
   const vs = $('ovVs');
-  const big = (id, S) => { const c = $(id), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, c.width, c.height); x.save(); if (S === 'B') { x.translate(c.width, 0); x.scale(-1, 1); } x.drawImage(trainerCanvas(S), 0, 0, c.width, c.height); x.restore(); };
+  const big = (id, S) => { const c = $(id), x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, c.width, c.height); x.save(); if (slotTeam(S) === 'B') { x.translate(c.width, 0); x.scale(-1, 1); } x.drawImage(trainerCanvas(S), 0, 0, c.width, c.height); x.restore(); };
   big('vsTrainerA', 'A'); big('vsTrainerB', 'B');
-  for (const S of ['A', 'B']) { const el = $('vsTeam' + S); el.innerHTML = ''; side(S).team.forEach(m => { const c = document.createElement('canvas'); c.width = c.height = SPR; drawSpriteTo(c, m.name, { faceRight: S === 'A' }); c.title = m.name; el.appendChild(c); }); }
+  for (const S of ['A', 'B']) { const el = $('vsTeam' + S); el.innerHTML = ''; side(S).team.forEach(m => { const c = document.createElement('canvas'); c.width = c.height = SPR; drawSpriteTo(c, m.name, { faceRight: slotTeam(S) === 'A' }); c.title = m.name; el.appendChild(c); }); }
   vs.querySelectorAll('.vs-card,.vs-mark').forEach(n => { n.style.animation = 'none'; void n.offsetWidth; n.style.animation = ''; });
   showOverlay('ovVs', true);
   let skipped = false; introSkip = () => { skipped = true; }; vs.onclick = introSkip;
@@ -7457,12 +7496,13 @@ async function playIntro(my) {
 }
 function onNeedPick() {
   const grid = $('pickGrid'); grid.innerHTML = '';
-  side('A').team.forEach((m, i) => { if (m.hp > 0) grid.appendChild(rosterCard(m, i, 'A', { button: true, pickable: true, onPick: forcePick })); });
+  const busy = G.doubles && slotLive('C') ? side('C').active : -1;   // doubles: the partner's Pokémon is already out
+  side('A').team.forEach((m, i) => { if (m.hp > 0 && i !== busy) grid.appendChild(rosterCard(m, i, 'A', { button: true, pickable: true, onPick: forcePick })); });
   showOverlay('ovSwitch', true); updateHUD(); autosave();
   const first = grid.querySelector('button'); if (first) first.focus();
 }
 function forcePick(i) {
-  if (!G || G.phase !== 'pick' || side('A').team[i].hp <= 0) return;
+  if (!G || G.phase !== 'pick' || side('A').team[i].hp <= 0 || (G.doubles && slotLive('C') && side('C').active === i)) return;
   showOverlay('ovSwitch', false); G.phase = 'battle'; spawnIn('A', i); updateHUD();
 }
 async function onBattleEnd(w, bigTxt) {
@@ -7763,7 +7803,7 @@ function initAppMode() {
   document.addEventListener('contextmenu', e => { if (e.target.closest('.arena,.touch-ui')) e.preventDefault(); });
   // haptics on big moments
   const wrap = (k, fn) => { const o = VFX[k]; VFX[k] = function () { const r = o.apply(this, arguments); fn.apply(this, arguments); return r; }; };
-  wrap('hit', (S, mv, dmg, eff, crit) => { if (S === 'A' && (crit || eff > 1)) haptic(crit ? 45 : 25); });
+  wrap('hit', (S, mv, dmg, eff, crit) => { if (slotTeam(S) === 'A' && (crit || eff > 1)) haptic(crit ? 45 : 25); });
   wrap('faint', () => haptic(90)); wrap('megaDone', () => haptic(60)); wrap('plotArmor', () => haptic(120));
   requestAnimationFrame(() => resizeScene());
 }
@@ -7776,7 +7816,7 @@ function boot() {
   if (legacy && !store.get(SAVE_PREFIX + 'auto')) { try { store.set(SAVE_PREFIX + 'auto', JSON.stringify(validateSave(legacy))); } catch { } }
   renderSlots();
   G = newBattle(DEFAULT_A, DEFAULT_B); G.phase = 'title'; trainerWalk.A = trainerWalk.B = 0;
-  for (const S of ['A', 'B']) { const sd = side(S); sd.state = 'idle'; sd.x = S === 'A' ? 330 : 670; sd.y = S === 'A' ? 330 : 250; sd.face = S === 'A' ? 1 : -1; }
+  for (const S of ['A', 'B']) { const sd = side(S); sd.state = 'idle'; sd.x = slotTeam(S) === 'A' ? 330 : 670; sd.y = slotTeam(S) === 'A' ? 330 : 250; sd.face = slotTeam(S) === 'A' ? 1 : -1; }
   updateHUD(true);
   loadCustomPack();
   requestAnimationFrame(t => { clock.last = t; frame(t); });
@@ -7812,7 +7852,7 @@ function trainerArt(S, pose, frame) {
   // back arm, backpack, legs
   const backArm = pose === 'cheer' ? [9, 19 + ub, 6, 8] : slump ? [9, 20 + ub, 8, 30] : [9, 19 + ub, 7, 28 + ub];
   limb(...backArm, 3, L.jacket[2]); put(backArm[2], backArm[3] + 1, L.skin[1]);
-  if (S === 'A') { rect(4, 19 + ub, 5, 10, L.pack[1]); rect(4, 19 + ub, 4, 9, L.pack[0]); rect(5, 22 + ub, 3, 1, L.pack[1]); }
+  if (slotTeam(S) === 'A') { rect(4, 19 + ub, 5, 10, L.pack[1]); rect(4, 19 + ub, 4, 9, L.pack[0]); rect(5, 22 + ub, 3, 1, L.pack[1]); }
   else { rect(5, 26 + ub, 5, 5, L.pack[1]); rect(5, 26 + ub, 4, 4, L.pack[0]); }
   const lk = walk && frame ? 1 : 0;
   rect(10 - lk, 30, 3, 7, L.pants[1]); rect(13 + lk, 30, 3, 7, L.pants[0]); rect(15 + lk, 30, 1, 7, L.pants[1]);
@@ -7820,7 +7860,7 @@ function trainerArt(S, pose, frame) {
   // jacket: lit from the left, darker on the right, with zip, pocket and hem
   for (let y = 18 + ub; y <= 30; y++) { const x0 = y === 18 + ub ? 9 : 8, x1 = y === 18 + ub ? 17 : 18; for (let x = x0; x <= x1; x++) put(x, y, x <= 10 ? L.jacket[0] : x >= 16 ? L.jacket[2] : L.jacket[1]); }
   rect(14, 19 + ub, 1, 11 - ub, L.jacket[0]); rect(10, 25 + ub, 3, 1, L.jacket[2]); rect(8, 30, 11, 1, L.jacket[2]);
-  if (S === 'B') limb(9, 19 + ub, 17, 28, 1, L.pack[1]);
+  if (slotTeam(S) === 'B') limb(9, 19 + ub, 17, 28, 1, L.pack[1]);
   // scarf with a fluttering tail
   rect(9, 16 + ub, 9, 2, L.scarf[0]); rect(9, 18 + ub, 9, 1, L.scarf[1]); limb(9, 18 + ub, frame ? 6 : 7, 22 + ub + (frame ? 0 : 1), 2, L.scarf[0], L.scarf[1]);
   // head
@@ -7866,11 +7906,11 @@ function trainerPose(S) {
 }
 function drawTrainer(S) {
   hookTrainerFx();
-  const t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140), i = bx(t.x + off), j = by(t.y), pose = trainerPose(S);
+  const t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140), i = bx(t.x + off), j = by(t.y), pose = trainerPose(S);
   const frame = pose === 'walk' ? Math.floor(clock.t / 130) % 2 : pose === 'cheer' ? Math.floor(clock.t / 260) % 2 : Math.floor(clock.t / 560) % 2;
   const img = trainerArt(S, pose === 'cheer' && frame ? 'idle' : pose, pose === 'cheer' ? 0 : frame);
   aEllFill(i, j, 9, 3, '#0b0f1a', .35);
-  bctx.save(); if (S === 'B') { bctx.translate(i + 16, j - 40); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 16, j - 40); bctx.restore();
+  bctx.save(); if (slotTeam(S) === 'B') { bctx.translate(i + 16, j - 40); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 16, j - 40); bctx.restore();
 }
 
 /* ---------- HUD: damage trail on the HP bars, pulse at low HP ---------- */
@@ -7948,9 +7988,8 @@ function updateCamera(dt) {
   const mode = activeCamMode(), e = EXT(STAGE_ID);
   let tx = toArtX(500), ty = toArtY(290), level = 0;
   if (G && ['battle', 'pick', 'intro', 'over'].includes(G.phase)) {
-    const a = side('A'), b = side('B'), va = !['out', 'wait'].includes(a.state), vb = !['out', 'wait'].includes(b.state);
-    if (va && vb) { tx = toArtX((a.x + b.x) / 2); ty = toArtY((a.y + b.y) / 2 - 25); }
-    else if (va) { tx = toArtX(a.x); ty = toArtY(a.y - 25); } else if (vb) { tx = toArtX(b.x); ty = toArtY(b.y - 25); }
+    const vis = SLOTS().map(side).filter(s => s && !['out', 'wait', 'empty'].includes(s.state));   // every Pokémon on the field (four in doubles)
+    if (vis.length) { tx = toArtX(vis.reduce((a, s) => a + s.x, 0) / vis.length); ty = toArtY(vis.reduce((a, s) => a + s.y, 0) / vis.length - 25); }
     if (G.phase === 'over' && G.winner && G.winner !== 'draw') { const w = side(G.winner); tx = toArtX(w.x); ty = toArtY(w.y - 30); level = 1; }
   }
   if (clock.t < cam.punchT && cam.fx && mode !== 'wide' && mode !== 'free') { tx = toArtX(cam.fx.x); ty = toArtY(cam.fx.y); level = Math.max(level, cam.fx.lv); }
@@ -8292,24 +8331,24 @@ function loadTrainer(name) {
 const customTrainer = S => TR_ANIM[TRSEL[S]] || null;
 function trainerAnimFor(S) { return customTrainer(S); }
 const trainerFacesRight = name => name in TRSEL.flip ? !!TRSEL.flip[name] : FACES_RIGHT_BY_DEFAULT.has(name);
-const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? S === 'B' : S === 'A';   // Red faces right, Blue faces left
+const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? slotTeam(S) === 'B' : slotTeam(S) === 'A';   // Red faces right, Blue faces left
 loadTrainer(TRSEL.A); loadTrainer(TRSEL.B);
 
 drawTrainer = function (S) {          // the sprite is drawn on the screen layer; the ground layer only gets its shadow
   hookTrainerFx(); if (!customTrainer(S)) return;
-  const t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140); aEllFill(bx(t.x + off), by(t.y), 10, 3, '#0b0f1a', .35);
+  const t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140); aEllFill(bx(t.x + off), by(t.y), 10, 3, '#0b0f1a', .35);
 };
 // Same pixel scale as the Pokémon sprites, feet on the trainer spot. Poses add motion:
 // lean and hop to throw or command, bounce to cheer, sink and dim when beaten.
 function drawCustomTrainers(c) {
   for (const S of ['A', 'B']) {
     const a = customTrainer(S); if (!a || !a.frames) continue;
-    const pose = trainerPose(S), dir = S === 'A' ? 1 : -1, t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140); let dx = 0, dy = 0, dim = 0;
+    const pose = trainerPose(S), dir = slotTeam(S) === 'A' ? 1 : -1, t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140); let dx = 0, dy = 0, dim = 0;
     if (pose === 'throw' || pose === 'point') { dx = 3 * dir; dy = -Math.round(Math.abs(Math.sin(clock.t / 90)) * 2); }
     else if (pose === 'cheer') dy = -Math.round(Math.abs(Math.sin(clock.t / 140)) * 5);
     else if (pose === 'slump') { dy = 2; dim = .35; }
     else if (pose === 'walk') dy = -(Math.floor(clock.t / 130) % 2);
-    const x = toScreenX(t.x + off + dx * 2), y = toScreenY(t.y + dy * 2), src = a.frames[animFrameIndex(a, clock.t + (S === 'B' ? 333 : 0))];
+    const x = toScreenX(t.x + off + dx * 2), y = toScreenY(t.y + dy * 2), src = a.frames[animFrameIndex(a, clock.t + (slotTeam(S) === 'B' ? 333 : 0))];
     const tall = a.h - a.foot, unit = Math.max(1, Math.round(cam.pz / 2)), sc = tall > 160 ? 75 / tall * unit : unit;
     c.save(); c.imageSmoothingEnabled = tall > 160; c.translate(Math.round(x), Math.round(y)); if (mirrorTrainer(S)) c.scale(-1, 1);
     const X0 = Math.round(-a.cx * sc), Y0 = Math.round(-tall * sc), W = Math.round(a.w * sc), H = Math.round(a.h * sc);
@@ -8820,7 +8859,7 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
     <header class="st-head"><div class="st-logo">ARENA <b>151</b></div><div class="st-sub">Live 6v6 Pokémon battles · set up your match</div></header>
     <div class="st-grid">${side('A', 'red', 'Red')}<div class="st-vs"><div class="st-vsball"><span>VS</span></div></div>${side('B', 'blue', 'Blue')}</div>
     <div class="st-sec">Choose your arena</div><div class="st-arenas" id="stArenas"></div>
-    <div class="st-foot"><label>Time limit <select id="stTime"><option value="0">None</option><option value="180">3:00</option><option value="300">5:00</option><option value="600">10:00</option></select></label>
+    <div class="st-foot"><label id="stFormatL">Format <select id="stFormat"><option value="1">Singles · 1v1</option><option value="2">Doubles · 2v2</option></select></label><label>Time limit <select id="stTime"><option value="0">None</option><option value="180">3:00</option><option value="300">5:00</option><option value="600">10:00</option></select></label>
       <button class="st-go" id="stGo">BATTLE!</button>
       <button class="st-btn" id="stContinue" type="button" hidden>Continue last battle</button>
       <button class="st-btn" id="stBack" hidden>Back to battle</button><button class="st-btn" id="stSettings">Settings</button><button class="st-btn" id="stHelp">Controls</button></div>
@@ -9043,6 +9082,11 @@ function syncShinyPicker() {
 { const _openMonPicker = openMonPicker; openMonPicker = function () { const r = _openMonPicker.apply(this, arguments); const show = missingnoUnlocked();
   for (const b of document.querySelectorAll('#stGridPk button[data-n="MissingNo."]')) b.hidden = !show; return r; }; }
 
+// Format: singles or doubles (Local and Online; story battles stay singles)
+{ const f = $('stFormat'); if (f) { try { f.value = localStorage.getItem('arena151.format') || '1'; } catch (e) { } f.onchange = () => { try { localStorage.setItem('arena151.format', f.value); } catch (e) { } }; }
+  const syncFmt = () => { const l = $('stFormatL'); if (l) l.hidden = typeof NET !== 'undefined' && NET.mode === 'story'; }; syncFmt(); setInterval(syncFmt, 800); }
+window.battleDoubles = () => { const f = $('stFormat'); return !!(f && f.value === '2' && typeof NET !== 'undefined' && NET.mode !== 'story'); };
+
 //# sourceURL=startscreen.js
 </script>
 <script>
@@ -9145,7 +9189,7 @@ playCry = function (name) { if (pickBase(name) !== 'MissingNo.') return _playCry
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '16.4';
+const APP_VERSION = '16.5';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -9189,7 +9233,7 @@ window.APP_VERSION_TEXT = 'v' + APP_VERSION;   // shown in the startup error pan
    so motion stays smooth. You always play Red, on the left.
    ===================================================================== */
 const NET = { ws: null, active: false, mode: 'local', url: '', status: '', code: null, over: false, pickShown: false, steerOn: false, lastSteer: 0, prevTrsel: null,
-  latest: null, evq: [], lastRx: 0, lastSnap: 0, predicting: false, hist: [], corr: { x: 0, y: 0 }, interp: { A: [], B: [] }, clockOff: null, offs: [], token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
+  latest: null, evq: [], lastRx: 0, lastSnap: 0, predicting: false, hist: [], corr: { x: 0, y: 0 }, interp: { A: [], B: [], C: [], D: [] }, clockOff: null, offs: [], token: null, wsUrl: '', reconnecting: 0, rtt: null, oppAway: 0 };
 try { NET.url = localStorage.getItem('arena151.server') || ''; NET.mode = localStorage.getItem('arena151.mode') === 'online' ? 'online' : 'local'; } catch (e) { }
 const netSend = msg => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(msg)); };
 const WEB_DEFAULT_SERVER = 'poke.itsjasperhello.com';
@@ -9234,7 +9278,7 @@ function netConnect() {
     .catch(() => { netStatus('No answer from ' + urls.join(' or ') + '. Is the server running and reachable?', 'err'); return Promise.reject(); });
 }
 function myInfo() { return { trainer: trainerTitle(TRSEL.A), trainerFile: TRSEL.A, team: readPickers('A').filter(Boolean) }; }
-async function hostGame() { try { await netConnect(); } catch (e) { return; } netSend({ t: 'host', ...myInfo(), arena: START.arena, timeLimit: +$('stTime').value || 0 }); netStatus('Creating a game…'); }
+async function hostGame() { try { await netConnect(); } catch (e) { return; } netSend({ t: 'host', ...myInfo(), arena: START.arena, timeLimit: +$('stTime').value || 0, doubles: typeof battleDoubles === 'function' && battleDoubles() }); netStatus('Creating a game…'); }
 async function joinGame() {
   const code = $('olCode').value.trim().toUpperCase(); if (code.length !== 4) { netStatus('Enter the 4-letter code from the host.', 'err'); return; }
   try { await netConnect(); } catch (e) { return; } netSend({ t: 'join', code, ...myInfo() }); netStatus('Joining ' + code + '…');
@@ -9266,7 +9310,7 @@ function onNetMessage(m) {
   }
 }
 async function beginOnline(m) {
-  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.predicting = false; NET.hist = []; NET.interp = { A: [], B: [] }; NET.offs = []; NET.clockOff = null; NET.lastRx = NET.lastSnap = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
+  NET.token = m.token; NET.code = m.code || NET.code; NET.latest = null; NET.evq = []; NET.predicting = false; NET.hist = []; NET.interp = { A: [], B: [], C: [], D: [] }; NET.offs = []; NET.clockOff = null; NET.lastRx = NET.lastSnap = performance.now(); NET.oppAway = 0; NET.reconnecting = 0;
   if (!NET.prevTrsel) NET.prevTrsel = { ...TRSEL };
   NET.active = true; NET.over = false; NET.pickShown = false; NET.steerOn = false;
   hideStart();
@@ -9276,7 +9320,8 @@ async function beginOnline(m) {
   watchMode = false; syncWatchButton();
   setStage(m.arena); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show');
-  G = newBattle(m.me.team, m.opp.team, { auto: false, timeLimit: m.timeLimit || 0 }); G.phase = 'intro'; G.online = true;
+  G = newBattle(m.me.team, m.opp.team, { auto: false, timeLimit: m.timeLimit || 0, doubles: !!m.doubles }); G.phase = 'intro'; G.online = true;
+  if (typeof placeTrainers === 'function') placeTrainers();
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
   $('log').innerHTML = ''; $('timer').textContent = '0:00'; movesKey = ''; rosterKey = '';
   logLine(`Online battle: ${m.me.trainer} vs ${m.opp.trainer} in the ${STAGE.name}.`, 't');
@@ -9296,7 +9341,8 @@ function applySnap(s, events) {
   const wasPhase = G.phase; NET.lastHold = s.hold || null;
   if (s.sw) clockSample(s.sw);
   if (G.phase !== 'over') G.phase = s.ph; G.time = s.time; G.elapsed = s.el; G.overtime = s.ot; G.lastDmgT = s.lastDmgT;
-  for (const S of ['A', 'B']) {
+  for (const S of SLOTS()) {
+    if (!s.sides[S]) continue;
     const sd = G.sides[S], o = dec(s.sides[S]), tx = o.x, ty = o.y; delete o.x; delete o.y;
     if (S === 'A') { delete o.manual; delete o.manualT; if (NET.predicting) { delete o.vx; delete o.vy; } }   // this phone owns its own steering and, while predicting, its velocity: the server's copy is a round trip old
     const activeChanged = o.active !== sd.active;
@@ -9528,8 +9574,7 @@ function predictOrInterpolate(dt) {
     if (NET.predicting) { NET.predicting = false; NET.hist = []; }
     const p = interpAt(NET.interp.A, renderT); if (p) { const k = 1 - Math.exp(-dt / 60); a.x += (p.x - a.x) * k; a.y += (p.y - a.y) * k; }
   }
-  const b = G.sides.B, p = interpAt(NET.interp.B, renderT);
-  if (p) { b.x = p.x; b.y = p.y; }
+  for (const S of SLOTS()) { if (S === 'A') continue; const o = G.sides[S], p = interpAt(NET.interp[S] || [], renderT); if (o && p) { o.x = p.x; o.y = p.y; } }   // everyone but you: smooth server positions
 }
 // The server's position is where you were about one round trip ago: compare against that moment and correct the difference.
 function reconcile(tx, ty) {
@@ -11820,7 +11865,7 @@ VFX.zStart = (S, monName, zName, zType) => { zStart(S, monName, zName, zType); V
 VFX.zImpact = (S, zType) => { const fs = other(S), sd = side(fs); try { VFX.shake(22, 800); for (let i = 0; i < 26; i++) { const a = Math.random() * Math.PI * 2, v = 160 + Math.random() * 260; spark(sd.x, sd.y - 30, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 120, g: 520, life: 700 + Math.random() * 400, color: Math.random() < .5 ? '#ffffff' : zTypeCol(zType) }); } burstAt(sd.x, sd.y - 30, zTypeCol(zType), 70, 620, 4); burstAt(sd.x, sd.y - 30, '#ffffff', 40, 420, 3); } catch (e) { } };
 VFX.dodge = (S, dx, dy) => {
   const sd = side(S); try { for (let i = 1; i <= 4; i++) burstAt(sd.x - dx * i * 14, sd.y - 20 - dy * i * 8, 'rgba(160,220,255,.9)', 3, 80, 1); } catch (e) { }
-  if (S === 'A' && typeof haptic === 'function') haptic(15);
+  if (slotTeam(S) === 'A' && typeof haptic === 'function') haptic(15);
 };
 
 /* ---------- buttons, gauge and keys ---------- */
@@ -12211,7 +12256,7 @@ window.doDodge = doDodge;
   const FIN = 1500;                                         // the finale starts 1.5 s into the Z-Move (the cinematic covers the start)
   function start(S, mon, type) {
     const seed = hashStr(mon), rng = seeded(seed), rgb = typeRGB(type), m = act(S), acc = (() => { try { const c = document.createElement('canvas'); c.width = c.height = 64; drawSpriteTo(c, m.pick || mon, {}); const d = c.getContext('2d').getImageData(0, 0, 64, 64).data; let r = 0, g = 0, b = 0, n = 0; for (let i = 0; i < d.length; i += 16) if (d[i + 3] > 200 && d[i] + d[i + 1] + d[i + 2] > 120 && d[i] + d[i + 1] + d[i + 2] < 700) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } return n ? [r / n, g / n, b / n].map(Math.round).join(',') : null; } catch (e) { return null; } })();
-    const light = mixRGB(rgb, acc || '255,255,255', acc ? .45 : .55), z = { S, F: S === 'A' ? 'B' : 'A', mon, type, t0: clock.t, seed, rng, spin: seed & 1 ? 1 : -1, rgb, light, hexLight: '#' + light.split(',').map(v => (+v).toString(16).padStart(2, '0')).join(''),
+    const light = mixRGB(rgb, acc || '255,255,255', acc ? .45 : .55), z = { S, F: other(S), mon, type, t0: clock.t, seed, rng, spin: seed & 1 ? 1 : -1, rgb, light, hexLight: '#' + light.split(',').map(v => (+v).toString(16).padStart(2, '0')).join(''),
       E: element(type), combo: COMBO[mon] || ['beam', 'met'], flags: {}, rates: {}, pts: {} };
     z.once = key => { if (z.flags[key]) return true; z.flags[key] = 1; return false; };
     z.r = key => z.rates[key] || (z.rates[key] = {});
@@ -12403,14 +12448,14 @@ window.duoCapable = () => document.documentElement.classList.contains('appmode')
   let builtKey = { A: '', B: '' };
   function pressMove(S, i) { if (!duoActive() || G.phase !== 'battle' || clock.paused) return; const sd = side(S), m = act(S); if (!m || i >= m.moves.length) return; if (!tryCast(S, i)) { sd.queued = i; sd.queuedT = 600; } }
   function pressMon(S, i) { if (!duoActive()) return; const sd = side(S), m = sd.team[i]; if (!m || m.hp <= 0) return;
-    if (G.phase === 'pick' && sd.state === 'wait') { spawnIn(S, i); const other = side(S === 'A' ? 'B' : 'A'); if (other.state !== 'wait') { G.phase = 'battle'; try { showOverlay('ovSwitch', false); } catch (e) { } } try { updateHUD(); } catch (e) { } return; }
+    if (G.phase === 'pick' && sd.state === 'wait') { spawnIn(S, i); const other = sideother(S); if (other.state !== 'wait') { G.phase = 'battle'; try { showOverlay('ovSwitch', false); } catch (e) { } } try { updateHUD(); } catch (e) { } return; }
     if (G.phase === 'battle' && i !== sd.active) requestSwitch(S, i); }
   function pressZ(S) { if (!duoActive() || G.phase !== 'battle') return; try { if (canZ(S)) zMove(S); } catch (e) { } }
   function build(S) { const p = pads[S], sd = side(S), key = sd.team.map(m => m.pick || m.name).join(',') + '|' + act(S).moves.join(','); if (builtKey[S] === key) return; builtKey[S] = key;
     const team = p.querySelector('.duo-team'); team.innerHTML = ''; sd.team.forEach((m, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'duo-mon'; b.dataset.i = i; const c = document.createElement('canvas'); c.width = c.height = 48; try { drawSpriteTo(c, m.pick || m.name, {}); } catch (e) { }
       b.appendChild(c); b.insertAdjacentHTML('beforeend', '<div class="hp"><i></i></div>'); b.onpointerdown = e => { e.preventDefault(); pressMon(S, i); }; team.appendChild(b); });
     p.querySelector('.duo-z').onpointerdown = e => { e.preventDefault(); pressZ(S); };
-    p.querySelector('.duo-name').textContent = (S === 'A' ? 'PLAYER 1' : 'PLAYER 2') + (typeof TRSEL !== 'undefined' && typeof trainerTitle === 'function' ? ' · ' + trainerTitle(TRSEL[S]).toUpperCase() : ''); }
+    p.querySelector('.duo-name').textContent = (slotTeam(S) === 'A' ? 'PLAYER 1' : 'PLAYER 2') + (typeof TRSEL !== 'undefined' && typeof trainerTitle === 'function' ? ' · ' + trainerTitle(TRSEL[S]).toUpperCase() : ''); }
   function buildMoves(S) { const p = pads[S], m = act(S), box = p.querySelector('.duo-moves'), key = (m.pick || m.name) + '|' + m.moves.join(','); if (box.dataset.k === key) return; box.dataset.k = key; box.innerHTML = '';
     m.moves.forEach((n, i) => { const mv = MOVES[n], col = (typeof TYPE_COLOR !== 'undefined' && TYPE_COLOR[mv.type]) || '#556'; const b = document.createElement('button'); b.type = 'button'; b.className = 'duo-move'; b.style.background = `linear-gradient(180deg,${col},${col}cc)`;
       b.innerHTML = `${n}<small>${mv.type}${mv.pow ? ' · ' + mv.pow : ''}</small><div class="cd"></div>`; b.onpointerdown = e => { e.preventDefault(); pressMove(S, i); }; box.appendChild(b); }); }
@@ -12432,6 +12477,46 @@ window.duoCapable = () => document.documentElement.classList.contains('appmode')
 })();
 
 //# sourceURL=duo.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 30: double battles (2v2) on the client
+   - Trainers stand behind where their Pokémon first appear: the midpoint of
+     the team's entry spots (one spot in singles, two in doubles), set back
+     95 units toward their own edge and kept inside the field.
+   - Doubles: a name and HP bar floats above each Pokémon (the top HUD shows
+     the leads); your partner is marked ALLY.
+   The engine side (slots A/C vs B/D, nearest-opponent targeting) is in
+   data.js and sim.js.
+   ===================================================================== */
+function placeTrainers() {
+  if (typeof G === 'undefined' || !G || typeof TRAINER_POS === 'undefined') return;
+  for (const T of ['A', 'B']) {
+    const slots = G.doubles ? [T, partnerOf(T)].filter(S => G.sides[S] && G.sides[S].state !== 'empty') : [T];
+    const pts = slots.map(S => entryOf(S)), mx = pts.reduce((a, p) => a + p.x, 0) / pts.length, my = pts.reduce((a, p) => a + p.y, 0) / pts.length, dir = T === 'A' ? -1 : 1;
+    TRAINER_POS[T].x = Math.max(40, Math.min(WW - 40, mx + dir * 95)); TRAINER_POS[T].y = Math.max(150, Math.min(WH - 20, my + 4));
+  }
+}
+(function doublesClient() {
+  // floating name + HP bars over every Pokémon in a double battle
+  const _dwf = drawWorldFx;
+  drawWorldFx = function () {
+    const r = _dwf.apply(this, arguments);
+    try { if (G && G.doubles && ['battle', 'intro', 'pick'].includes(G.phase)) {
+      const c = bctx; c.save();
+      for (const S of SLOTS()) { const sd = side(S); if (!sd || sd.state === 'empty' || sd.state === 'out' || sd.state === 'wait') continue; const m = act(S); if (!m) continue;
+        const h = headOf(S), x = bx(h.x), y = by(h.y) - 18, w = 34, frac = Math.max(0, m.hp / m.max), mine = slotTeam(S) === 'A';
+        c.globalAlpha = .92; c.fillStyle = 'rgba(8,12,30,.78)'; c.fillRect(x - w / 2 - 2, y - 9, w + 4, 13);
+        c.fillStyle = '#2a3050'; c.fillRect(x - w / 2, y, w, 3); c.fillStyle = frac > .5 ? '#5ce07a' : frac > .2 ? '#ffd84a' : '#ff5a5a'; c.fillRect(x - w / 2, y, w * frac, 3);
+        c.font = '700 6px Rubik, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillStyle = mine ? '#9fd0ff' : '#ffb0a8';
+        c.fillText((S === 'C' && !(G.human && G.human.C) ? 'ALLY · ' : '') + m.name.toUpperCase(), x, y - 2); }
+      c.restore(); } } catch (e) { console.error(e); }
+    return r;
+  };
+})();
+
+//# sourceURL=doubles.js
 </script>
 <script>
 'use strict';

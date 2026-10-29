@@ -214,7 +214,7 @@ VFX.zStart = (S, monName, zName, zType) => { zStart(S, monName, zName, zType); V
 VFX.zImpact = (S, zType) => { const fs = other(S), sd = side(fs); try { VFX.shake(22, 800); for (let i = 0; i < 26; i++) { const a = Math.random() * Math.PI * 2, v = 160 + Math.random() * 260; spark(sd.x, sd.y - 30, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 120, g: 520, life: 700 + Math.random() * 400, color: Math.random() < .5 ? '#ffffff' : zTypeCol(zType) }); } burstAt(sd.x, sd.y - 30, zTypeCol(zType), 70, 620, 4); burstAt(sd.x, sd.y - 30, '#ffffff', 40, 420, 3); } catch (e) { } };
 VFX.dodge = (S, dx, dy) => {
   const sd = side(S); try { for (let i = 1; i <= 4; i++) burstAt(sd.x - dx * i * 14, sd.y - 20 - dy * i * 8, 'rgba(160,220,255,.9)', 3, 80, 1); } catch (e) { }
-  if (S === 'A' && typeof haptic === 'function') haptic(15);
+  if (slotTeam(S) === 'A' && typeof haptic === 'function') haptic(15);
 };
 
 /* ---------- buttons, gauge and keys ---------- */

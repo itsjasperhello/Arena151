@@ -20,7 +20,7 @@ function trainerArt(S, pose, frame) {
   // back arm, backpack, legs
   const backArm = pose === 'cheer' ? [9, 19 + ub, 6, 8] : slump ? [9, 20 + ub, 8, 30] : [9, 19 + ub, 7, 28 + ub];
   limb(...backArm, 3, L.jacket[2]); put(backArm[2], backArm[3] + 1, L.skin[1]);
-  if (S === 'A') { rect(4, 19 + ub, 5, 10, L.pack[1]); rect(4, 19 + ub, 4, 9, L.pack[0]); rect(5, 22 + ub, 3, 1, L.pack[1]); }
+  if (slotTeam(S) === 'A') { rect(4, 19 + ub, 5, 10, L.pack[1]); rect(4, 19 + ub, 4, 9, L.pack[0]); rect(5, 22 + ub, 3, 1, L.pack[1]); }
   else { rect(5, 26 + ub, 5, 5, L.pack[1]); rect(5, 26 + ub, 4, 4, L.pack[0]); }
   const lk = walk && frame ? 1 : 0;
   rect(10 - lk, 30, 3, 7, L.pants[1]); rect(13 + lk, 30, 3, 7, L.pants[0]); rect(15 + lk, 30, 1, 7, L.pants[1]);
@@ -28,7 +28,7 @@ function trainerArt(S, pose, frame) {
   // jacket: lit from the left, darker on the right, with zip, pocket and hem
   for (let y = 18 + ub; y <= 30; y++) { const x0 = y === 18 + ub ? 9 : 8, x1 = y === 18 + ub ? 17 : 18; for (let x = x0; x <= x1; x++) put(x, y, x <= 10 ? L.jacket[0] : x >= 16 ? L.jacket[2] : L.jacket[1]); }
   rect(14, 19 + ub, 1, 11 - ub, L.jacket[0]); rect(10, 25 + ub, 3, 1, L.jacket[2]); rect(8, 30, 11, 1, L.jacket[2]);
-  if (S === 'B') limb(9, 19 + ub, 17, 28, 1, L.pack[1]);
+  if (slotTeam(S) === 'B') limb(9, 19 + ub, 17, 28, 1, L.pack[1]);
   // scarf with a fluttering tail
   rect(9, 16 + ub, 9, 2, L.scarf[0]); rect(9, 18 + ub, 9, 1, L.scarf[1]); limb(9, 18 + ub, frame ? 6 : 7, 22 + ub + (frame ? 0 : 1), 2, L.scarf[0], L.scarf[1]);
   // head
@@ -74,11 +74,11 @@ function trainerPose(S) {
 }
 function drawTrainer(S) {
   hookTrainerFx();
-  const t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140), i = bx(t.x + off), j = by(t.y), pose = trainerPose(S);
+  const t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140), i = bx(t.x + off), j = by(t.y), pose = trainerPose(S);
   const frame = pose === 'walk' ? Math.floor(clock.t / 130) % 2 : pose === 'cheer' ? Math.floor(clock.t / 260) % 2 : Math.floor(clock.t / 560) % 2;
   const img = trainerArt(S, pose === 'cheer' && frame ? 'idle' : pose, pose === 'cheer' ? 0 : frame);
   aEllFill(i, j, 9, 3, '#0b0f1a', .35);
-  bctx.save(); if (S === 'B') { bctx.translate(i + 16, j - 40); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 16, j - 40); bctx.restore();
+  bctx.save(); if (slotTeam(S) === 'B') { bctx.translate(i + 16, j - 40); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 16, j - 40); bctx.restore();
 }
 
 /* ---------- HUD: damage trail on the HP bars, pulse at low HP ---------- */

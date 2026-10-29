@@ -16,8 +16,24 @@ function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePoin
 function mulberry(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const rnd = () => Math.random();
 const randInt = (a, b) => a + Math.floor(rnd() * (b - a + 1));
-const other = s => (s === 'A' ? 'B' : 'A');
+/* Battle slots. Singles: A (player 1) and B (player 2). Doubles add C (player 1's second Pokémon) and D (player 2's second).
+   teamOf maps a slot to its team; other(s) is the opponent to face and attack: in singles the one opponent, in doubles the
+   nearest opponent still standing (or, while a move or hit is resolving, the one it is aimed at: G.forceFoe). */
+const slotTeam = s => (s === 'C' ? 'A' : s === 'D' ? 'B' : s);
+const foeTeam = s => (slotTeam(s) === 'A' ? 'B' : 'A');
+const partnerOf = s => ({ A: 'C', C: 'A', B: 'D', D: 'B' })[s];
+const SLOTS = () => (typeof G !== 'undefined' && G && G.doubles ? ['A', 'B', 'C', 'D'] : ['A', 'B']);
+const foeSlots = s => (typeof G !== 'undefined' && G && G.doubles ? (slotTeam(s) === 'A' ? ['B', 'D'] : ['A', 'C']) : [slotTeam(s) === 'A' ? 'B' : 'A']);
+const slotLive = s => { const sd = G && G.sides[s]; if (!sd || sd.state === 'empty') return false; const m = sd.team[sd.active]; return !!m && m.hp > 0; };
+function nearestFoe(s) { const me = G.sides[s], foes = foeSlots(s).filter(slotLive); if (!foes.length) return foeSlots(s)[0];
+  let best = foes[0], bd = Infinity; for (const f of foes) { const o = G.sides[f], d = Math.hypot(o.x - me.x, o.y - me.y); if (d < bd) { bd = d; best = f; } } return best; }
+const other = s => {
+  if (typeof G === 'undefined' || !G || !G.doubles) return s === 'A' ? 'B' : 'A';
+  if (G.forceFoe && slotTeam(G.forceFoe) !== slotTeam(s) && G.sides[G.forceFoe]) return G.forceFoe;
+  return nearestFoe(s);
+};
 const TEAM_NAME = { A: 'Red', B: 'Blue' };
+Object.defineProperty(TEAM_NAME, 'C', { get() { return TEAM_NAME.A; }, enumerable: false }); Object.defineProperty(TEAM_NAME, 'D', { get() { return TEAM_NAME.B; }, enumerable: false });
 
 /* =====================================================================
    Section 2: data — roster, types, moves

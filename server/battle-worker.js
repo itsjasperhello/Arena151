@@ -50,7 +50,7 @@ function logErr(room, kind, e) {
 }
 
 /* ---------- mirroring the guest's view ---------- */
-const swapSide = s => (s === 'A' ? 'B' : s === 'B' ? 'A' : s);
+const swapSide = s => ({ A: 'B', B: 'A', C: 'D', D: 'C' })[s] || s;
 function mirror(v, key, inManual) {
   if (Array.isArray(v)) return v.map(x => mirror(x, key, inManual));
   if (v && typeof v === 'object') { if (v.__mv) return v; const o = {}; for (const k in v) o[k] = mirror(v[k], k, inManual || k === 'manual'); return o; }
@@ -68,7 +68,7 @@ function mirrorEvent(ev) {
   if (name === '__log') return ev;
   if (name === 'markFire') return [name, mirror(args[0])];
   if (name === 'dodge') return [name, swapSide(args[0]), -(+args[1] || 0), +args[2] || 0];
-  return [name, ...args.map((a, i) => (POS_EVENTS.has(name) && i === 0 && typeof a === 'number') ? WW - a : (a === 'A' || a === 'B') ? swapSide(a) : a)];
+  return [name, ...args.map((a, i) => (POS_EVENTS.has(name) && i === 0 && typeof a === 'number') ? WW - a : (a === 'A' || a === 'B' || a === 'C' || a === 'D') ? swapSide(a) : a)];
 }
 
 /* ---------- battles ---------- */
@@ -79,7 +79,7 @@ function start(m) {
   SCRIPT.runInContext(ctx);
   Object.assign(room, { ctx, state: 'intro', ready: {}, cues: {}, snapAt: 0, keyAt: 0, needKey: { A: true, B: true }, pend: { A: [], B: [] },
     pickSince: {}, hold: null, over: false, seq: 0, introToken: (room.introToken || 0) + 1, closed: false, broken: false, diag: [], lastHp: null, lastInfo: null });
-  guarded(room, () => { room.arenaId = ctx.__init(m.teamA, m.teamB, m.names, m.arena, m.timeLimit); }, 'match setup');
+  guarded(room, () => { room.arenaId = ctx.__init(m.teamA, m.teamB, m.names, m.arena, m.timeLimit, !!m.doubles); room.doubles = !!m.doubles; }, 'match setup');
   if (room.broken) return;
   note('started', { code: m.code, arenaId: room.arenaId });
   runIntro(room, room.introToken).catch(e => logErr(room, 'intro', e));
@@ -89,8 +89,9 @@ async function waitFor(room, tok, test, timeout) { const t0 = mono(); while (!te
 const live = (room, tok) => rooms.get(room.code) === room && !room.closed && !room.broken && room.introToken === tok;
 async function runIntro(room, tok) {
   await waitFor(room, tok, () => room.ready.A && room.ready.B, READY_TIMEOUT);
-  for (const S of ['A', 'B']) {                                // Red's side (host) first, then the guest
+  for (const S of room.doubles ? ['A', 'C', 'B', 'D'] : ['A', 'B']) {   // Red's side (host) first, then the guest; doubles: each team's second Pokémon after its lead
     if (!live(room, tok)) return;
+    if (room.ctx.__empty(S)) continue;                          // a one-Pokémon team has no second slot to send out
     guarded(room, () => room.ctx.__spawn(S), 'send-out'); room.cues[S] = {};
     await waitFor(room, tok, () => room.cues[S].A && room.cues[S].B, CUE_TIMEOUT);   // both phones finished the send-out sound and cry
   }
@@ -141,7 +142,8 @@ function snapshot(room, now, key) {
     if (TEST && room.muteSide === S && now < room.muteUntil) continue;          // test hook: this phone gets nothing for a while
     const full = key || room.needKey[S]; room.needKey[S] = false;
     const tm = { A: {}, B: {} };
-    for (const T of ['A', 'B']) view.teams[T].forEach((mon, i) => { if (mon && (full || i === view.sides[T].active)) tm[T][i] = mon; });
+    const P = { A: 'C', B: 'D' };   // doubles: a team's second slot shares its six
+    for (const T of ['A', 'B']) view.teams[T].forEach((mon, i) => { if (mon && (full || i === view.sides[T].active || (view.sides[P[T]] && i === view.sides[P[T]].active))) tm[T][i] = mon; });
     const { teams, ...rest } = view;
     post(room.code, S, { t: 'snap', s: { ...rest, tm, key: full, seq: room.seq, sw: stamp() }, ev: pend.splice(0, pend.length) });
   }
@@ -149,7 +151,7 @@ function snapshot(room, now, key) {
 function sumHp(room, S) { try { return room.ctx.__teamHp(S); } catch (e) { return 0; } }
 function info(snap, S) { const sd = snap.sides[S] || {}; return { mon: (snap.teams[S][sd.active] || {}).name, state: sd.state, cast: sd.cast && sd.cast.mv && sd.cast.mv.__mv, x: Math.round(sd.x), y: Math.round(sd.y) }; }
 function mirrorView(s) {
-  const m = { ...s, sides: { A: mirror(s.sides.B), B: mirror(s.sides.A) }, teams: { A: s.teams.B, B: s.teams.A },
+  const m = { ...s, sides: Object.assign({ A: mirror(s.sides.B), B: mirror(s.sides.A) }, s.sides.C ? { C: mirror(s.sides.D), D: mirror(s.sides.C) } : {}), teams: { A: s.teams.B, B: s.teams.A },
     shots: mirror(s.shots), beams: mirror(s.beams), marks: mirror(s.marks), waves: mirror(s.waves), clash: mirror(s.clash),
     pickLeft: s.pickLeft ? { A: s.pickLeft.B, B: s.pickLeft.A } : null };
   if (s.hold) m.hold = { side: swapSide(s.hold.side), left: s.hold.left };

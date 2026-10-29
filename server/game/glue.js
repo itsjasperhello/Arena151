@@ -18,24 +18,27 @@ function __enc(v, d) {
   const o = {}; for (const k in v) { if (k === 'u' || k[0] === '_') continue;   // 'u' and '_…' keys are back-references used only by the game logic
       const e = __enc(v[k], d + 1); if (e !== undefined) o[k] = e; } return o;
 }
-function __init(teamA, teamB, names, arena, timeLimit) {
+function __init(teamA, teamB, names, arena, timeLimit, doubles) {
   TEAM_NAME.A = names.A; TEAM_NAME.B = names.B;
   const id = setArena(arena);
-  G = newBattle(teamA, teamB, { auto: false, timeLimit: timeLimit || 0 }); G.human = { A: true, B: true }; G.phase = 'intro';
+  G = newBattle(teamA, teamB, { auto: false, timeLimit: timeLimit || 0, doubles: !!doubles }); G.human = { A: true, B: true };   // doubles: each player's second Pokémon (C, D) fights under the AI G.phase = 'intro';
   G.staleMs = 90000;          // two people need longer than the AI to find each other; a warning shows 10 s before
   __events = []; __needPick = false; __ended = null;
   return id;
 }
 function __tagIds() { for (const arr of [G.shots, G.beams, G.marks, G.waves, G.clash ? [G.clash] : []]) for (const o of arr) if (!o.id) o.id = ++__id; }
 function __step(dt) { clock.t += dt; simStep(dt); __tagIds(); }
-function __spawn(S) { spawnIn(S, side(S).active || 0); __tagIds(); }
+function __empty(S) { return !G.sides[S] || G.sides[S].state === 'empty'; }
+function __spawn(S) { if (side(S).state === 'empty') return; spawnIn(S, side(S).active || 0); __tagIds(); }
 function __startBattle() { G.phase = 'battle'; G.lastDmgT = G.time; }
 function __takeEvents() { const e = __events; __events = []; return e; }
 function __snapshot(full) {          // full: every Pokémon (keyframes); otherwise only the active ones are copied
   const sides = {}, teams = {};
-  for (const S of ['A', 'B']) {
+  for (const S of SLOTS()) {
     const sd = G.sides[S], o = {}; for (const k in sd) if (k !== 'team') o[k] = __enc(sd[k], 1); sides[S] = o;
-    teams[S] = sd.team.map((m, i) => (full !== false || i === sd.active) ? __enc(m, 1) : null);
+    if (S === 'C' || S === 'D') continue;   // doubles: C and D share A's and B's six
+    const P = S === 'A' ? 'C' : 'D', pa = G.doubles && G.sides[P] ? G.sides[P].active : -1;
+    teams[S] = sd.team.map((m, i) => (full !== false || i === sd.active || i === pa) ? __enc(m, 1) : null);
   }
   return { ph: G.phase, time: G.time, el: G.elapsed, ot: G.overtime || 0, lastDmgT: G.lastDmgT, sides, teams,
     shots: __enc(G.shots, 0), beams: __enc(G.beams, 0), marks: __enc(G.marks, 0), waves: __enc(G.waves, 0), clash: G.clash ? __enc(G.clash, 0) : null };
@@ -65,7 +68,7 @@ function __pick(S, i) {
 }
 function __autoPick(S) { return __pick(S, bestSwitchFor(S)); }
 function __state() { return { phase: G ? G.phase : 'none', waiting: G ? __waiting() : [], ended: __ended }; }
-function __forfeit(loser) { if (G && G.phase !== 'over') { G.decision = 'Opponent disconnected.'; endBattle(other(loser), 'FORFEIT'); } }
+function __forfeit(loser) { if (G && G.phase !== 'over') { G.decision = 'Opponent disconnected.'; endBattle(foeTeam(loser), 'FORFEIT'); } }
 function __validTeam(t) { return Array.isArray(t) && t.length >= 1 && t.length <= 6 && t.every(n => { const [b, v] = String(n).split('|'); return DEX.some(d => d.name === b) && (v === undefined || v === 'shiny'); }); }   // 1–6 Pokémon
 function __teamHp(S) { return side(S).team.reduce((s, m) => s + Math.max(0, m.hp), 0); }
 

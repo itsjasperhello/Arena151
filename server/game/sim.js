@@ -37,15 +37,23 @@ function makeBattleMon(pick) {
   m.ability = PINCH[m.types[0]] || ''; m.pinchShown = false;
   return m;
 }
-function newSide(key, picks) {
-  return { key, team: picks.map(makeBattleMon), active: 0, x: ENTRY[key].x, y: ENTRY[key].y, vx: 0, vy: 0, face: key === 'A' ? 1 : -1,
+// Where a slot's Pokémon enters: the stage's entry spot; in doubles the team's two Pokémon enter 75 units above and below it.
+function entryOf(S, doubles) { const d = doubles != null ? doubles : !!(G && G.doubles), E = ENTRY[slotTeam(S)]; if (!d) return E;
+  const off = (S === 'A' || S === 'B') ? -75 : 75; return { x: E.x, y: Math.max(150, Math.min(WH - 50, E.y + off)) }; }
+function newSide(key, picks, doubles) {
+  const E = entryOf(key, doubles);
+  return { key, team: picks.map(makeBattleMon), active: 0, x: E.x, y: E.y, vx: 0, vy: 0, face: slotTeam(key) === 'A' ? 1 : -1,
     state: 'out', stateT: 0, cast: null, stun: 0, stunKind: '', gcd: 0, switchCd: 0, aiT: 500, strafe: 1, strafeT: 0,
     manual: { x: 0, y: 0 }, manualT: 0, queued: null, queuedT: 0, pendingSwitch: null, kbx: 0, kby: 0, hit: 0, hop: 0, dig: false,
     throwT: -9999, pillT: 0, pill: '', walk: 0, prefDist: 260, megaUsed: false, plotUsed: false, sinceIn: 0, dodgeT: 0, dodgeCd: 0, zCharge: 0, zUsed: false, zInfo: null, zHit: false };
 }
 function newBattle(picksA, picksB, opts = {}) {
+  const doubles = !!opts.doubles, sides = { A: newSide('A', picksA, doubles), B: newSide('B', picksB, doubles) };
+  if (doubles) for (const [S, T] of [['C', 'A'], ['D', 'B']]) {          // the second slot shares its team's six, starting with the second Pokémon
+    const sd = newSide(S, [], true); sd.team = sides[T].team; const second = sd.team.findIndex((m, i) => i !== sides[T].active && m && m.hp > 0);
+    if (second >= 0) sd.active = second; else { sd.active = sides[T].active; sd.state = 'empty'; } sides[S] = sd; }
   return {
-    picks: { A: picksA.slice(), B: picksB.slice() }, sides: { A: newSide('A', picksA), B: newSide('B', picksB) },
+    doubles, picks: { A: picksA.slice(), B: picksB.slice() }, sides,
     shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
@@ -59,11 +67,11 @@ const accMult = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
 const effSpe = m => m.stats.spe * stageMult(m.stages.spe) * (m.status === 'par' ? .5 : 1);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const present = s => { const sd = side(s); return sd.state === 'idle' && !sd.dig && !(sd.dodgeT > 0) && act(s).hp > 0; };
-const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s === 'B');   // online battles mark both sides human
+const controlledByAI = s => G.auto || (G.human ? !G.human[s] : s !== 'A');   // doubles: each team's second Pokémon (C, D) fights under the AI   // online battles mark both sides human
 // AI difficulty 1–10 per side (G.aiLevel). Level 6 is the classic AI exactly; nothing set = classic.
 // aiK(S, atLevel1, atLevel6, atLevel10) blends a setting between those three points.
 const AI_CLASSIC = 6;
-function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[S]; return l >= 1 && l <= 13 ? l : AI_CLASSIC; }
+function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l >= 1 && l <= 13 ? l : AI_CLASSIC; }
 // Levels 11–13 exist only for story secrets: they keep sharpening every setting past level 10.
 function aiK(S, lo, base, hi) { const l = aiLv(S); if (l > 10) return hi + (hi - base) * (l - 10) / 8; return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
@@ -142,7 +150,7 @@ function applyHit(S, mv, u, opts = {}) {
   if (!opts.z) { const us = side(S); us.zCharge = Math.min(100, (us.zCharge || 0) + dmg / t.max * 85); ts.zCharge = Math.min(100, (ts.zCharge || 0) + dmg / t.max * 45); }
   if (opts.combo) VFX.combo(fs, opts.combo);
   if (crit || eff > 1 || t.hp <= 0) VFX.crowd(t.hp <= 0 ? 2 : 1);
-  const st = G.stats[S]; st.dmg += dmg; u.dmg += dmg; if (crit) st.crits++;
+  const st = G.stats[slotTeam(S)]; st.dmg += dmg; u.dmg += dmg; if (crit) st.crits++;
   if (!G.stats.best || dmg > G.stats.best.amt) G.stats.best = { amt: dmg, mon: u.name, move: mv.name, side: S };
   G.lastDmgT = G.time; G.hudDirty = true;
   // knockback away from the attacker
@@ -184,7 +192,7 @@ function tryCast(S, idx) {
   const t = side(fs);
   const accOk = mv.acc == null || Math.random() * 100 < mv.acc * accMult(m.stages.acc - (present(fs) ? act(fs).stages.eva : 0));
   sd.cast = { idx, mv, t: 0, phase: 'wind', accOk, landed: false, aim: { x: t.x, y: t.y }, spawn: 0, group: G.nextShotGroup++ };
-  sd.pill = mv.name; sd.pillT = 1200; G.stats[S].moves++;
+  sd.pill = mv.name; sd.pillT = 1200; G.stats[slotTeam(S)].moves++;
   logLine(`${m.name} used ${mv.name}!`);
   VFX.windup(S, mv);
   return true;
@@ -206,6 +214,10 @@ function shoot(S, mv, opts) {
     scale: opts.scale, burst: opts.burst, dest: opts.burst ? to : null, t: 0, combo: opts.combo || null });
 }
 function updateCast(S, dt) {
+  if (G.doubles) { const c = side(S).cast; if (c && !c.tgt) c.tgt = other(S); const keep = G.forceFoe; G.forceFoe = c && c.tgt && slotLive(c.tgt) ? c.tgt : null; try { return updateCastCore(S, dt); } finally { G.forceFoe = keep; } }
+  return updateCastCore(S, dt);
+}
+function updateCastCore(S, dt) {
   const sd = side(S), c = sd.cast, mv = c.mv, m = act(S), fs = other(S), t = side(fs);
   c.t += dt;
   if (c.phase === 'wind') { if (c.t < WINDUP(mv)) return; c.phase = 'go'; c.t = 0; c.aim = aimPoint(S, c.accOk); startExec(S, c); return; }
@@ -241,8 +253,8 @@ function updateCast(S, dt) {
         G.beams.push(b); c._beam = b;
         if (mv.e && mv.e.rch) { sd.kbx -= sd.face * 360; }   // the user is pushed back by the force of the beam (Hyper Beam style recoil)
         if (present(fs) && along > 0 && perp < 44) {
-          b.pend = true;                           // damage lands after a short grace so a beam fired back can still meet it
-          const rival = G.clash ? null : G.beams.find(o => o !== b && o.owner === fs && o.pend && !o.cl);
+          b.pend = true; b.tgt = fs;                           // damage lands after a short grace so a beam fired back can still meet it
+          const rival = (G.clash || G.doubles) ? null : G.beams.find(o => o !== b && o.owner === fs && o.pend && !o.cl);
           if (rival) startClash(rival, b);
         } else missAt(t.x, t.y - 50, S);
         c.phase = 'fire'; c.t = 0; return; }
@@ -305,12 +317,11 @@ function updateWorld(dt) {
     p.x += p.vx * k; p.y += p.vy * k;
     if (p.burst && p.dest && Math.hypot(p.dest.x - p.x, p.dest.y - 30 - p.y) < 22) {
       VFX.explode(p.x, p.y, p.mv);
-      if (present(fs) && Math.hypot(t.x - p.x, t.y - 30 - p.y) < 82) groupHit(p); else groupMiss(p);
+      { const hitSlot = foeSlots(p.owner).find(f => present(f) && Math.hypot(side(f).x - p.x, side(f).y - 30 - p.y) < 82); if (hitSlot) { const keep = G.forceFoe; G.forceFoe = hitSlot; try { groupHit(p); } finally { G.forceFoe = keep; } } else groupMiss(p); }
       G.shots.splice(i, 1); continue;
     }
-    if (present(fs) && Math.hypot(t.x - p.x, t.y - 32 - p.y) < p.r + 26) {
-      if (p.damage) groupHit(p); VFX.impactAt(p.x, p.y, p.mv); G.shots.splice(i, 1); continue;
-    }
+    { const hitSlot = foeSlots(p.owner).find(f => present(f) && Math.hypot(side(f).x - p.x, side(f).y - 32 - p.y) < p.r + 26);
+      if (hitSlot) { const keep = G.forceFoe; G.forceFoe = hitSlot; try { if (p.damage) groupHit(p); } finally { G.forceFoe = keep; } VFX.impactAt(p.x, p.y, p.mv); G.shots.splice(i, 1); continue; } }
     if (p.ttl <= 0 || p.x < -40 || p.x > WW + 40 || p.y < -60 || p.y > WH + 40) { groupMiss(p); G.shots.splice(i, 1); }
   }
   for (let i = G.marks.length - 1; i >= 0; i--) {
@@ -318,7 +329,8 @@ function updateWorld(dt) {
     if (mk.t >= mk.delay) {
       const fs = other(mk.owner), t = side(fs);
       VFX.markFire(mk);
-      if (present(fs) && Math.hypot(t.x - mk.x, t.y - mk.y) < mk.r) { const sd = side(mk.owner); if (applyHit(mk.owner, mk.mv, mk.u)) { if (sd.cast && sd.cast.mv === mk.mv) sd.cast.landed = true; } }
+      const hitSlot = foeSlots(mk.owner).find(f => present(f) && Math.hypot(side(f).x - mk.x, side(f).y - mk.y) < mk.r);
+      if (hitSlot) { const sd = side(mk.owner), keep = G.forceFoe; G.forceFoe = hitSlot; let ok = false; try { ok = applyHit(mk.owner, mk.mv, mk.u); } finally { G.forceFoe = keep; } if (ok && sd.cast && sd.cast.mv === mk.mv) sd.cast.landed = true; }
       else missAt(mk.x, mk.y - 40, mk.owner);
       G.marks.splice(i, 1);
     }
@@ -326,7 +338,8 @@ function updateWorld(dt) {
   for (let i = G.waves.length - 1; i >= 0; i--) {
     const w = G.waves[i]; w.r += w.speed * k;
     const fs = other(w.owner), t = side(fs);
-    if (!w.hit && present(fs)) { const d = Math.hypot(t.x - w.x, (t.y - w.y) * 1.6); if (Math.abs(d - w.r) < 34 || d < w.r) { w.hit = true; applyHit(w.owner, w.mv, w.u); } }
+    for (const f of foeSlots(w.owner)) { if (!present(f) || (w.hitSet && w.hitSet[f])) continue; const tt = side(f), d = Math.hypot(tt.x - w.x, (tt.y - w.y) * 1.6);   // a wave can sweep both opponents
+      if (Math.abs(d - w.r) < 34 || d < w.r) { w.hit = true; (w.hitSet || (w.hitSet = {}))[f] = 1; const keep = G.forceFoe; G.forceFoe = f; try { applyHit(w.owner, w.mv, w.u); } finally { G.forceFoe = keep; } } }
     if (w.r >= w.maxR) { if (!w.hit) missAt(t.x, t.y - 40, w.owner); G.waves.splice(i, 1); }
   }
   updateClash(dt);
@@ -371,7 +384,7 @@ function beamRivalSoon(S, c, window) {
 }
 function landBeam(b) {
   if (!b.pend) return; b.pend = false;
-  const sd = side(b.owner), landed = applyHit(b.owner, b.mv, b.u);
+  const sd = side(b.owner), keep = G.forceFoe; if (G.doubles && b.tgt) G.forceFoe = b.tgt; let landed = false; try { landed = applyHit(b.owner, b.mv, b.u); } finally { G.forceFoe = keep; }
   if (sd.cast && sd.cast._beam === b) sd.cast.landed = landed;
 }
 function startClash(b1, b2) {
@@ -567,6 +580,7 @@ function move(S, dt, rooted) {
   [sd.x, sd.y] = clampWalk(sd.x, sd.y);
   const sp = Math.hypot(sd.vx, sd.vy); sd.walk += sp * k;
   if (!sd.cast || sd.cast.phase === 'after') sd.face = foe.x >= sd.x ? 1 : -1;
+  else if (G.doubles && sd.cast.tgt && G.sides[sd.cast.tgt]) sd.face = side(sd.cast.tgt).x >= sd.x ? 1 : -1;   // doubles: keep facing the opponent the move is aimed at
   else if (Math.abs(sd.vx) > 20) sd.face = sd.vx > 0 ? 1 : -1;
   if (sp > 150 && Math.random() < dt / 90) VFX.dust(S);
 }
@@ -614,7 +628,7 @@ function aiThink(S) {
 function bestSwitchFor(S) {
   const foe = act(other(S)); let best = null, bestV = -Infinity;
   side(S).team.forEach((m, i) => {
-    if (m.hp <= 0 || i === side(S).active) return;
+    if (m.hp <= 0 || i === side(S).active || (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i)) return;
     const off = Math.max(0, ...m.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, foe.types)));
     const def = Math.max(0, ...foe.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, m.types)));
     const v = off * 2 - def + m.hp / m.max;
@@ -649,6 +663,10 @@ function zMove(S) {
   logLine(`${m.name} unleashed its full-force Z-Move: ${z.name}!`, 't'); VFX.zStart(S, m.name, z.name, z.type); G.hudDirty = true; return true;
 }
 function zMoveTick(S, dt) {
+  if (G.doubles) { const sd = side(S); if (!sd.zTgt || !slotLive(sd.zTgt)) sd.zTgt = other(S); const keep = G.forceFoe; G.forceFoe = sd.zTgt; try { return zMoveTickCore(S, dt); } finally { G.forceFoe = keep; } }
+  return zMoveTickCore(S, dt);
+}
+function zMoveTickCore(S, dt) {
   const sd = side(S); sd.stateT += dt; sd.vx = sd.vy = 0;
   if (!sd.zHit && sd.stateT >= Z_HIT) {
     sd.zHit = true; const u = act(S), z = sd.zInfo;
@@ -680,6 +698,7 @@ function requestSwitch(S, idx) {
   const sd = side(S);
   if (G.phase !== 'battle' || sd.state !== 'idle' || sd.cast || sd.switchCd > 0 || sd.stun > 0) return false;
   if (idx === sd.active || !sd.team[idx] || sd.team[idx].hp <= 0) return false;
+  if (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === idx) return false;   // already out with the partner
   sd.state = 'leaving'; sd.stateT = 0; sd.pendingSwitch = idx; sd.switchCd = 5000;
   logLine(`${TEAM_NAME[S]} recalled ${act(S).name}!`);
   return true;
@@ -688,8 +707,8 @@ function resetOnLeave(m) { m.stages = zeroStages(); m.conf = 0; m.vol.recharge =
 function completeSwitch(S) { const sd = side(S); resetOnLeave(act(S)); spawnIn(S, sd.pendingSwitch); sd.pendingSwitch = null; }
 function spawnIn(S, idx) {
   const sd = side(S); sd.active = idx; sd.state = 'entering'; sd.stateT = 0; sd.cast = null; sd.stun = 0; sd.gcd = 600; sd.dig = false;
-  sd.x = ENTRY[S].x; sd.y = ENTRY[S].y + (Math.random() - .5) * 80; sd.vx = sd.vy = sd.kbx = sd.kby = 0; sd.throwT = G.time; sd.aiT = 700;
-  sd.face = S === 'A' ? 1 : -1;
+  const E = entryOf(S); sd.x = E.x; sd.y = E.y + (Math.random() - .5) * (G.doubles ? 40 : 80); sd.vx = sd.vy = sd.kbx = sd.kby = 0; sd.throwT = G.time; sd.aiT = 700;
+  sd.face = slotTeam(S) === 'A' ? 1 : -1; sd.zTgt = null;
   logLine(`${TEAM_NAME[S]} sent out ${act(S).name}!`); G.hudDirty = true; sd.sinceIn = 0;
   if (typeof VFX !== 'undefined') VFX.call(S, `Go, ${act(S).name}!`);
   if (typeof VFX !== 'undefined') VFX.sendOut(S);
@@ -700,12 +719,14 @@ function startFaint(S) {
   logLine(`${m.name} fainted!`); VFX.faint(S); G.hudDirty = true;
 }
 function teamAlive(S) { return side(S).team.some(m => m.hp > 0); }
+function benchFor(S) { return side(S).team.map((m, i) => (m.hp > 0 && i !== side(S).active && !(G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i) ? i : -1)).filter(i => i >= 0); }
 function afterFaint(S) {
-  if (!teamAlive(S)) { endBattle(teamAlive(other(S)) ? other(S) : 'draw'); return; }
+  if (!teamAlive(S)) { endBattle(teamAlive(foeTeam(S)) ? foeTeam(S) : 'draw'); return; }
+  if (G.doubles && !benchFor(S).length) { side(S).state = 'empty'; G.hudDirty = true; return; }   // no one left to send: the partner fights on alone
   if (controlledByAI(S)) {
     const healthy = side(S).team.map((m, i) => (m.hp > 0 ? i : -1)).filter(i => i >= 0);
     const sloppy = healthy.length && Math.random() < aiK(S, .85, 0, 0);
-    spawnIn(S, sloppy ? healthy[Math.floor(Math.random() * healthy.length)] : bestSwitchFor(S));
+    const pool = G.doubles ? benchFor(S) : healthy; spawnIn(S, sloppy && pool.length ? pool[Math.floor(Math.random() * pool.length)] : (bestSwitchFor(S) ?? pool[0]));
   }
   else { side(S).state = 'wait'; G.phase = 'pick'; if (typeof onNeedPick === 'function') onNeedPick(); }
 }
@@ -724,7 +745,7 @@ function endBattle(w, big) {
 function simStep(dt) {
   if (!G || G.phase === 'pick' || G.phase === 'over' || G.phase === 'title') return;
   G.time += dt; if (G.phase === 'battle') G.elapsed += dt;
-  updateSide('A', dt); updateSide('B', dt);
+  for (const S of SLOTS()) { if (side(S).state === 'empty') continue; updateSide(S, dt); }
   if (G.phase === 'battle') {
     updateWorld(dt);
     // Sudden Death: after 5:00, damage grows 25% every 30 seconds; at 10:00 the battle is decided on HP

@@ -24,7 +24,7 @@
     h = Math.max(22, Math.min(90, h));
     return { i: bx(sd.x), j: by(sd.y) - h * .5, feet: by(sd.y), h, w: h * .8, face: sd.face || 1, k: Math.max(.75, Math.min(1.7, h / 40)), wx: sd.x, wy: sd.y };
   }
-  const foe = S => (S === 'A' ? 'B' : 'A');
+  const foe = S => other(S);
 
   /* ---------- the scene ---------- */
   // darken the arena (over the Pokémon and stage, under the effects) so the glow pops
@@ -97,7 +97,7 @@
   function tinted(src, col) { let m = TINT.get(src); if (!m) { m = new Map(); TINT.set(src, m); } let t = m.get(col); if (t) return t;
     t = document.createElement('canvas'); t.width = src.width; t.height = src.height; const x = t.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = col; x.globalAlpha = .65; x.fillRect(0, 0, t.width, t.height); if (m.size > 24) m.clear(); m.set(col, t); return t; }
   function ghost(S, col = '#bfe0ff', ms = 260, a0 = .55) {
-    try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front), src = an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))];
+    try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front), src = an.frames[animFrameIndex(an, clock.t + (slotTeam(S) === 'B' ? 777 : 0))];
       const flip = (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0, unit = .5 * L.scale, img = tinted(src, col), x = bx(sd.x), y = by(sd.y);
       fx({ max: ms / 1000, draw: (c, q) => { c.save(); c.globalAlpha = a0 * (1 - q); c.translate(x, y); c.scale(flip ? -1 : 1, 1); c.imageSmoothingEnabled = false; c.drawImage(img, -an.cx * unit, -(an.h - an.foot) * unit, an.w * unit, an.h * unit); c.restore(); } });
     } catch (e) { }
@@ -142,6 +142,6 @@
 
   // a Pokémon's current animation frame, for avatars: { an, src, unit, flip }
   function actorFrame(S) { try { const L = actorLook(S); if (!L || !L.sp || !L.sp.custom) return null; const sd = L.sd, useBack = sd.view === 'back' && L.sp.back, an = ensureAnim(useBack ? L.sp.back : L.sp.front);
-    return { an, src: an.frames[animFrameIndex(an, clock.t + (S === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
+    return { an, src: an.frames[animFrameIndex(an, clock.t + (slotTeam(S) === 'B' ? 777 : 0))], unit: .5 * L.scale, flip: (act(S) && act(S).name === 'MissingNo.') ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0 }; } catch (e) { return null; } }
   window.FXK = { tinted, actorFrame, body, foe, dim, flash, shake, scar, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, ease, rnd, N, T };
 })();

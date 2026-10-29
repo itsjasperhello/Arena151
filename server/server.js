@@ -37,7 +37,7 @@ const mono = () => performance.now();
 const CODE = ['data.js', 'fxdata.js', 'arenas.js', 'sim.js', 'glue.js'].map(f => fs.readFileSync(path.join(__dirname, 'game', f), 'utf8')).join('\n;\n');
 const CHECK = vm.createContext({ console, Math, JSON, Date }); new vm.Script(CODE).runInContext(CHECK);   // validates team names
 const validTeam = t => CHECK.__validTeam(t);
-const swapSide = s => (s === 'A' ? 'B' : s === 'B' ? 'A' : s);
+const swapSide = s => ({ A: 'B', B: 'A', C: 'D', D: 'C' })[s] || s;
 
 /* ---------- worker pool ---------- */
 const pool = [];
@@ -94,7 +94,7 @@ function onWorker(w, m) {
     room.arenaId = m.arenaId;
     for (const S of ['A', 'B']) {
       const me = room.info[S], opp = room.info[swapSide(S)];
-      room.startMsg[S] = { arena: room.arenaId, timeLimit: room.timeLimit, me, opp, role: S === 'A' ? 'host' : 'guest', code: room.code, token: room.tokens[S] };
+      room.startMsg[S] = { arena: room.arenaId, timeLimit: room.timeLimit, doubles: !!room.doubles, me, opp, role: S === 'A' ? 'host' : 'guest', code: room.code, token: room.tokens[S] };
       send(room.players[S], { t: 'start', ...room.startMsg[S] });
     }
     log(`room ${room.code}: battle on ${room.arenaId} — ${room.info.A.trainer} vs ${room.info.B.trainer} (worker ${room.worker.id})`);
@@ -127,7 +127,7 @@ function startRoom(room) {
   if (!room.worker) { room.worker = pickWorker(); room.worker.load++; }
   room.tokens = room.tokens || { A: crypto.randomUUID(), B: crypto.randomUUID() };
   room.startMsg = {}; room.away = {}; room.over = false; room.rematch = {}; room.state = 'battle';
-  toWorker(room, { cmd: 'start', teamA: room.info.A.team, teamB: room.info.B.team, names: { A: room.info.A.trainer, B: room.info.B.trainer }, arena: room.arena, timeLimit: room.timeLimit });
+  toWorker(room, { cmd: 'start', teamA: room.info.A.team, teamB: room.info.B.team, names: { A: room.info.A.trainer, B: room.info.B.trainer }, arena: room.arena, timeLimit: room.timeLimit, doubles: !!room.doubles });
 }
 function closeRoom(room, why) {
   if (room.closed) return; room.closed = true; rooms.delete(room.code);
@@ -198,7 +198,7 @@ function clean(m) {                                  // only well-formed fields 
   if ('code' in m) o.code = str(m.code, 12); if ('token' in m) o.token = str(m.token, 64); if ('v' in m) o.v = str(m.v, 12);
   if ('name' in m) o.name = str(m.name, 24); if ('trainer' in m) o.trainer = str(m.trainer, 24); if ('trainerFile' in m) o.trainerFile = str(m.trainerFile, 40).replace(/[^A-Za-z0-9_ .-]/g, '');
   if (Array.isArray(m.team)) o.team = m.team.slice(0, 6).map(x => str(x, 24));
-  if ('arena' in m) o.arena = str(m.arena, 16); if ('timeLimit' in m) o.timeLimit = int(m.timeLimit, 0, 3600); if ('max' in m) o.max = int(m.max, 2, 16);
+  if ('arena' in m) o.arena = str(m.arena, 16); if ('timeLimit' in m) o.timeLimit = int(m.timeLimit, 0, 3600); if ('doubles' in m) o.doubles = !!m.doubles; if ('max' in m) o.max = int(m.max, 2, 16);
   if ('i' in m) o.i = int(m.i, 0, 5); if ('q' in m) o.q = int(m.q, 0, 2147483647); if ('s' in m) o.s = m.s === 'B' ? 'B' : 'A'; if ('x' in m) o.x = num(m.x, -1, 1); if ('y' in m) o.y = num(m.y, -1, 1);
   if (m.off) o.off = true; if ('c' in m) o.c = num(m.c, -1e15, 1e15); if ('ms' in m) o.ms = int(m.ms, 0, 60000); if ('why' in m) o.why = str(m.why, 80);
   return o;
@@ -218,7 +218,7 @@ function handle(ws, m) {
       if (ws.tour) tourLeave(ws);
       if (room) leave(ws, true);
       const info = cleanInfo(m); if (!info) return send(ws, { t: 'error', msg: 'Pick six valid Pokémon first.' });
-      const code = newCode(), r = { code, players: { A: ws, B: null }, info: { A: info, B: null }, arena: String(m.arena || 'random'), timeLimit: +m.timeLimit || 0, state: 'lobby', away: {} };
+      const code = newCode(), r = { code, players: { A: ws, B: null }, info: { A: info, B: null }, arena: String(m.arena || 'random'), timeLimit: +m.timeLimit || 0, doubles: !!m.doubles, state: 'lobby', away: {} };
       rooms.set(code, r); ws.room = r; send(ws, { t: 'hosted', code }); log(`room ${code} hosted by ${info.trainer}`);
       break;
     }

@@ -132,7 +132,7 @@ const VFX = {
   banner(t, col) { banner.text = t; banner.t = clock.t; banner.color = col || '#ffb347'; },
   aura(S, col) { const h = head(S); fx.push({ kind: 'aura', x: h.x, y: h.y + 10, color: col, t0: clock.t, life: 700 }); },
   sendOut(S) { fx.push({ kind: 'capsule', S, t0: clock.t, life: 320 }); },
-  call(S, text) { const t = TRAINER_POS[S]; screenFx.push({ kind: 'call', x: t.x + (S === 'A' ? -6 : 6), y: t.y - 62, text, align: S === 'A' ? 'left' : 'right', t0: clock.t, life: 1600 }); },
+  call(S, text) { const t = TRAINER_POS[slotTeam(S)]; screenFx.push({ kind: 'call', x: t.x + (slotTeam(S) === 'A' ? -6 : 6), y: t.y - 62, text, align: slotTeam(S) === 'A' ? 'left' : 'right', t0: clock.t, life: 1600 }); },
   faint(S) { slide.text = `${displayName(act(S))} FAINTED!`; slide.t = clock.t; portraitShake(S); punch(side(S).x, side(S).y - 30, 1300, 2); },
   plotArmor(S) { bigText.text = 'ANIME PLOT ARMOR ACTIVATE!'; bigText.t = clock.t; bigText.life = 1700; bigText.color = '#ffb347'; punch(side(S).x, side(S).y - 30, 1600, 2); VFX.shake(10, 400); },
   combo(S, n) { const h = head(S), old = fx.find(f => f.id === 'combo' + S && clock.t - f.t0 < 900); if (old) { old.text = `${n} HIT COMBO!`; old.t0 = clock.t; return; } fx.push({ kind: 'text', x: h.x - 60, y: h.y - 80, text: `${n} HIT COMBO!`, t0: clock.t, life: 1100, color: '#ffe066', size: 40, vy: 0, stroke: '#3a2606', italic: true, id: 'combo' + S }); },
@@ -147,9 +147,8 @@ function portraitShake(S) { const el = $('port' + S); if (!el) return; el.classL
 function updateCamera(dt) {
   let tx = toArtX(500), ty = toArtY(290), level = 0;
   if (G && ['battle', 'pick', 'intro', 'over'].includes(G.phase)) {
-    const a = side('A'), b = side('B'), va = !['out', 'wait'].includes(a.state), vb = !['out', 'wait'].includes(b.state);
-    if (va && vb) { tx = toArtX((a.x + b.x) / 2); ty = toArtY((a.y + b.y) / 2 - 25); }
-    else if (va) { tx = toArtX(a.x); ty = toArtY(a.y - 25); } else if (vb) { tx = toArtX(b.x); ty = toArtY(b.y - 25); }
+    const vis = SLOTS().map(side).filter(s => s && !['out', 'wait', 'empty'].includes(s.state));   // every Pokémon on the field (four in doubles)
+    if (vis.length) { tx = toArtX(vis.reduce((a, s) => a + s.x, 0) / vis.length); ty = toArtY(vis.reduce((a, s) => a + s.y, 0) / vis.length - 25); }
     if (G.phase === 'over' && G.winner && G.winner !== 'draw') { const w = side(G.winner); tx = toArtX(w.x); ty = toArtY(w.y - 30); level = 1; }
   }
   if (clock.t < cam.punchT && cam.fx) { tx = toArtX(cam.fx.x); ty = toArtY(cam.fx.y); level = Math.max(level, cam.fx.lv); }
@@ -169,11 +168,11 @@ const toScreenX = x => (ax(x) - OX) * cam.pz, toScreenY = y => (ay(y) - OY) * ca
 /* ---------- drawing ---------- */
 const DISPLAY_FONT = () => getComputedStyle(document.body).getPropertyValue('--display') || 'Arial Black';
 function drawTrainer(S) {
-  const img = trainerCanvas(S), t = TRAINER_POS[S], off = trainerWalk[S] * (S === 'A' ? -140 : 140);
+  const img = trainerCanvas(S), t = TRAINER_POS[S], off = trainerWalk[S] * (slotTeam(S) === 'A' ? -140 : 140);
   const sd = G ? side(S) : null, lift = sd && G.time >= sd.throwT && G.time - sd.throwT < 300 ? Math.round(Math.sin((G.time - sd.throwT) / 300 * Math.PI) * 2) : 0;
   const i = bx(t.x + off), j = by(t.y);
   aEllFill(i, j, 7, 2, '#0b0f1a', .3);
-  bctx.save(); if (S === 'B') { bctx.translate(i + 8, j - 24 - lift); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 8, j - 24 - lift); bctx.restore();
+  bctx.save(); if (slotTeam(S) === 'B') { bctx.translate(i + 8, j - 24 - lift); bctx.scale(-1, 1); bctx.drawImage(img, 0, 0); } else bctx.drawImage(img, i - 8, j - 24 - lift); bctx.restore();
 }
 function drawCrowd() {
   if (crowdState.length !== STAGE.crowd.length || crowdState.stage !== STAGE_ID) { crowdState.length = 0; crowdState.stage = STAGE_ID; STAGE.crowd.forEach(([x, y], k) => crowdState.push({ x, y, pal: CROWD_PALS[k % CROWD_PALS.length], react: -9999, mark: '!', ph: Math.random() * 6 })); }
@@ -222,7 +221,7 @@ function drawActorSprite(S) {
     if (sd.view === 'back') { if (ly > -.15 * len) sd.view = 'front'; } else if (ly < -.45 * len) sd.view = 'back';
     const glitchFlip = m.name === 'MissingNo.' && sp.back && (moving || !!sd.cast || sd.state === 'dash' || sd.state === 'zmove');   // MissingNo.: front ⇄ back every 0.33 s while walking or attacking
     const useBack = glitchFlip ? Math.floor(clock.t / 330) % 2 === 1 : sd.view === 'back' && sp.back, a = ensureAnim(useBack ? sp.back : sp.front);
-    const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (S === 'B' ? 777 : 0)), src = a.frames[fi];
+    const fi = frozen ? 0 : animFrameIndex(a, clock.t * (asleep ? .35 : 1) + (slotTeam(S) === 'B' ? 777 : 0)), src = a.frames[fi];
     // front art faces left and back art faces right; mirror so the Pokémon faces where it is going
     const flip = m.name === 'MissingNo.' ? sd.face > 0 : useBack ? sd.face < 0 : sd.face > 0;   // MissingNo.'s back art faces the same way as its front
     const unit = (cam.pz >= 2 ? Math.round(cam.pz / 2) : cam.pz / 2) * scale, still = a.frames.length < 2 && !a.live;   // shrinks with the camera when zoomed out
@@ -307,7 +306,7 @@ function drawBeamDefault(b) {
   for (let k = 0; k < n; k++) { const s = Math.sin(k / 6 - clock.t / 40) * (w + 2); aRect(i0 + di * k + nx * s, j0 + dj * k + ny * s, 1, 1, '#ffffff', fade); }
 }
 function drawAimLines() {
-  for (const S of ['A', 'B']) { const sd = side(S), c = sd.cast; if (!c || c.mv.anim !== 'beam' || c.phase !== 'go') continue; aLine(bx(sd.x + sd.face * 18), by(sd.y - 32), bx(c.aim.x), by(c.aim.y - 32), '#ff3b4b', .75 * Math.min(1, c.t / 200), 1); }
+  for (const S of SLOTS()) { const sd = side(S), c = sd.cast; if (!c || c.mv.anim !== 'beam' || c.phase !== 'go') continue; aLine(bx(sd.x + sd.face * 18), by(sd.y - 32), bx(c.aim.x), by(c.aim.y - 32), '#ff3b4b', .75 * Math.min(1, c.t / 200), 1); }
 }
 function drawWorldFx() {
   for (let k = fx.length - 1; k >= 0; k--) {
@@ -320,7 +319,7 @@ function drawWorldFx() {
     else if (f.kind === 'psy') { for (let s = 0; s < 3; s++) { const qq = (q + s / 3) % 1, r = (10 + qq * 55) / 2; aRing(bx(f.x), by(f.y), r, r * .6, f.color, (1 - qq) * .9); } }
     else if (f.kind === 'aura') { bctx.globalCompositeOperation = 'lighter'; for (let r = 30; r > 0; r -= 6) aDisc(bx(f.x), by(f.y), r * (1 - q * .3), f.color, .08 * (1 - q)); bctx.globalCompositeOperation = 'source-over'; }
     else if (f.kind === 'arrows') { for (let s = 0; s < 5; s++) { const ox = f.x - 36 + s * 18, oy = f.y + (f.up ? -1 : 1) * ((q * 60 + s * 13) % 60) - 6; for (let t = 0; t < 3; t++) aRect(bx(ox) - t, by(oy) + (f.up ? t : -t), t * 2 + 1, 1, f.color, 1 - q); } }
-    else if (f.kind === 'capsule') { if (!G) continue; const S = f.S, from = TRAINER_POS[S], to = side(S), x = lerp(from.x, to.x, q), y = lerp(from.y - 30, to.y - 20, q) - Math.sin(q * Math.PI) * 70, col = S === 'A' ? '#ff4b55' : '#4aa6ff', i = bx(x), j = by(y); aRect(i - 3, j - 3, 6, 6, '#141a2c'); aRect(i - 2, j - 2, 4, 4, col); aRect(i - 2, j - 2, 2, 2, '#ffffff'); if (q > .92) { burstAt(to.x, to.y - 20, '#ffffff', 20, 280, 1); ringFx(to.x, to.y - 10, col, 6, 70, 400); fx.splice(k, 1); } }
+    else if (f.kind === 'capsule') { if (!G) continue; const S = f.S, from = TRAINER_POS[slotTeam(S)], to = side(S), x = lerp(from.x, to.x, q), y = lerp(from.y - 30, to.y - 20, q) - Math.sin(q * Math.PI) * 70, col = slotTeam(S) === 'A' ? '#ff4b55' : '#4aa6ff', i = bx(x), j = by(y); aRect(i - 3, j - 3, 6, 6, '#141a2c'); aRect(i - 2, j - 2, 4, 4, col); aRect(i - 2, j - 2, 2, 2, '#ffffff'); if (q > .92) { burstAt(to.x, to.y - 20, '#ffffff', 20, 280, 1); ringFx(to.x, to.y - 10, col, 6, 70, 400); fx.splice(k, 1); } }
   }
   for (let k = parts.length - 1; k >= 0; k--) if (!drawParticle(parts[k])) parts.splice(k, 1);
   bctx.globalAlpha = 1;
@@ -353,7 +352,7 @@ function draw(dt) {
   b.clearRect(0, 0, buf.width, buf.height);   // the arena itself is painted in HD on the screen layer
   drawCrowd();
   drawTrainer('A'); drawTrainer('B');
-  const order = G ? ['A', 'B'].sort((p, q) => side(p).y - side(q).y) : [];
+  const order = G ? SLOTS().filter(S => side(S).state !== 'empty').sort((p, q) => side(p).y - side(q).y) : [];
   if (G) { drawAimLines(); for (const S of order) drawActorGround(S); }
   // ground effects: marks, shockwaves, lingering ground effects (full resolution)
   bctx = uctx; hiBegin(uctx);

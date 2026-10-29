@@ -176,7 +176,7 @@
   const FIN = 1500;                                         // the finale starts 1.5 s into the Z-Move (the cinematic covers the start)
   function start(S, mon, type) {
     const seed = hashStr(mon), rng = seeded(seed), rgb = typeRGB(type), m = act(S), acc = (() => { try { const c = document.createElement('canvas'); c.width = c.height = 64; drawSpriteTo(c, m.pick || mon, {}); const d = c.getContext('2d').getImageData(0, 0, 64, 64).data; let r = 0, g = 0, b = 0, n = 0; for (let i = 0; i < d.length; i += 16) if (d[i + 3] > 200 && d[i] + d[i + 1] + d[i + 2] > 120 && d[i] + d[i + 1] + d[i + 2] < 700) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } return n ? [r / n, g / n, b / n].map(Math.round).join(',') : null; } catch (e) { return null; } })();
-    const light = mixRGB(rgb, acc || '255,255,255', acc ? .45 : .55), z = { S, F: S === 'A' ? 'B' : 'A', mon, type, t0: clock.t, seed, rng, spin: seed & 1 ? 1 : -1, rgb, light, hexLight: '#' + light.split(',').map(v => (+v).toString(16).padStart(2, '0')).join(''),
+    const light = mixRGB(rgb, acc || '255,255,255', acc ? .45 : .55), z = { S, F: other(S), mon, type, t0: clock.t, seed, rng, spin: seed & 1 ? 1 : -1, rgb, light, hexLight: '#' + light.split(',').map(v => (+v).toString(16).padStart(2, '0')).join(''),
       E: element(type), combo: COMBO[mon] || ['beam', 'met'], flags: {}, rates: {}, pts: {} };
     z.once = key => { if (z.flags[key]) return true; z.flags[key] = 1; return false; };
     z.r = key => z.rates[key] || (z.rates[key] = {});
