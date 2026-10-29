@@ -2391,11 +2391,14 @@ function newSide(key, picks, doubles) {
 }
 function newBattle(picksA, picksB, opts = {}) {
   const doubles = !!opts.doubles, sides = { A: newSide('A', picksA, doubles), B: newSide('B', picksB, doubles) };
-  if (doubles) for (const [S, T] of [['C', 'A'], ['D', 'B']]) {          // the second slot shares its team's six, starting with the second Pokémon
-    const sd = newSide(S, [], true); sd.team = sides[T].team; const second = sd.team.findIndex((m, i) => i !== sides[T].active && m && m.hp > 0);
+  if (doubles) for (const [S, T] of [['C', 'A'], ['D', 'B']]) {
+    const own = (opts['picks' + S] || []).filter(Boolean);
+    if (own.length) { sides[S] = newSide(S, own, true); continue; }      // four parties: the partner brings its own Pokémon
+    const sd = newSide(S, [], true); sd.team = sides[T].team;           // otherwise the second slot shares its team's six, starting with the second Pokémon
+    const second = sd.team.findIndex((m, i) => i !== sides[T].active && m && m.hp > 0);
     if (second >= 0) sd.active = second; else { sd.active = sides[T].active; sd.state = 'empty'; } sides[S] = sd; }
   return {
-    doubles, picks: { A: picksA.slice(), B: picksB.slice() }, sides,
+    doubles, picks: Object.assign({ A: picksA.slice(), B: picksB.slice() }, doubles ? { C: sides.C.team.map(m => m.pick || m.name), D: sides.D.team.map(m => m.pick || m.name) } : {}), sides,
     shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
@@ -2970,7 +2973,7 @@ function aiThink(S) {
 function bestSwitchFor(S) {
   const foe = act(other(S)); let best = null, bestV = -Infinity;
   side(S).team.forEach((m, i) => {
-    if (m.hp <= 0 || i === side(S).active || (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i)) return;
+    if (m.hp <= 0 || i === side(S).active || (sharesParty(S) && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i)) return;
     const off = Math.max(0, ...m.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, foe.types)));
     const def = Math.max(0, ...foe.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, m.types)));
     const v = off * 2 - def + m.hp / m.max;
@@ -3040,7 +3043,7 @@ function requestSwitch(S, idx) {
   const sd = side(S);
   if (G.phase !== 'battle' || sd.state !== 'idle' || sd.cast || sd.switchCd > 0 || sd.stun > 0) return false;
   if (idx === sd.active || !sd.team[idx] || sd.team[idx].hp <= 0) return false;
-  if (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === idx) return false;   // already out with the partner
+  if (sharesParty(S) && slotLive(partnerOf(S)) && side(partnerOf(S)).active === idx) return false;   // already out with the partner
   sd.state = 'leaving'; sd.stateT = 0; sd.pendingSwitch = idx; sd.switchCd = 5000;
   logLine(`${TEAM_NAME[S]} recalled ${act(S).name}!`);
   return true;
@@ -3060,8 +3063,11 @@ function startFaint(S) {
   sd.state = 'fainting'; sd.stateT = 0; sd.cast = null; sd.dig = false; m.status = ''; m.conf = 0; m.vol.recharge = false;
   logLine(`${m.name} fainted!`); VFX.faint(S); G.hudDirty = true;
 }
-function teamAlive(S) { return side(S).team.some(m => m.hp > 0); }
-function benchFor(S) { return side(S).team.map((m, i) => (m.hp > 0 && i !== side(S).active && !(G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i) ? i : -1)).filter(i => i >= 0); }
+// a side's parties: one in singles; in doubles its two slots' parties (the same party when they share)
+function partiesOf(S) { const T = slotTeam(S), out = [side(T).team]; if (G.doubles) { const P = G.sides[partnerOf(T)]; if (P && P.team !== side(T).team) out.push(P.team); } return out; }
+const sharesParty = S => !!(G && G.doubles && G.sides[partnerOf(S)] && side(S).team === side(partnerOf(S)).team);
+function teamAlive(S) { return partiesOf(S).some(t => t.some(m => m.hp > 0)); }   // a side is out only when all its parties are
+function benchFor(S) { return side(S).team.map((m, i) => (m.hp > 0 && i !== side(S).active && !(sharesParty(S) && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i) ? i : -1)).filter(i => i >= 0); }
 function afterFaint(S) {
   if (!teamAlive(S)) { endBattle(teamAlive(foeTeam(S)) ? foeTeam(S) : 'draw'); return; }
   if (G.doubles && !benchFor(S).length) { side(S).state = 'empty'; G.hudDirty = true; return; }   // no one left to send: the partner fights on alone
@@ -3073,7 +3079,7 @@ function afterFaint(S) {
   else { side(S).state = 'wait'; G.phase = 'pick'; if (typeof onNeedPick === 'function') onNeedPick(); }
 }
 function decideByHp(reason) {
-  const pct = s => side(s).team.reduce((a, m) => a + m.hp / m.max, 0);
+  const pct = s => partiesOf(s).reduce((a, t) => a + t.reduce((b, m) => b + m.hp / m.max, 0), 0);
   const a = pct('A'), b = pct('B'); G.decision = reason;
   return Math.abs(a - b) < .001 ? 'draw' : a > b ? 'A' : 'B';
 }
@@ -7452,6 +7458,8 @@ function onSpritesChanged() { clearTimeout(spritesDirtyT); spritesDirtyT = setTi
    ===================================================================== */
 const DEFAULT_A = ['Pikachu', 'Blastoise', 'Venusaur', 'Snorlax', 'Charizard', 'Lapras'];
 const DEFAULT_B = ['Arcanine', 'Pinsir', 'Golbat', 'Jolteon', 'Gyarados', 'Alakazam'];
+const DEFAULT_C = ['Pidgeot', 'Raichu', 'Nidoking', 'Arcanine', 'Lapras', 'Snorlax'];      // Red's partner (doubles)
+const DEFAULT_D = ['Fearow', 'Ninetales', 'Nidoqueen', 'Gyarados', 'Jolteon', 'Dragonite']; // Blue's partner (doubles)
 const showOverlay = (id, on) => { const e = $(id); if (e) e.classList.toggle('show', on); };
 let introSkip = null, autosaveT = 0;
 function resetScene() { cancelAll(); buildScars(); crowdState.length = 0; for (const k in groupState) delete groupState[k]; trainerWalk.A = trainerWalk.B = 1; slide.t = -9999; bigText.t = -9999; }
@@ -7461,7 +7469,8 @@ async function startBattle(picksA, picksB, stageId) {
   picksA = filledTeam(picksA); picksB = filledTeam(picksB);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
-  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle) });
+  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
+    ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}) });   // four parties in Local doubles
   G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
   if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
   // two players on one phone or tablet: both sides human (Local only)
@@ -7677,9 +7686,15 @@ function queueMove(i) {
   const sd = side('A'), m = act('A'); if (i >= m.moves.length) return;
   if (!tryCast('A', i)) { sd.queued = i; sd.queuedT = 600; }
 }
+// pickers for each party: A and B, plus C and D (the doubles partners' parties)
 function buildPickers() {
-  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join('') + DEX.map(d => `<option value="${d.name}|shiny">${d.name} \u2728</option>`).join(''); root.appendChild(sel); } }
+  for (const S of ['A', 'B', 'C', 'D']) { let root = $('pick' + S); if (!root) { root = document.createElement('div'); root.id = 'pick' + S; root.hidden = true; document.body.appendChild(root); } root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join('') + DEX.map(d => `<option value="${d.name}|shiny">${d.name} \u2728</option>`).join(''); root.appendChild(sel); } }
+  try { loadPartnerParties(); } catch (e) { }
 }
+// Set any one party (A, B, or the doubles partners C and D); the partners' parties are kept on the device
+function setParty(S, team) { team.forEach((n, i) => { const el = $('pick' + S + i); if (el) el.value = n; });
+  if (S === 'C' || S === 'D') try { localStorage.setItem('arena151.party' + S, JSON.stringify(readPickers(S))); } catch (e) { } }
+function loadPartnerParties() { for (const [S, def] of [['C', DEFAULT_C], ['D', DEFAULT_D]]) { let t = null; try { t = JSON.parse(localStorage.getItem('arena151.party' + S) || 'null'); } catch (e) { } setParty(S, Array.isArray(t) && t.length === 6 ? t : def); } }
 function setPickers(a, b) { a.forEach((n, i) => { if ($('pickA' + i)) $('pickA' + i).value = n; }); b.forEach((n, i) => { if ($('pickB' + i)) $('pickB' + i).value = n; }); }
 const readPickers = S => Array.from({ length: 6 }, (_, i) => $(`pick${S}${i}`).value);
 // MissingNo. only appears in Local and Online once a saved Pokédex story has caught it (regular or shiny)
@@ -8854,6 +8869,7 @@ const START = { open: false, ctrl: { A: 'human', B: 'ai' }, arena: 'random', slo
       <div class="st-note" id="stNote${S}"></div>
       <div class="st-team" id="stTeam${S}"></div>
       <div class="st-row"><button class="st-btn" data-rand="${S}">🎲 Random team</button><button class="st-btn" data-def="${S}">Starter team</button></div>
+      <div class="st-partner" id="stPartner${S === 'A' ? 'C' : 'D'}" hidden><div class="st-ph"><span>PARTNER PARTY <small>second Pokémon in doubles</small></span><span><button class="st-btn sm" data-rand="${S === 'A' ? 'C' : 'D'}" aria-label="Random partner party">🎲</button><button class="st-btn sm" data-def="${S === 'A' ? 'C' : 'D'}">Starter</button></span></div><div class="st-team" id="stTeam${S === 'A' ? 'C' : 'D'}"></div></div>
     </section>`;
   ov.innerHTML = `<div class="st-bg">${balls}</div><div class="st-wrap">
     <header class="st-head"><div class="st-logo">ARENA <b>151</b></div><div class="st-sub">Live 6v6 Pokémon battles · set up your match</div></header>
@@ -8884,12 +8900,16 @@ const typeChips = name => (DEX_BY_NAME[pickBase(name)].types).map(t => `<i style
 
 /* ---------- rendering the panels ---------- */
 function stTeam(S) { return readPickers(S); }
+// the parties shown: Red and Blue, plus both partners in Local doubles (one screen, compact)
+const startParties = () => (typeof battleDoubles === 'function' && battleDoubles() && typeof NET !== 'undefined' && NET.mode === 'local' ? ['A', 'B', 'C', 'D'] : ['A', 'B']);
 function renderStartTeams() {
-  for (const S of ['A', 'B']) {
+  const four = startParties().length === 4; document.documentElement.classList.toggle('st-dbl', four);
+  for (const P of ['C', 'D']) { const el = $('stPartner' + P); if (el) el.hidden = !four; }
+  for (const S of startParties()) {
     const box = $('stTeam' + S); box.replaceChildren();
     stTeam(S).forEach((name, i) => {
-      const b = document.createElement('button'); b.className = 'st-mon'; b.type = 'button'; b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: ${name}. Change`);
-      if (!name) { b.classList.add('none'); b.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}: no Pokémon. Add one`); b.innerHTML = '<div class="pic"><span class="plus">+</span></div><div class="nm">No Pokémon</div>'; }
+      const b = document.createElement('button'); b.className = 'st-mon'; b.type = 'button'; b.setAttribute('aria-label', `${S === 'C' || S === 'D' ? TEAM_NAME[S] + '’s partner' : TEAM_NAME[S]} slot ${i + 1}: ${name}. Change`);
+      if (!name) { b.classList.add('none'); b.setAttribute('aria-label', `${S === 'C' || S === 'D' ? TEAM_NAME[S] + '’s partner' : TEAM_NAME[S]} slot ${i + 1}: no Pokémon. Add one`); b.innerHTML = '<div class="pic"><span class="plus">+</span></div><div class="nm">No Pokémon</div>'; }
       else { b.appendChild(monPic(name)); b.insertAdjacentHTML('beforeend', `<div class="nm">${pickLabel(name)}</div><div class="ty">${typeChips(name)}</div>`); }
       b.onclick = () => openMonPicker(S, i);
       // Each Pokémon on its own: the ✨ button switches just this slot between its regular and shiny form.
@@ -8897,7 +8917,7 @@ function renderStartTeams() {
       if (name) {
         const on = pickShiny(name), sh = document.createElement('button'); sh.type = 'button'; sh.className = 'st-shy' + (on ? ' on' : ''); sh.textContent = '\u2728';
         sh.setAttribute('aria-pressed', String(on)); sh.setAttribute('aria-label', `${pickBase(name)}: ${on ? 'shiny' : 'regular'} form. Switch`); sh.title = on ? 'Shiny \u2014 tap for the regular form' : 'Regular \u2014 tap for the shiny form';
-        sh.onclick = e => { e.stopPropagation(); const team = readPickers(S); team[i] = pickBase(team[i]) + (on ? '' : '|shiny'); setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); renderStartTeams(); };
+        sh.onclick = e => { e.stopPropagation(); const team = readPickers(S); team[i] = pickBase(team[i]) + (on ? '' : '|shiny'); setParty(S, team); renderStartTeams(); };
         slot.appendChild(sh);
       }
       box.appendChild(slot);
@@ -8943,7 +8963,7 @@ function openMonPicker(S, i) {
     const none = document.createElement('button'); none.type = 'button'; none.className = 'none'; none.dataset.q = 'no pokemon none empty';
     none.innerHTML = '<div class="pic"><span class="plus">\u2715</span></div>No Pok\u00E9mon<small>leave this slot empty</small>';
     none.onclick = () => { const { S, i } = START.slot, team = readPickers(S); if (team.filter(Boolean).length <= 1 && team[i]) { toastMsg('A team needs at least one Pok\u00E9mon'); return; }
-      team[i] = ''; setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
+      team[i] = ''; setParty(S, team); closeMonPicker(); renderStartTeams(); };
     grid.appendChild(none);
   }
   if (!$('stShiny')) {                                      // the Shiny switch: picks from the grid become shiny
@@ -8954,7 +8974,7 @@ function openMonPicker(S, i) {
   if (grid.childElementCount <= 1) for (const d of DEX) {
     const b = document.createElement('button'); b.type = 'button'; b.dataset.q = `${d.name} ${String(d.id).padStart(3, '0')} ${d.types.join(' ')}`.toLowerCase();
     b.dataset.n = d.name; b.appendChild(monPic(d.name + (START.shiny ? '|shiny' : ''))); b.insertAdjacentHTML('beforeend', `${d.name}<small>#${String(d.id).padStart(3, '0')} · ${d.types.join('/')}</small>`);
-    b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name + (START.shiny ? '|shiny' : ''); setPickers(S === 'A' ? team : readPickers('A'), S === 'B' ? team : readPickers('B')); closeMonPicker(); renderStartTeams(); };
+    b.onclick = () => { const { S, i } = START.slot, team = readPickers(S); team[i] = d.name + (START.shiny ? '|shiny' : ''); setParty(S, team); closeMonPicker(); renderStartTeams(); };
     grid.appendChild(b);
   }
   syncShinyPicker();
@@ -8970,8 +8990,8 @@ $('stPick').onclick = e => { if (e.target.id === 'stPick') closeMonPicker(); };
 for (const b of document.querySelectorAll('#startOv .st-arrow')) b.onclick = () => { const S = b.dataset.tr, k = TRAINERS.indexOf(TRSEL[S]); TRSEL[S] = TRAINERS[(k + +b.dataset.d + TRAINERS.length) % TRAINERS.length]; saveTrsel(); renderStartTrainers(); syncTrainerPickers(); };
 for (const S of ['A', 'B']) $('stSel' + S).onchange = e => { TRSEL[S] = e.target.value; saveTrsel(); renderStartTrainers(); syncTrainerPickers(); };
 for (const b of document.querySelectorAll('#startOv .st-ctrl button')) b.onclick = () => { if (b.disabled) return; START.ctrl[b.dataset.c] = b.dataset.v; renderStartTrainers(); renderAiLevels(); };
-for (const b of document.querySelectorAll('#startOv [data-rand]')) b.onclick = () => { const S = b.dataset.rand, t = randomTeam(); setPickers(S === 'A' ? t : readPickers('A'), S === 'B' ? t : readPickers('B')); renderStartTeams(); };
-for (const b of document.querySelectorAll('#startOv [data-def]')) b.onclick = () => { const S = b.dataset.def; setPickers(S === 'A' ? DEFAULT_A : readPickers('A'), S === 'B' ? DEFAULT_B : readPickers('B')); renderStartTeams(); };
+for (const b of document.querySelectorAll('#startOv [data-rand]')) b.onclick = () => { const S = b.dataset.rand, t = randomTeam(); setParty(S, t); renderStartTeams(); };
+for (const b of document.querySelectorAll('#startOv [data-def]')) b.onclick = () => { const S = b.dataset.def; setParty(S, { A: DEFAULT_A, B: DEFAULT_B, C: DEFAULT_C, D: DEFAULT_D }[S]); renderStartTeams(); };
 $('stSettings').onclick = () => { const b = $('bSettings'); if (b) b.click(); };
 $('stBack').onclick = () => { hideStart(); clock.paused = false; };
 $('stHelp').onclick = () => { const b = $('bHelp'); if (b) b.click(); };
@@ -9086,6 +9106,36 @@ function syncShinyPicker() {
 { const f = $('stFormat'); if (f) { try { f.value = localStorage.getItem('arena151.format') || '1'; } catch (e) { } f.onchange = () => { try { localStorage.setItem('arena151.format', f.value); } catch (e) { } }; }
   const syncFmt = () => { const l = $('stFormatL'); if (l) l.hidden = typeof NET !== 'undefined' && NET.mode === 'story'; }; syncFmt(); setInterval(syncFmt, 800); }
 window.battleDoubles = () => { const f = $('stFormat'); return !!(f && f.value === '2' && typeof NET !== 'undefined' && NET.mode !== 'story'); };
+
+// doubles: the Format choice and the mode redraw the parties (four in Local doubles)
+{ const f = $('stFormat'); if (f) f.addEventListener('change', () => { try { renderStartTeams(); } catch (e) { } }); }
+{ const css = document.createElement('style'); css.textContent = `
+  html.st-dbl #startOv .st-side{grid-template-areas:"tr name" "tr ctrl" "team team" "row row" "pt pt"}
+  html.st-dbl #startOv .st-side.blue{grid-template-areas:"name tr" "ctrl tr" "team team" "row row" "pt pt"}
+  html.st-dbl #startOv .st-team{grid-template-columns:repeat(6,1fr);gap:4px}
+  html.st-dbl #startOv .st-mon{padding:3px 2px 3px;border-radius:10px}
+  html.st-dbl #startOv .st-mon .pic{height:34px}
+  html.st-dbl #startOv .st-mon img,html.st-dbl #startOv .st-mon canvas{max-height:34px}
+  html.st-dbl #startOv .st-mon .nm{font-size:9px;margin-top:1px}
+  html.st-dbl #startOv .st-mon .ty{display:none}
+  html.st-dbl #startOv .st-shy{width:17px;height:17px;font-size:9px;top:1px;right:1px}
+  #startOv .st-partner{grid-area:pt;border-top:1px dashed rgba(255,255,255,.18);padding-top:5px;display:grid;gap:4px}
+  #startOv .st-partner[hidden]{display:none}
+  #startOv .st-ph{display:flex;justify-content:space-between;align-items:center;font:800 11px var(--ui);color:#ffd84a;letter-spacing:.04em}
+  #startOv .st-ph small{font-weight:600;color:#c8cde8;letter-spacing:0;margin-left:4px}
+  #startOv .st-btn.sm{padding:3px 8px;font-size:11px;margin-left:4px}
+  #startOv .st-partner{grid-template-columns:1fr}
+  #startOv .st-partner .st-team{grid-area:auto!important;width:100%}
+  #startOv .st-ph{white-space:nowrap;gap:6px}
+  #startOv .st-ph>span:last-child{display:flex;flex:none}
+  @media (max-height:520px){
+    html.st-dbl #startOv .st-mon .pic{height:26px} html.st-dbl #startOv .st-mon img,html.st-dbl #startOv .st-mon canvas{max-height:26px}
+    html.st-dbl #startOv .st-mon .nm{font-size:8px} html.st-dbl #startOv .st-mon{padding:2px 1px}
+    html.st-dbl #startOv .st-team{gap:3px} html.st-dbl #startOv .st-ph small{display:none} html.st-dbl #startOv .st-partner{padding-top:3px;gap:2px}
+    html.st-dbl #startOv .st-row .st-btn{padding:3px 10px} html.st-dbl #startOv .st-side{gap:2px 8px;padding:5px 8px}
+    html.st-dbl #startOv .st-note{display:none}
+  }`; document.head.appendChild(css); }
+try { renderStartTeams(); } catch (e) { }
 
 //# sourceURL=startscreen.js
 </script>

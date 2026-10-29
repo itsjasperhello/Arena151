@@ -132,6 +132,8 @@ function onSpritesChanged() { clearTimeout(spritesDirtyT); spritesDirtyT = setTi
    ===================================================================== */
 const DEFAULT_A = ['Pikachu', 'Blastoise', 'Venusaur', 'Snorlax', 'Charizard', 'Lapras'];
 const DEFAULT_B = ['Arcanine', 'Pinsir', 'Golbat', 'Jolteon', 'Gyarados', 'Alakazam'];
+const DEFAULT_C = ['Pidgeot', 'Raichu', 'Nidoking', 'Arcanine', 'Lapras', 'Snorlax'];      // Red's partner (doubles)
+const DEFAULT_D = ['Fearow', 'Ninetales', 'Nidoqueen', 'Gyarados', 'Jolteon', 'Dragonite']; // Blue's partner (doubles)
 const showOverlay = (id, on) => { const e = $(id); if (e) e.classList.toggle('show', on); };
 let introSkip = null, autosaveT = 0;
 function resetScene() { cancelAll(); buildScars(); crowdState.length = 0; for (const k in groupState) delete groupState[k]; trainerWalk.A = trainerWalk.B = 1; slide.t = -9999; bigText.t = -9999; }
@@ -141,7 +143,8 @@ async function startBattle(picksA, picksB, stageId) {
   picksA = filledTeam(picksA); picksB = filledTeam(picksB);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
-  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle) });
+  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
+    ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}) });   // four parties in Local doubles
   G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–10 (story mode sets the gym's)
   if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
   // two players on one phone or tablet: both sides human (Local only)
@@ -357,9 +360,15 @@ function queueMove(i) {
   const sd = side('A'), m = act('A'); if (i >= m.moves.length) return;
   if (!tryCast('A', i)) { sd.queued = i; sd.queuedT = 600; }
 }
+// pickers for each party: A and B, plus C and D (the doubles partners' parties)
 function buildPickers() {
-  for (const S of ['A', 'B']) { const root = $('pick' + S); root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join('') + DEX.map(d => `<option value="${d.name}|shiny">${d.name} \u2728</option>`).join(''); root.appendChild(sel); } }
+  for (const S of ['A', 'B', 'C', 'D']) { let root = $('pick' + S); if (!root) { root = document.createElement('div'); root.id = 'pick' + S; root.hidden = true; document.body.appendChild(root); } root.innerHTML = ''; for (let i = 0; i < 6; i++) { const sel = document.createElement('select'); sel.id = `pick${S}${i}`; sel.setAttribute('aria-label', `${TEAM_NAME[S]} slot ${i + 1}`); sel.innerHTML = '<option value="">— No Pokémon —</option>' + DEX.map(d => `<option value="${d.name}">${String(d.id).padStart(3, '0')} · ${d.name} (${d.types.join('/')})</option>`).join('') + DEX.map(d => `<option value="${d.name}|shiny">${d.name} \u2728</option>`).join(''); root.appendChild(sel); } }
+  try { loadPartnerParties(); } catch (e) { }
 }
+// Set any one party (A, B, or the doubles partners C and D); the partners' parties are kept on the device
+function setParty(S, team) { team.forEach((n, i) => { const el = $('pick' + S + i); if (el) el.value = n; });
+  if (S === 'C' || S === 'D') try { localStorage.setItem('arena151.party' + S, JSON.stringify(readPickers(S))); } catch (e) { } }
+function loadPartnerParties() { for (const [S, def] of [['C', DEFAULT_C], ['D', DEFAULT_D]]) { let t = null; try { t = JSON.parse(localStorage.getItem('arena151.party' + S) || 'null'); } catch (e) { } setParty(S, Array.isArray(t) && t.length === 6 ? t : def); } }
 function setPickers(a, b) { a.forEach((n, i) => { if ($('pickA' + i)) $('pickA' + i).value = n; }); b.forEach((n, i) => { if ($('pickB' + i)) $('pickB' + i).value = n; }); }
 const readPickers = S => Array.from({ length: 6 }, (_, i) => $(`pick${S}${i}`).value);
 // MissingNo. only appears in Local and Online once a saved Pokédex story has caught it (regular or shiny)

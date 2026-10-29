@@ -49,11 +49,14 @@ function newSide(key, picks, doubles) {
 }
 function newBattle(picksA, picksB, opts = {}) {
   const doubles = !!opts.doubles, sides = { A: newSide('A', picksA, doubles), B: newSide('B', picksB, doubles) };
-  if (doubles) for (const [S, T] of [['C', 'A'], ['D', 'B']]) {          // the second slot shares its team's six, starting with the second Pokémon
-    const sd = newSide(S, [], true); sd.team = sides[T].team; const second = sd.team.findIndex((m, i) => i !== sides[T].active && m && m.hp > 0);
+  if (doubles) for (const [S, T] of [['C', 'A'], ['D', 'B']]) {
+    const own = (opts['picks' + S] || []).filter(Boolean);
+    if (own.length) { sides[S] = newSide(S, own, true); continue; }      // four parties: the partner brings its own Pokémon
+    const sd = newSide(S, [], true); sd.team = sides[T].team;           // otherwise the second slot shares its team's six, starting with the second Pokémon
+    const second = sd.team.findIndex((m, i) => i !== sides[T].active && m && m.hp > 0);
     if (second >= 0) sd.active = second; else { sd.active = sides[T].active; sd.state = 'empty'; } sides[S] = sd; }
   return {
-    doubles, picks: { A: picksA.slice(), B: picksB.slice() }, sides,
+    doubles, picks: Object.assign({ A: picksA.slice(), B: picksB.slice() }, doubles ? { C: sides.C.team.map(m => m.pick || m.name), D: sides.D.team.map(m => m.pick || m.name) } : {}), sides,
     shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
@@ -628,7 +631,7 @@ function aiThink(S) {
 function bestSwitchFor(S) {
   const foe = act(other(S)); let best = null, bestV = -Infinity;
   side(S).team.forEach((m, i) => {
-    if (m.hp <= 0 || i === side(S).active || (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i)) return;
+    if (m.hp <= 0 || i === side(S).active || (sharesParty(S) && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i)) return;
     const off = Math.max(0, ...m.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, foe.types)));
     const def = Math.max(0, ...foe.moves.map(n => MOVES[n].cat === 'X' ? 0 : typeEff(MOVES[n].type, m.types)));
     const v = off * 2 - def + m.hp / m.max;
@@ -698,7 +701,7 @@ function requestSwitch(S, idx) {
   const sd = side(S);
   if (G.phase !== 'battle' || sd.state !== 'idle' || sd.cast || sd.switchCd > 0 || sd.stun > 0) return false;
   if (idx === sd.active || !sd.team[idx] || sd.team[idx].hp <= 0) return false;
-  if (G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === idx) return false;   // already out with the partner
+  if (sharesParty(S) && slotLive(partnerOf(S)) && side(partnerOf(S)).active === idx) return false;   // already out with the partner
   sd.state = 'leaving'; sd.stateT = 0; sd.pendingSwitch = idx; sd.switchCd = 5000;
   logLine(`${TEAM_NAME[S]} recalled ${act(S).name}!`);
   return true;
@@ -718,8 +721,11 @@ function startFaint(S) {
   sd.state = 'fainting'; sd.stateT = 0; sd.cast = null; sd.dig = false; m.status = ''; m.conf = 0; m.vol.recharge = false;
   logLine(`${m.name} fainted!`); VFX.faint(S); G.hudDirty = true;
 }
-function teamAlive(S) { return side(S).team.some(m => m.hp > 0); }
-function benchFor(S) { return side(S).team.map((m, i) => (m.hp > 0 && i !== side(S).active && !(G.doubles && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i) ? i : -1)).filter(i => i >= 0); }
+// a side's parties: one in singles; in doubles its two slots' parties (the same party when they share)
+function partiesOf(S) { const T = slotTeam(S), out = [side(T).team]; if (G.doubles) { const P = G.sides[partnerOf(T)]; if (P && P.team !== side(T).team) out.push(P.team); } return out; }
+const sharesParty = S => !!(G && G.doubles && G.sides[partnerOf(S)] && side(S).team === side(partnerOf(S)).team);
+function teamAlive(S) { return partiesOf(S).some(t => t.some(m => m.hp > 0)); }   // a side is out only when all its parties are
+function benchFor(S) { return side(S).team.map((m, i) => (m.hp > 0 && i !== side(S).active && !(sharesParty(S) && slotLive(partnerOf(S)) && side(partnerOf(S)).active === i) ? i : -1)).filter(i => i >= 0); }
 function afterFaint(S) {
   if (!teamAlive(S)) { endBattle(teamAlive(foeTeam(S)) ? foeTeam(S) : 'draw'); return; }
   if (G.doubles && !benchFor(S).length) { side(S).state = 'empty'; G.hudDirty = true; return; }   // no one left to send: the partner fights on alone
@@ -731,7 +737,7 @@ function afterFaint(S) {
   else { side(S).state = 'wait'; G.phase = 'pick'; if (typeof onNeedPick === 'function') onNeedPick(); }
 }
 function decideByHp(reason) {
-  const pct = s => side(s).team.reduce((a, m) => a + m.hp / m.max, 0);
+  const pct = s => partiesOf(s).reduce((a, t) => a + t.reduce((b, m) => b + m.hp / m.max, 0), 0);
   const a = pct('A'), b = pct('B'); G.decision = reason;
   return Math.abs(a - b) < .001 ? 'draw' : a > b ? 'A' : 'B';
 }
