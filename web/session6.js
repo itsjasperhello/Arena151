@@ -20,13 +20,13 @@
    Every file named <Name>_trainer.png (animated PNG) in the sprites folder is a trainer option.
    The Android app lists the folder itself, so new files appear automatically; elsewhere the
    bundled roster below is used. Underscores in the name become spaces (Lt_Surge -> "Lt Surge"). */
-const BUNDLED_TRAINERS = ['Ash', 'Blaine', 'Brawly', 'Brock', 'Emmet', 'Erika', 'Fantina', 'Flannery', 'Gary', 'Ghetsis', 'Giovanni', 'Lance', 'Lt_Surge', 'Misty', 'Roxanne', 'Sabrina', 'Steven', 'Wallace', 'Wattson', 'Winona'];
+const BUNDLED_TRAINERS = ['Ash', 'Blaine', 'Brawly', 'Brock', 'Emmet', 'Erika', 'Fantina', 'Flannery', 'Gary', 'Ghetsis', 'Giovanni', 'Lance', 'Lt_Surge', 'Misty', 'Professor_Oak', 'Roxanne', 'Sabrina', 'Steven', 'Wallace', 'Wattson', 'Winona'];
 const FACES_RIGHT_BY_DEFAULT = new Set(['Brock']);          // most battle sprites face left
 const trainerTitle = n => n.replace(/_/g, ' ');
 function discoverTrainers() {
   let files = null;
   try { if (window.AndroidApp && AndroidApp.listSprites) files = JSON.parse(AndroidApp.listSprites()); } catch (e) { }
-  const found = (files || []).map(f => (String(f).match(/^(.+)_trainer\.png$/i) || [])[1]).filter(Boolean);
+  const found = (files || []).map(f => (String(f).match(/^(.+)_trainer\.png$/i) || [])[1]).filter(n => n && !/_back$/i.test(n));   // <Name>_back_trainer.png is a back sprite, not a trainer
   return [...new Set(found.length ? found : BUNDLED_TRAINERS)].sort((a, b) => a.localeCompare(b));
 }
 // Route trainers (story mode only) are kept out of the start screen's trainer list.
@@ -57,7 +57,7 @@ function loadTrainer(name) {
     return TR_ANIM[name];
   })();
 }
-const customTrainer = S => TR_ANIM[TRSEL[S]] || null;
+const customTrainer = S => (typeof trainerOverride === 'function' && trainerOverride(S)) || TR_ANIM[TRSEL[S]] || null;   // a back sprite while throwing
 function trainerAnimFor(S) { return customTrainer(S); }
 const trainerFacesRight = name => name in TRSEL.flip ? !!TRSEL.flip[name] : FACES_RIGHT_BY_DEFAULT.has(name);
 const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? slotTeam(S) === 'B' : slotTeam(S) === 'A';   // Red faces right, Blue faces left

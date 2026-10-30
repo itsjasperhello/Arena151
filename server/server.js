@@ -63,6 +63,7 @@ function endByHp(room, reason) {
     const hp = room.lastHp || { A: 0, B: 0 }, w = hp.A === hp.B ? 'draw' : hp.A > hp.B ? 'A' : 'B';
     for (const S of ['A', 'B']) send(room.players[S], { t: 'over', winner: w === 'draw' ? 'draw' : (w === S ? 'A' : 'B'), big: 'MATCH ENDED', reason });
     if (room.tour) matchFinished(room, w);
+    rankedFinished(room, w);
     log(`room ${room.code}: ended by HP (${hp.A} vs ${hp.B}) — ${reason}`);
   }
   for (const S of ['A', 'B']) { const p = room.players[S]; if (p && p.room === room) p.room = null; }
@@ -103,6 +104,7 @@ function onWorker(w, m) {
     for (const S of ['A', 'B']) send(room.players[S], { t: 'over', winner: m.winner === 'draw' ? 'draw' : (m.winner === S ? 'A' : 'B'), big: m.big, reason: m.reason });
     log(`room ${room.code}: winner ${m.winner}`);
     if (room.tour) matchFinished(room, m.winner);
+    rankedFinished(room, m.winner);
   }
 }
 // A message for one phone ('A' / 'B') or both ('*'). A phone that is far behind gets this update skipped.
@@ -127,6 +129,7 @@ function startRoom(room) {
   if (!room.worker) { room.worker = pickWorker(); room.worker.load++; }
   room.tokens = room.tokens || { A: crypto.randomUUID(), B: crypto.randomUUID() };
   room.startMsg = {}; room.away = {}; room.over = false; room.rematch = {}; room.state = 'battle';
+  for (const S of ['A', 'B']) if (room.info[S]) accounts.addGhost(room.info[S].trainerFile || room.info[S].trainer, room.info[S].team);   // ghost battles: remember real teams
   toWorker(room, { cmd: 'start', teamA: room.info.A.team, teamB: room.info.B.team, names: { A: room.info.A.trainer, B: room.info.B.trainer }, arena: room.arena, timeLimit: room.timeLimit, doubles: !!room.doubles });
 }
 function closeRoom(room, why) {
@@ -200,9 +203,35 @@ function clean(m) {                                  // only well-formed fields 
   if (Array.isArray(m.team)) o.team = m.team.slice(0, 6).map(x => str(x, 24));
   if ('arena' in m) o.arena = str(m.arena, 16); if ('timeLimit' in m) o.timeLimit = int(m.timeLimit, 0, 3600); if ('doubles' in m) o.doubles = !!m.doubles; if ('max' in m) o.max = int(m.max, 2, 16);
   if ('i' in m) o.i = int(m.i, 0, 5); if ('q' in m) o.q = int(m.q, 0, 2147483647); if ('s' in m) o.s = m.s === 'B' ? 'B' : 'A'; if ('x' in m) o.x = num(m.x, -1, 1); if ('y' in m) o.y = num(m.y, -1, 1);
+  if ('deviceKey' in m) o.deviceKey = str(m.deviceKey, 100); if ('title' in m) o.title = str(m.title, 48); if (m.finished) o.finished = true;
   if (m.off) o.off = true; if ('c' in m) o.c = num(m.c, -1e15, 1e15); if ('ms' in m) o.ms = int(m.ms, 0, 60000); if ('why' in m) o.why = str(m.why, 80);
   return o;
 }
+/* ---------- ranked queue: signed-in accounts or phones that have beaten the story campaign ---------- */
+const rqueue = [];
+function rankedFinished(room, winner) {
+  if (!room.ranked || room.ranked.done) return; room.ranked.done = true;
+  const r = accounts.recordRanked(room.ranked.A, room.ranked.B, winner === 'A' || winner === 'B' ? winner : 'draw'); if (!r) return;
+  for (const S of ['A', 'B']) send(room.players[S], { t: 'rated', before: Math.round(r[S].before), after: Math.round(r[S].after) });
+  log(`room ${room.code}: ranked ${Math.round(r.A.before)}→${Math.round(r.A.after)} vs ${Math.round(r.B.before)}→${Math.round(r.B.after)}`);
+}
+function rankedMatch() {
+  for (let i = rqueue.length - 1; i >= 0; i--) if (rqueue[i].ws.readyState !== 1 || rqueue[i].ws.room) rqueue.splice(i, 1);   // gone, or already playing
+  const now = mono();
+  for (let i = 0; i < rqueue.length; i++) for (let j = i + 1; j < rqueue.length; j++) {
+    const a = rqueue[i], b = rqueue[j]; if (a.key === b.key) continue;
+    const reach = 150 + (now - Math.min(a.at, b.at)) / 1000 * 25;          // close ratings first; the window widens while you wait
+    if (Math.abs(a.rating - b.rating) > reach) continue;
+    rqueue.splice(j, 1); rqueue.splice(i, 1);
+    const code = newCode(), r = { code, players: { A: a.ws, B: b.ws }, info: { A: a.info, B: b.info }, arena: 'random', timeLimit: 300, doubles: false, state: 'lobby', away: {}, ranked: { A: a.key, B: b.key } };
+    rooms.set(code, r); a.ws.room = r; b.ws.room = r;
+    send(a.ws, { t: 'rmatched', opp: b.info.trainer, oppRating: Math.round(b.rating) }); send(b.ws, { t: 'rmatched', opp: a.info.trainer, oppRating: Math.round(a.rating) });
+    send(a.ws, { t: 'hosted', code }); send(b.ws, { t: 'joined', code });
+    log(`ranked: ${a.info.trainer} (${Math.round(a.rating)}) vs ${b.info.trainer} (${Math.round(b.rating)})`);
+    startRoom(r); return rankedMatch();
+  }
+}
+setInterval(rankedMatch, 1000).unref();
 function handle(ws, m) {
   const room = ws.room;
   switch (m.t) {
@@ -210,6 +239,18 @@ function handle(ws, m) {
       if (m.v !== VERSION) return send(ws, { t: 'error', msg: `Version mismatch: your app is v${m.v}, the server is v${VERSION}. Update both to the same version.` });
       send(ws, { t: 'hi', v: VERSION });
       break;
+    case 'rqueue': {
+      if (room) leave(ws, true); if (ws.tour) tourLeave(ws);
+      const p = accounts.playerKey(m.token, m.deviceKey); if (!p) return send(ws, { t: 'error', msg: 'Ranked needs a player key — update the app.' });
+      if (!accounts.campaignBeaten(p, m.finished)) return send(ws, { t: 'error', msg: p.userId ? 'Beat the story campaign (and let your save sync) to unlock ranked.' : 'Beat the story campaign to unlock ranked.' });
+      const info = cleanInfo(m); if (!info) return send(ws, { t: 'error', msg: 'Pick six valid Pokémon first.' });
+      const me = accounts.ratedPlayer(p.key, info.trainer);
+      for (let i = rqueue.length - 1; i >= 0; i--) if (rqueue[i].ws === ws || rqueue[i].key === p.key) rqueue.splice(i, 1);
+      rqueue.push({ ws, key: p.key, info, rating: me.rating, at: mono() });
+      send(ws, { t: 'rqueued', rating: Math.round(me.rating), waiting: rqueue.length }); rankedMatch();
+      break;
+    }
+    case 'rleave': { for (let i = rqueue.length - 1; i >= 0; i--) if (rqueue[i].ws === ws) rqueue.splice(i, 1); send(ws, { t: 'rleft' }); break; }
     case 'thost': tourHost(ws, m); break;
     case 'tstart': tourStart(ws); break;
     case 'tleave': tourLeave(ws); break;
@@ -244,7 +285,7 @@ function handle(ws, m) {
       if (room && room.worker) { const S = sideOf(room, ws); if (S) toWorker(room, { cmd: 'input', S, msg: m }); }
       break;
     case 'rematch':
-      if (room && room.over && !room.tour) { room.rematch[sideOf(room, ws)] = true; send(room.players[swapSide(sideOf(room, ws))], { t: 'rematchAsked' }); if (room.rematch.A && room.rematch.B) startRoom(room); }
+      if (room && room.over && !room.tour && !room.ranked) { room.rematch[sideOf(room, ws)] = true; send(room.players[swapSide(sideOf(room, ws))], { t: 'rematchAsked' }); if (room.rematch.A && room.rematch.B) startRoom(room); }
       break;
     case 'leave': leave(ws, true); break;
     case 'ping': send(ws, { t: 'pong', c: m.c }); break;
@@ -273,7 +314,7 @@ function handle(ws, m) {
 function cleanInfo(m) {
   const team = Array.isArray(m.team) ? m.team.slice(0, 6).map(String) : [];
   if (!validTeam(team)) return null;
-  return { trainer: String(m.name || m.trainer || 'Trainer').slice(0, 24), trainerFile: String(m.trainerFile || '').slice(0, 40), team };
+  return { trainer: String(m.name || m.trainer || 'Trainer').slice(0, 24), trainerFile: String(m.trainerFile || '').slice(0, 40), team, title: String(m.title || '').slice(0, 48) };
 }
 function leave(ws, deliberate) {
   const room = ws.room; if (!room) return; ws.room = null;

@@ -2399,6 +2399,7 @@ function newBattle(picksA, picksB, opts = {}) {
     if (second >= 0) sd.active = second; else { sd.active = sides[T].active; sd.state = 'empty'; } sides[S] = sd; }
   return {
     doubles, picks: Object.assign({ A: picksA.slice(), B: picksB.slice() }, doubles ? { C: sides.C.team.map(m => m.pick || m.name), D: sides.D.team.map(m => m.pick || m.name) } : {}), sides,
+    rules: opts.rules || null,   // story boss twists: { weather: 'rain'|'sun'|'sand'|'hail', banA: [types the challenger may not use] }
     shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
@@ -2423,6 +2424,8 @@ function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l 
 function aiK(S, lo, base, hi) { const l = aiLv(S); if (l > 10) return hi + (hi - base) * (l - 10) / 8; return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
 
+// permanent weather (story boss rule): rain powers Water and weakens Fire, harsh sun the reverse
+const weatherMult = mv => { const w = G && G.rules && G.rules.weather; if (w === 'rain') return mv.type === 'Water' ? 1.5 : mv.type === 'Fire' ? .5 : 1; if (w === 'sun') return mv.type === 'Fire' ? 1.5 : mv.type === 'Water' ? .5 : 1; return 1; };
 function calcDamage(u, t, mv, crit, eff, roll = true) {
   const phys = mv.cat === 'P';
   let aS = phys ? u.stages.atk : u.stages.spa, dS = phys ? t.stages.def : t.stages.spd;
@@ -2435,7 +2438,7 @@ function calcDamage(u, t, mv, crit, eff, roll = true) {
   const burn = phys && u.status === 'brn' ? .5 : 1;
   const r = roll ? .85 + Math.random() * .15 : .925;
   const od = G && G.overtime ? G.overtime : 1;
-  return Math.max(1, Math.floor(base * stab * eff * pinch * (crit ? 1.5 : 1) * r * burn * DMG_MULT * od));
+  return Math.max(1, Math.floor(base * stab * eff * pinch * (crit ? 1.5 : 1) * r * burn * DMG_MULT * od * weatherMult(mv)));
 }
 function statusImmune(m, st) {
   if (st === 'brn') return m.types.includes('Fire');
@@ -2528,6 +2531,7 @@ function tryCast(S, idx) {
   if (G.clash && inClash(S)) { if (!controlledByAI(S)) G.clash.mash[S] = (G.clash.mash[S] || 0) + 1; return !controlledByAI(S); }   // a button press during a beam lock pushes the beam
   const sd = side(S), m = act(S), mv = MOVES[m.moves[idx]];
   if (!mv || sd.state !== 'idle' || sd.cast || sd.stun > 0 || sd.gcd > 0 || m.cd[idx] > 0) return false;
+  if (G.rules && G.rules.banA && slotTeam(S) === 'A' && G.rules.banA.includes(mv.type)) return false;   // story boss rule: this type is banned for the challenger
   if (m.status === 'slp' || m.status === 'frz') return false;
   if (m.vol.recharge) return false;
   const fs = other(S);
@@ -2885,6 +2889,9 @@ function statusTick(S, m, dt) {
     }
   }
   if (m.conf > 0) { m.conf -= dt; if (m.conf <= 0) { m.conf = 0; VFX.text(S, 'SNAPPED OUT', '#bfffd0'); logLine(`${m.name} snapped out of its confusion!`); G.hudDirty = true; } }
+  { const wx = G.rules && G.rules.weather;   // sandstorm chips all but Rock, Ground and Steel; hail all but Ice — every 6 s
+    if ((wx === 'sand' && !m.types.some(t => t === 'Rock' || t === 'Ground' || t === 'Steel')) || (wx === 'hail' && !m.types.includes('Ice'))) { m.wxT = (m.wxT || 0) + dt;
+      if (m.wxT >= 6000) { m.wxT -= 6000; const d = Math.min(m.hp, Math.max(1, Math.floor(m.max / 16))); m.hp -= d; VFX.text(S, (wx === 'sand' ? 'SANDSTORM ' : 'HAIL ') + '-' + d, wx === 'sand' ? '#e8cf8a' : '#cfeaff'); G.hudDirty = true; G.lastDmgT = G.time; } } }
   if (m.item === 'Leftovers' && m.hp < m.max) { m.lefT += dt; if (m.lefT >= 3000) { m.lefT = 0; const h = Math.min(m.max - m.hp, Math.floor(m.max / 32)); m.hp += h; VFX.heal(S, h, true); G.hudDirty = true; } }
 }
 // Moves that can be used on the move; every other attack roots its user until it lands. Shared with online prediction.
@@ -2959,13 +2966,21 @@ function aiThink(S) {
   if (!present(fs)) return;
   const t = act(fs), d = dist(sd, side(fs));
   const all = u.moves.map((n, i) => ({ i, v: scoreMove(u, t, n, d) + Math.random() * aiK(S, 1.2, .08, 0) }));
+  // trainer personality (story): aggressive, switch-heavy, status-focused or defensive
+  const style = G.aiStyle && G.aiStyle[slotTeam(S)];
+  if (style) for (const x of all) { const mv = MOVES[u.moves[x.i]], st = mv.cat === 'X';
+    if (style === 'aggro') x.v *= st ? .5 : 1.25; else if (style === 'status') x.v *= st ? (t.status ? .7 : 1.9) : .9; else if (style === 'defensive') x.v *= st ? 1.5 : .95; }
   const best = all.slice().sort((a, b) => b.v - a.v)[0];
   sd.prefDist = (['contact', 'dash', 'slash', 'dig'].includes(MOVES[u.moves[best.i]].anim) ? 70 : 250 + (u.stats.spe > 90 ? 60 : 0)) + (Math.random() - .5) * aiK(S, 220, 0, 0);
+  if (style === 'aggro') sd.prefDist = Math.max(60, sd.prefDist - 50); else if (style === 'status' || style === 'defensive') sd.prefDist += 90;
   const ready = all.filter(x => u.cd[x.i] <= 0).sort((a, b) => b.v - a.v);
   // switch out of a hopeless matchup now and then
   if (S === 'B' || G.auto) {
     const weak = u.moves.every(n => MOVES[n].cat === 'X' || typeEff(MOVES[n].type, t.types) < 1);
     if (weak && sd.switchCd <= 0 && u.hp / u.max > .4 && Math.random() < aiK(S, 0, .06, .2)) { const alt = bestSwitchFor(S); if (alt != null) { requestSwitch(S, alt); return; } }
+    if (style === 'switcher' && sd.switchCd <= 0 && u.hp / u.max > .25) {            // switch-heavy: also leaves threatening matchups, often
+      const threat = t.moves.some(n => MOVES[n].cat !== 'X' && typeEff(MOVES[n].type, u.types) >= 2);
+      if ((weak || threat) && Math.random() < .3) { const alt = bestSwitchFor(S); if (alt != null) { requestSwitch(S, alt); return; } } }
   }
   if (!ready.length || ready[0].v < .04) return;
   if (Math.random() < aiK(S, .45, 0, 0)) return;                     // weaker AIs hesitate
@@ -7402,9 +7417,10 @@ function updateCooldowns() {
     const c = sd.cast, charging = !!(c && c.idx === i && G.phase === 'battle');
     const ch = charging ? (c.phase === 'wind' ? clamp(c.t / Math.max(1, WINDUP(mv)), 0, 1) : 1) : 0;
     b.style.setProperty('--ch', ch.toFixed(3)); b.classList.toggle('charging', charging);
-    const txt = charging ? (c.phase === 'wind' ? 'CHARGING' : 'FIRING') : sd.queued === i ? 'QUEUED' : cd > 0 ? (cd / 1000).toFixed(1) : '';
+    const banned = !!(G.rules && G.rules.banA && G.rules.banA.includes(mv.type)); b.classList.toggle('banned', banned);
+    const txt = banned ? 'BANNED' : charging ? (c.phase === 'wind' ? 'CHARGING' : 'FIRING') : sd.queued === i ? 'QUEUED' : cd > 0 ? (cd / 1000).toFixed(1) : '';
     const t = b.querySelector('.cdtxt'); if (t.textContent !== txt) t.textContent = txt;
-    b.classList.toggle('ready', cd <= 0 && G.phase === 'battle');
+    b.classList.toggle('ready', !banned && cd <= 0 && G.phase === 'battle');
     b.classList.toggle('queued', sd.queued === i);
     b.disabled = G.phase !== 'battle' || clock.paused || G.auto;
   }
@@ -7469,12 +7485,21 @@ function chooseStage() { const v = $('stageSel').value; return v === 'random' ? 
 const filledTeam = t => { const f = (t || []).filter(Boolean); return f.length ? f : [DEX[0].name]; };   // empty slots ("No Pokémon") are skipped
 async function startBattle(picksA, picksB, stageId) {
   picksA = filledTeam(picksA); picksB = filledTeam(picksB);
+  const RU = typeof storyRules === 'function' ? storyRules() : null;   // story boss twists and difficulty
+  if (RU && RU.fixedTeam) picksA = RU.fixedTeam.slice();                 // puzzle battles: a fixed team
+  if (RU && RU.handicap) picksA = picksA.slice(0, RU.handicap);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
-  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
+  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), rules: RU && (RU.weather || RU.banA) ? { weather: RU.weather || null, banA: RU.banA || null, handicap: RU.handicap || null } : null,
+    doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
     ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}) });   // four parties in Local doubles
   G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–13 (story mode sets the gym's)
   if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
+  if (RU && RU.aiStyle) G.aiStyle = { B: RU.aiStyle };                    // the trainer's personality
+  if (RU && RU.bonus) for (const m of G.sides.A.team) { for (const k in RU.bonus) if (k === 'hp') { m.max = Math.round(m.max * RU.bonus.hp); m.hp = m.max; } else m.stats[k] = Math.round(m.stats[k] * RU.bonus[k]); }   // badge passives
+  if (RU && RU.carry) G.sides.A.team.forEach((m, i) => { const f = RU.carry[i]; if (f != null) m.hp = Math.max(0, Math.round(m.max * f)); });   // gauntlets: no healing between fights
+  if (RU && RU.carry) { const first = G.sides.A.team.findIndex(m => m.hp > 0); if (first > 0) G.sides.A.active = first; }
+  if (RU && RU.foeScale && RU.foeScale !== 1) for (const m of G.sides.B.team) { for (const k of ['atk', 'def', 'spa', 'spd', 'spe']) m.stats[k] = Math.round(m.stats[k] * RU.foeScale); m.max = Math.round(m.max * RU.foeScale); m.hp = m.max; }   // difficulty
   // two players on one phone or tablet: both sides human (Local only)
   if (typeof NET !== 'undefined' && NET.mode === 'local' && typeof START !== 'undefined' && START.ctrl && START.ctrl.B === 'human' && typeof duoCapable === 'function' && duoCapable()) G.human = { A: START.ctrl.A === 'human', B: true };
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
@@ -7484,7 +7509,7 @@ async function startBattle(picksA, picksB, stageId) {
   try {
     await playIntro(my); guard(my);
     // Red comes out and cries, then Blue; the battle waits for both, then counts down 3 · 2 · 1 · GO!
-    spawnIn('A', 0); await sendOutDone('A'); guard(my);
+    spawnIn('A', side('A').active || 0); await sendOutDone('A'); guard(my);
     if (G.doubles && side('C').state !== 'empty') { spawnIn('C', side('C').active); await sendOutDone('C'); guard(my); }
     spawnIn('B', 0); await sendOutDone('B'); guard(my);
     if (G.doubles && side('D').state !== 'empty') { spawnIn('D', side('D').active); await sendOutDone('D'); guard(my); }
@@ -8308,13 +8333,13 @@ document.addEventListener('keydown', e => {
    Every file named <Name>_trainer.png (animated PNG) in the sprites folder is a trainer option.
    The Android app lists the folder itself, so new files appear automatically; elsewhere the
    bundled roster below is used. Underscores in the name become spaces (Lt_Surge -> "Lt Surge"). */
-const BUNDLED_TRAINERS = ['Ash', 'Blaine', 'Brawly', 'Brock', 'Emmet', 'Erika', 'Fantina', 'Flannery', 'Gary', 'Ghetsis', 'Giovanni', 'Lance', 'Lt_Surge', 'Misty', 'Roxanne', 'Sabrina', 'Steven', 'Wallace', 'Wattson', 'Winona'];
+const BUNDLED_TRAINERS = ['Ash', 'Blaine', 'Brawly', 'Brock', 'Emmet', 'Erika', 'Fantina', 'Flannery', 'Gary', 'Ghetsis', 'Giovanni', 'Lance', 'Lt_Surge', 'Misty', 'Professor_Oak', 'Roxanne', 'Sabrina', 'Steven', 'Wallace', 'Wattson', 'Winona'];
 const FACES_RIGHT_BY_DEFAULT = new Set(['Brock']);          // most battle sprites face left
 const trainerTitle = n => n.replace(/_/g, ' ');
 function discoverTrainers() {
   let files = null;
   try { if (window.AndroidApp && AndroidApp.listSprites) files = JSON.parse(AndroidApp.listSprites()); } catch (e) { }
-  const found = (files || []).map(f => (String(f).match(/^(.+)_trainer\.png$/i) || [])[1]).filter(Boolean);
+  const found = (files || []).map(f => (String(f).match(/^(.+)_trainer\.png$/i) || [])[1]).filter(n => n && !/_back$/i.test(n));   // <Name>_back_trainer.png is a back sprite, not a trainer
   return [...new Set(found.length ? found : BUNDLED_TRAINERS)].sort((a, b) => a.localeCompare(b));
 }
 // Route trainers (story mode only) are kept out of the start screen's trainer list.
@@ -8345,7 +8370,7 @@ function loadTrainer(name) {
     return TR_ANIM[name];
   })();
 }
-const customTrainer = S => TR_ANIM[TRSEL[S]] || null;
+const customTrainer = S => (typeof trainerOverride === 'function' && trainerOverride(S)) || TR_ANIM[TRSEL[S]] || null;   // a back sprite while throwing
 function trainerAnimFor(S) { return customTrainer(S); }
 const trainerFacesRight = name => name in TRSEL.flip ? !!TRSEL.flip[name] : FACES_RIGHT_BY_DEFAULT.has(name);
 const mirrorTrainer = S => trainerFacesRight(TRSEL[S]) ? slotTeam(S) === 'B' : slotTeam(S) === 'A';   // Red faces right, Blue faces left
@@ -9241,7 +9266,7 @@ playCry = function (name) { if (pickBase(name) !== 'MissingNo.') return _playCry
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '16.5';
+const APP_VERSION = '16.6';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -9345,6 +9370,7 @@ function leaveOnline() {
 /* ---------- messages from the server ---------- */
 function onNetMessage(m) {
   switch (m.t) {
+    case 'rqueued': case 'rleft': case 'rmatched': case 'rated': if (typeof onNetExtra === 'function') onNetExtra(m); break;   // ranked
     case 'error': netStatus(m.msg, 'err'); toast(m.msg); break;
     case 'hosted': NET.code = m.code; $('olCodeShow').textContent = m.code; netStatus('Game created. Tell your friend the code — waiting for them to join…', 'ok'); break;
     case 'joined': NET.code = m.code; netStatus('Joined! Starting…', 'ok'); break;
@@ -11698,6 +11724,557 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
 })();
 
 //# sourceURL=trainers.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 31: story engine (milestone 1)
+   - JSON-driven cutscenes with portraits before story fights
+   - Gary's rival arc: fights before gyms 3, 5 and 7; his team grows with
+     yours; his lines shift from cocky to bitter with your record vs him
+   - Boss twists: each gym leader adds a rule (permanent weather, banned
+     move types for the challenger, or a handicap: bring only 3 or 4)
+   - Stars per fight: win · no faints · under par time (best kept)
+   - Difficulty: Story / Normal / Hard (AI skill and opponent stats)
+   ===================================================================== */
+(function storyEngine() {
+  if (typeof STORY === 'undefined' || typeof GYMS === 'undefined') return;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  /* ---------- data ---------- */
+  const RULES = {
+    1: { weather: 'sand', title: 'Sandstorm', text: 'A permanent SANDSTORM chips every Pokémon that isn’t Rock, Ground or Steel.' },
+    2: { weather: 'rain', title: 'Downpour', text: 'Permanent RAIN: Water moves hit 50% harder, Fire moves 50% weaker.' },
+    3: { banA: ['Ground'], title: 'Insulated floor', text: 'Your GROUND moves are banned in Surge’s gym.' },
+    4: { weather: 'sun', title: 'Greenhouse sun', text: 'Permanent HARSH SUN: Fire moves hit 50% harder, Water moves 50% weaker.' },
+    5: { handicap: 3, title: 'Ninja ambush', text: 'Koga’s trap: you may bring only your first THREE Pokémon against his six.' },
+    6: { banA: ['Bug', 'Ghost'], title: 'Mind barrier', text: 'Sabrina’s psychic barrier bans your BUG and GHOST moves.' },
+    7: { weather: 'sun', banA: ['Water'], title: 'Volcano', text: 'HARSH SUN blazes, and your WATER moves evaporate — they’re banned.' },
+    8: { weather: 'sand', handicap: 4, title: 'Earthquake', text: 'A SANDSTORM rages and Giovanni allows only your first FOUR Pokémon.' },
+    9: { weather: 'hail', title: 'Dragon’s blizzard', text: 'Permanent HAIL chips every Pokémon that isn’t Ice.' }
+  };
+  const GARY = GYMS.find(g => g.n === 10) || { file: 'Gary', leader: 'Gary' };
+  const RIVAL_AT = { 2: 0, 4: 1, 6: 2 };   // before gym index 2, 4 and 6 (Lt. Surge, Koga, Blaine): rival fights 1, 2, 3
+  const RIVAL_BASE = [
+    ['Pidgeotto', 'Abra', 'Rattata', '*1'],
+    ['Pidgeotto', 'Kadabra', 'Rhyhorn', 'Exeggcute', '*2'],
+    ['Pidgeot', 'Alakazam', 'Rhydon', 'Exeggutor', 'Gyarados', '*2']
+  ];
+  const PAR = n => 110 + n * 10;   // seconds for the speed star
+  const DIFF = { story: { name: 'Story', ai: -2, scale: .92 }, normal: { name: 'Normal', ai: 0, scale: 1 }, hard: { name: 'Hard', ai: 2, scale: 1.08 } };
+  // the scripts (who: 'me' = you, 'foe' = the opponent) — short scenes, two or three lines each
+  const SCRIPT = {
+    gym: {
+      1: [['foe', 'So you’re the new challenger. Feel that wind? My gym’s sandstorm never stops.'], ['me', 'A little sand won’t slow us down.']],
+      2: [['foe', 'It’s pouring in here, and that’s how I like it. My Water Pokémon love the rain!'], ['me', 'Then we’ll just have to make a splash.']],
+      3: [['foe', 'Hah! You think your Ground tricks work here? My floor’s insulated, kid. No Ground moves!'], ['me', 'We don’t need tricks to beat you.']],
+      4: [['foe', 'Feel the sunlight in my garden? My Grass Pokémon bloom brightest in it.'], ['me', 'We’ll be careful not to get burned.']],
+      5: [['foe', 'Fwahaha! You walked into my trap. Only three of your Pokémon may follow you in.'], ['me', 'Three will be enough.']],
+      6: [['foe', 'I foresaw your arrival… and your Bug and Ghost moves. They won’t pass my barrier.'], ['me', 'Then we’ll find another way through.']],
+      7: [['foe', 'Hah! Welcome to my volcano, where Water boils away before it lands!'], ['me', 'Turn up the heat — we’re ready.']],
+      8: [['foe', 'So you made it this far. In my gym the ground itself fights you. Bring four. No more.'], ['me', 'Four is all I need to stop you.']],
+      9: [['foe', 'Feel that cold? Dragons fear nothing — not even the blizzard I fight in.'], ['me', 'Then let’s see who freezes first.']]
+    },
+    rival: {   // [encounter][mood] — before; after: win / lose
+      before: [
+        { cocky: [['foe', 'Hey! Smell ya later? Nah — smell ya NOW. Let’s see if you’ve learned anything.'], ['me', 'Gary… fine, let’s go.']],
+          rattled: [['foe', 'You again. That last win was luck, and you know it.'], ['me', 'Want to find out?']],
+          bitter: [['foe', 'You… always one step ahead. Not this time.'], ['me', 'Let’s battle, Gary.']] },
+        { cocky: [['foe', 'Still collecting badges? Cute. I’ve got twice as many already.'], ['me', 'Badges don’t battle. Pokémon do.']],
+          rattled: [['foe', 'I’ve been training non-stop since you beat me. My team’s evolved — have you?'], ['me', 'See for yourself.']],
+          bitter: [['foe', 'Everyone keeps talking about YOU. The kid who beats Gary. I’m sick of it.'], ['me', 'Then let your Pokémon do the talking.']] },
+        { cocky: [['foe', 'One more gym and you’ll finally see what a real trainer looks like. Me.'], ['me', 'Big talk. Let’s go.']],
+          rattled: [['foe', 'Okay. No more games. This is my real team.'], ['me', 'Bring it, Gary.']],
+          bitter: [['foe', 'I don’t get it. I train harder. I study harder. Why do YOU keep winning?'], ['me', 'Maybe you’re training for the wrong reasons.']] }
+      ],
+      win: { cocky: [['foe', 'What?! Huh… a fluke. Next time you won’t be so lucky.']], rattled: [['foe', 'Tch. Again? …Whatever. See ya.']], bitter: [['foe', '…Fine. Enjoy it while it lasts.']] },
+      lose: { cocky: [['foe', 'Ha! Told you. Go home and cry to Gramps.']], rattled: [['foe', 'That’s more like it. Back where you belong — behind me.']], bitter: [['foe', 'Finally. FINALLY. Remember this feeling.']] }
+    },
+    champion: {
+      cocky: [['foe', 'Took you long enough. I’m the Champion, and I’ve been waiting to prove I’m the best.'], ['me', 'Then let’s settle it.']],
+      rattled: [['foe', 'So it comes down to us. Just like I always knew it would.'], ['me', 'One last battle, Gary.']],
+      bitter: [['foe', 'You beat me every time it mattered. Not today. Not for the title.'], ['me', 'Then show me your best.']]
+    }
+  };
+
+  /* ---------- save helpers ---------- */
+  const sv = () => STORY.save;
+  const rv = () => { const s = sv(); s.rival = s.rival || { w: 0, l: 0, done: {} }; s.rival.done = s.rival.done || {}; return s.rival; };
+  const mood = () => { const r = rv(), d = r.w - r.l; return d >= 2 ? 'bitter' : d >= 1 ? 'rattled' : 'cocky'; };
+  const diff = () => DIFF[(sv() && sv().difficulty) || 'normal'] || DIFF.normal;
+  const starsOf = key => ((sv() && sv().stars) || {})[key] || 0;
+  window.storyStars = () => Object.values((sv() && sv().stars) || {}).reduce((a, n) => a + n, 0);
+
+  /* ---------- cutscenes ---------- */
+  const css = document.createElement('style'); css.textContent = `
+  #csOv{position:fixed;inset:0;z-index:3000;display:none;background:linear-gradient(180deg,rgba(5,8,22,.25),rgba(5,8,22,.75));font-family:var(--ui,Rubik,sans-serif)}
+  #csOv.show{display:block}
+  #csOv .por{position:absolute;bottom:150px;height:min(48vh,340px);filter:drop-shadow(0 10px 22px rgba(0,0,0,.6));transition:opacity .25s,transform .25s;image-rendering:pixelated}
+  #csOv .por.l{left:6vw}#csOv .por.r{right:6vw;transform:scaleX(-1)}
+  #csOv .por.dim{opacity:.4}
+  #csOv .box{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(860px,92vw);min-height:104px;background:#0d1430;border:3px solid #ffd84a;border-radius:16px;padding:14px 20px 16px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+  #csOv .who{position:absolute;top:-16px;left:18px;background:#ffd84a;color:#141c34;font:900 13px var(--ui,Rubik,sans-serif);padding:3px 12px;border-radius:9px;letter-spacing:.05em}
+  #csOv .who.r{left:auto;right:18px}
+  #csOv .txt{font:600 17px/1.45 var(--ui,Rubik,sans-serif);min-height:50px}
+  #csOv .hint{position:absolute;right:16px;bottom:8px;font:700 11px var(--ui,Rubik,sans-serif);color:#9aa6d8}
+  #csOv .skip{position:absolute;top:max(14px,env(safe-area-inset-top));right:16px;background:#2a3456;color:#fff;border:0;border-radius:10px;padding:7px 14px;font:800 12px var(--ui,Rubik,sans-serif);cursor:pointer}
+  #csOv .twist{position:absolute;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);background:#3a1830;border:2px solid #ff7aa8;color:#ffd6e6;border-radius:12px;padding:7px 14px;font:800 13px var(--ui,Rubik,sans-serif);max-width:80vw;text-align:center}
+  #ruleToast{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:60;background:rgba(40,16,40,.92);border:2px solid #ff7aa8;color:#ffe2ee;border-radius:14px;padding:10px 18px;font:800 15px var(--ui,Rubik,sans-serif);text-align:center;pointer-events:none;opacity:0;transition:opacity .4s}
+  #ruleToast.show{opacity:1}#ruleToast small{display:block;font-weight:600;font-size:12px;color:#ffc6da;margin-top:3px}
+  .move.banned,.tmove.banned{filter:grayscale(1) brightness(.6)}
+  .sy-extra{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);font:600 13px var(--ui,Rubik,sans-serif);color:#dfe4ff;text-align:left}
+  .sy-extra b{color:#ffd84a}.sy-extra .twist{color:#ffb3cf}
+  .sy-diff{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.sy-diff button{border:0;border-radius:9px;padding:5px 12px;font:800 12px var(--ui,Rubik,sans-serif);background:#2a3456;color:#fff;cursor:pointer}
+  .sy-diff button.on{background:#ffd84a;color:#141c34}
+  .sy-stars{font:900 22px var(--ui,Rubik,sans-serif);letter-spacing:4px;color:#ffd84a;text-shadow:0 2px 8px rgba(0,0,0,.5)}.sy-stars i{color:#4a5378;font-style:normal}
+  .sy-starwhy{font:600 12px var(--ui,Rubik,sans-serif);color:#c8cde8}`;
+  document.head.appendChild(css);
+  const ov = document.createElement('div'); ov.id = 'csOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Cutscene'); document.body.appendChild(ov);
+  const toast = document.createElement('div'); toast.id = 'ruleToast'; document.body.appendChild(toast);
+  const imgOf = file => (typeof TRAINERS !== 'undefined' && TRAINERS.includes(file) && typeof portraitUrl === 'function' ? portraitUrl(file) : '');
+  function playScene(lines, foe, twist) {
+    if (!lines || !lines.length) return Promise.resolve();
+    return new Promise(done => {
+      STORY.cutscene = true; let k = 0, typing = null, full = '';
+      const me = sv().trainer, myImg = imgOf(me), foeImg = imgOf(foe.file);
+      ov.innerHTML = `${myImg ? `<img class="por l" src="${myImg}" alt="">` : ''}${foeImg ? `<img class="por r" src="${foeImg}" alt="">` : ''}
+        ${twist ? `<div class="twist">⚠ ${esc(twist.title)}: ${esc(twist.text)}</div>` : ''}<button class="skip" type="button">Skip ▸▸</button>
+        <div class="box"><div class="who"></div><div class="txt" aria-live="polite"></div><div class="hint">tap / Space ▸</div></div>`;
+      ov.classList.add('show');
+      const L = ov.querySelector('.por.l'), R = ov.querySelector('.por.r'), who = ov.querySelector('.who'), txt = ov.querySelector('.txt');
+      const finish = () => { clearInterval(typing); ov.classList.remove('show'); ov.innerHTML = ''; window.removeEventListener('keydown', key, true); STORY.cutscene = false; done(); };
+      const show = () => { if (k >= lines.length) return finish(); const [w, t] = lines[k]; const mine = w === 'me';
+        who.textContent = mine ? (typeof trainerTitle === 'function' ? trainerTitle(me) : 'You').toUpperCase() : (foe.leader || foe.file).toUpperCase(); who.classList.toggle('r', !mine);
+        if (L) L.classList.toggle('dim', !mine); if (R) R.classList.toggle('dim', mine);
+        full = t; let n = 0; txt.textContent = ''; clearInterval(typing); typing = setInterval(() => { n += 2; txt.textContent = full.slice(0, n); if (n >= full.length) clearInterval(typing); }, 18); };
+      const next = () => { if (txt.textContent.length < full.length) { clearInterval(typing); txt.textContent = full; return; } k++; show(); };
+      const key = e => { if (e.key !== ' ' && e.key !== 'Enter' && e.key !== 'Escape') return; e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); if (e.key === 'Escape') finish(); else next(); };   // the scene consumes its keys (Escape must not also leave the battle that starts next)
+      ov.onclick = e => { if (e.target.closest('.skip')) finish(); else next(); };
+      window.addEventListener('keydown', key, true); show();
+    });
+  }
+  window.playScene = playScene;
+  window.STORY_DATA = { RULES, SCRIPT, DIFF, PAR, diff, mood, rv, starsOf, imgOf };
+
+  /* ---------- rules for the next story battle ---------- */
+  STORY.nextRules = null;
+  window.storyRules = () => (STORY.battle ? STORY.nextRules : null);
+  const _cur = currentAiLevels;
+  currentAiLevels = function () { const r = _cur.apply(this, arguments); if (STORY.battle && r && r.B) { const base = r.B; r.B = base >= 13 ? 13 : Math.max(1, Math.min(12, base + diff().ai)); } return r; };
+
+  /* ---------- the rival ---------- */
+  function rivalTeam(k) {
+    const pick = garyPick(sv().team), line = GARY_TEAMS.find(G => G.counter === pick.counter) ? null : null;
+    const counterLine = (GARY_TEAMS.map(G => G.line).find(l => l.includes(pick.counter))) || ['Charmander', 'Charmeleon', 'Charizard'];
+    const list = RIVAL_BASE[k].map(n => n === '*1' ? counterLine[1] : n === '*2' ? counterLine[2] : n);
+    const size = Math.max(2, Math.min(list.length, (sv().team || []).length));   // grows with yours
+    return list.slice(list.length - size);                                        // keeps his starter, sheds the earliest picks
+  }
+  async function startRival(i) {
+    const k = RIVAL_AT[i], m = mood();
+    await playScene(SCRIPT.rival.before[k][m], GARY);
+    const s = sv(), g = gymAt(i);
+    STORY.battle = { gym: i, rival: k, level: Math.max(1, (g.ai || g.n) - 1), practice: false };
+    STORY.nextRules = Object.assign({ foeScale: diff().scale }, typeof storyRuleExtras === 'function' ? storyRuleExtras({ rival: true }) : {});
+    if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
+    TRSEL.A = s.trainer; TRSEL.B = GARY.file; loadTrainer(s.trainer); loadTrainer(GARY.file);
+    try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
+    watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
+    $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
+    startBattle(s.team.slice(), rivalTeam(k), 'plaza');
+    STORY.battle.G = G;
+  }
+  async function rivalResult(won, b) {
+    const r = rv(), m = mood(); if (won) r.w++; else r.l++; r.done[b.gym] = true; saveStory();
+    showOverlay('ovResults', false); openStoryScreen();
+    await playScene((won ? SCRIPT.rival.win : SCRIPT.rival.lose)[m], GARY);
+    try { renderStory(); openGymCard(b.gym); } catch (e) { }
+  }
+
+  /* ---------- wrap the story flow ---------- */
+  const _start = startGymBattle;
+  startGymBattle = async function (i) {
+    if (STORY.cutscene) return;
+    const s = sv(), g = gymAt(i); if (!s) return _start.apply(this, arguments);
+    const first = i === s.badges && !g.secret;
+    if (first && RIVAL_AT[i] != null && !rv().done[i]) { closeModal(); return startRival(i); }
+    const K = g.rulesKey || g.n;
+    const rules = Object.assign({ foeScale: diff().scale }, g.secret ? {} : (RULES[K] || {}), typeof storyRuleExtras === 'function' ? storyRuleExtras(g) : {});
+    // the leader's scene plays on arrival — right before the battle, after any route walk or wild encounter
+    STORY.pendingScene = first ? { lines: g.n === 10 ? SCRIPT.champion[mood()] : SCRIPT.gym[K], who: g, twist: RULES[K] } : null;
+    STORY.nextRules = rules;
+    return _start.call(this, i);
+  };
+  const _result = storyResult;
+  storyResult = function (won) {
+    const b = STORY.battle, s = sv(), BG = b && b.G;
+    let earned = 0, key = null;
+    if (b && s && BG) {
+      key = b.event ? 'e' + b.event : b.rival != null ? 'r' + b.rival : 'g' + (gymAt(b.gym).rulesKey || gymAt(b.gym).n);
+      if (won) { earned = 1; if (!BG.sides.A.team.some(m => m.hp <= 0)) earned++; if (BG.elapsed / 1000 <= PAR(Math.min(10, b.gym + 1))) earned++; }
+      s.stars = s.stars || {}; if (earned > (s.stars[key] || 0)) s.stars[key] = earned;
+      saveStory();
+    }
+    STORY.nextRules = null;
+    if (b && b.rival != null) { STORY.battle = null; return rivalResult(won, b); }
+    const r = _result.apply(this, arguments);
+    if (won && key) { const box = document.querySelector('#syModal .sy-cer'); if (box) { const d = document.createElement('div');
+      d.innerHTML = `<div class="sy-stars" aria-label="${earned} of 3 stars">${'★'.repeat(earned)}<i>${'★'.repeat(3 - earned)}</i></div><div class="sy-starwhy">★ win · ★ no faints · ★ under ${PAR(Math.min(10, b.gym + 1))} s${starsOf(key) > earned ? ` · best: ${starsOf(key)}★` : ''}</div>`;
+      const h = box.querySelector('h2'); if (h) h.after(d); else box.prepend(d); } }
+    return r;
+  };
+
+  const _startBattle = startBattle;
+  startBattle = async function () {
+    const sc = STORY.pendingScene; STORY.pendingScene = null;
+    if (sc && STORY.battle) { const b = STORY.battle; await playScene(sc.lines, sc.who, sc.twist); if (STORY.battle !== b) return; const p = _startBattle.apply(this, arguments); b.G = G; return p; }
+    return _startBattle.apply(this, arguments);
+  };
+  /* ---------- battles: apply the rules, show the twist ---------- */
+  let shownFor = null;
+  setInterval(() => {
+    if (typeof G === 'undefined' || !G || !G.rules) return;
+    if (G.phase === 'battle' && shownFor !== G) { shownFor = G; const t = Object.values(RULES).find(x => x.weather === G.rules.weather && JSON.stringify(x.banA || null) === JSON.stringify(G.rules.banA || null) && (x.handicap || null) === (G.rules.handicap || null));
+      if (t) { toast.innerHTML = `⚠ ${esc(t.title)}<small>${esc(t.text)}</small>`; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3800); } }
+  }, 250);
+  // weather on the field
+  if (typeof drawWorldFx === 'function') { const _dwf = drawWorldFx; drawWorldFx = function () { const r = _dwf.apply(this, arguments);
+    try { const w = G && G.rules && G.rules.weather; if (w && ['battle', 'intro', 'pick'].includes(G.phase)) { const c = bctx, t = clock.t, W = c.canvas.width, H = c.canvas.height; c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+      if (w === 'rain') { c.fillStyle = 'rgba(40,70,120,.12)'; c.fillRect(0, 0, W, H); c.strokeStyle = 'rgba(190,215,255,.55)'; c.lineWidth = 1; c.beginPath(); for (let k = 0; k < 90; k++) { const x = ((k * 97.3 + t * .55) % (W + 40)) - 20, y = ((k * 53.1 + t * .9) % (H + 40)) - 20; c.moveTo(x, y); c.lineTo(x - 4, y + 12); } c.stroke(); }
+      else if (w === 'sun') { const g = c.createRadialGradient(W * .85, -H * .1, 10, W * .85, -H * .1, H * 1.1); g.addColorStop(0, 'rgba(255,220,140,.35)'); g.addColorStop(1, 'rgba(255,160,60,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
+      else if (w === 'sand') { c.fillStyle = 'rgba(190,150,80,.16)'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(225,190,120,.6)'; for (let k = 0; k < 120; k++) { const x = ((k * 71.7 + t * .7) % (W + 20)) - 10, y = (k * 37.3 + Math.sin(t / 400 + k) * 6) % H; c.fillRect(x, y, 2, 1); } }
+      else if (w === 'hail') { c.fillStyle = 'rgba(200,225,255,.10)'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(235,245,255,.85)'; for (let k = 0; k < 70; k++) { const x = ((k * 83.9 + t * .2) % (W + 20)) - 10, y = ((k * 61.7 + t * .5) % (H + 20)) - 10; c.fillRect(x, y, 2, 2); } }
+      c.restore(); } } catch (e) { }
+    return r; }; }
+
+  /* ---------- the gym card: twist, stars, difficulty ---------- */
+  const _card = openGymCard;
+  openGymCard = function (i) {
+    const r = _card.apply(this, arguments);
+    try { const s = sv(), g = gymAt(i), card = document.querySelector('#syModal > div'); if (!s || !card || g.secret) return r;
+      const rivalNext = i === s.badges && RIVAL_AT[i] != null && !rv().done[i], rule = RULES[g.rulesKey || g.n], key = 'g' + (g.rulesKey || g.n), n = starsOf(key);
+      const d = document.createElement('div'); d.className = 'sy-extra';
+      d.innerHTML = `${rivalNext ? `<div><b>⚔ Gary blocks the way!</b> Your rival challenges you before ${esc(g.leader)}.</div>` : ''}
+        ${rule ? `<div class="twist">⚠ <b>${esc(rule.title)}</b> — ${esc(rule.text)}</div>` : ''}
+        <div>Stars: <span class="sy-stars" style="font-size:16px">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span> <span class="sy-starwhy">win · no faints · under ${PAR(g.n)} s</span></div>
+        <div class="sy-diff" role="group" aria-label="Difficulty">${Object.entries(DIFF).map(([k, v]) => `<button type="button" data-d="${k}" class="${((s.difficulty || 'normal') === k) ? 'on' : ''}">${v.name}</button>`).join('')}</div>`;
+      card.appendChild(d);
+      d.querySelectorAll('.sy-diff button').forEach(b => b.onclick = () => { s.difficulty = b.dataset.d; saveStory(); d.querySelectorAll('.sy-diff button').forEach(x => x.classList.toggle('on', x === b)); });
+    } catch (e) { console.error(e); }
+    return r;
+  };
+  /* ---------- the map: stars under each gym ---------- */
+  const _render = renderStory;
+  renderStory = function () {
+    const r = _render.apply(this, arguments);
+    try { const s = sv(); if (!s) return r;
+      document.querySelectorAll('#syMap g.gym[data-g]').forEach(node => { const i = +node.dataset.g; if (i >= TOTAL) return; const n = starsOf('g' + GYMS[i].n); if (!n) return;
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text'); t.setAttribute('y', '58'); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'gstars');
+        t.setAttribute('style', 'font:900 15px Rubik,sans-serif;fill:#ffd84a;paint-order:stroke;stroke:#141c34;stroke-width:4px'); t.textContent = '★'.repeat(n) + '☆'.repeat(3 - n); node.appendChild(t); });
+    } catch (e) { }
+    return r;
+  };
+})();
+
+//# sourceURL=storyengine.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 32: story milestone 2
+   - The Silph Co. branch (before Sabrina): stop Team Rocket (a three-fight
+     survival gauntlet, no healing between) or join them (3v3 against
+     Officer Jenny) — joining puts Professor Oak in the Viridian gym as an
+     alternate 8th leader in place of Giovanni
+   - Mixed formats: a 1v1 duel (before Misty) and a puzzle battle with a
+     fixed team (before Erika)
+   - AI personalities per trainer (aggressive, switch-heavy, status, defensive)
+   - Badge passives: each badge adds a small, permanent bonus in story battles
+   - Trainers with a back sprite (<Name>_back_trainer.png) turn around to throw
+   ===================================================================== */
+(function storyMilestone2() {
+  if (typeof STORY === 'undefined' || !window.STORY_DATA) return;
+  const $ = id => document.getElementById(id);
+  const D = STORY_DATA, esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const sv = () => STORY.save;
+  const fileFor = (keys, fallback) => (typeof ALL_TRAINERS !== 'undefined' && ALL_TRAINERS.find(n => keys.includes(trainerKey(n)))) || fallback;
+
+  /* ---------- personalities and badge passives ---------- */
+  const STYLE = { 1: 'defensive', 2: 'aggro', 3: 'aggro', 4: 'status', 5: 'status', 6: 'switcher', 7: 'aggro', 8: 'defensive', 9: 'aggro', 10: 'switcher', oak: 'switcher' };
+  const STYLE_NAME = { aggro: 'Aggressive — all-out attacks, up close', switcher: 'Switch-heavy — swaps out of bad matchups', status: 'Status — poisons, puts to sleep, keeps away', defensive: 'Defensive — sets up and walls from range' };
+  const BADGE_BONUS = [{ def: 1.03, t: '+3% Defense' }, { hp: 1.03, t: '+3% HP' }, { spe: 1.03, t: '+3% Speed' }, { spd: 1.03, t: '+3% Sp. Def' },
+    { atk: 1.03, t: '+3% Attack' }, { spa: 1.03, t: '+3% Sp. Atk' }, { atk: 1.02, spa: 1.02, t: '+2% Attack & Sp. Atk' }, { hp: 1.02, atk: 1.02, def: 1.02, spa: 1.02, spd: 1.02, spe: 1.02, t: '+2% all stats' }];
+  const bonusNow = () => { const n = Math.min(8, (sv() && sv().badges) || 0), out = {}; for (let k = 0; k < n; k++) for (const s in BADGE_BONUS[k]) if (s !== 't') out[s] = (out[s] || 1) * BADGE_BONUS[k][s]; return out; };
+  window.storyRuleExtras = g => ({ aiStyle: g && g.rival ? 'switcher' : (g && (g.style || STYLE[g.rulesKey || g.n])) || null, bonus: bonusNow() });
+
+  /* ---------- Professor Oak: the alternate 8th gym leader ---------- */
+  const GIOVANNI = GYMS[7];
+  const OAK = Object.assign({}, GIOVANNI, { leader: 'Professor Oak', file: 'Professor_Oak', rulesKey: 'oak', type: 'Normal',
+    team: ['Tauros', 'Exeggutor', 'Arcanine', 'Gyarados', 'Lapras', 'Dragonite'],
+    hello: 'I gave you your first Pokémon. I never imagined I’d have to take your badge case back.',
+    win: 'Go home and think about what kind of trainer you want to be.', lose: '…You’ve grown strong, whatever side you’re on. Take the Earth Badge.' });
+  D.RULES.oak = { handicap: 5, title: 'Final exam', text: 'Oak tests everything you know: you may bring only five Pokémon, and he switches to cover every weakness.' };
+  D.SCRIPT.gym.oak = [['foe', 'So it’s true. You joined Team Rocket.'], ['foe', 'Giovanni wants my research? Then you’ll have to take it from me — in battle.'], ['me', 'I’m sorry, Professor. Let’s battle.']];
+  const applyBranch = () => { const s = sv(); GYMS[7] = s && s.branch === 'rocket' ? OAK : GIOVANNI; };
+  window.applyStoryBranch = applyBranch;
+
+  /* ---------- events (before gyms 2, 4 and 6) ---------- */
+  const EV = {
+    1: { id: 'duel', title: 'Nugget Bridge duel', format: '1v1', name: 'Cooltrainer', keys: ['cooltrainermale', 'cooltrainerm', 'cooltrainerboy', 'acetrainermale', 'acetrainerm'], team: ['Nidorino'], style: 'aggro', arena: 'cerulean',
+      text: 'A 1v1 duel: your lead Pokémon against his. No switching — whoever falls first loses.',
+      before: [['foe', 'Five trainers guard this bridge, and I’m the last. One Pokémon each — no switching, no excuses!'], ['me', 'My lead is ready.']],
+      win: [['foe', 'Clean win. You earned the crossing.']], lose: [['foe', 'Not good enough to cross. Train up and try again!']] },
+    3: { id: 'puzzle', title: 'Cerulean Cape puzzle', format: 'puzzle', name: 'Swimmer', keys: ['swimmer', 'swimmermale', 'swimmerm'], team: ['Starmie'], fixedTeam: ['Golduck', 'Poliwhirl', 'Wartortle', 'Pikachu'], foeScale: 1.6, style: 'defensive', arena: 'cerulean',
+      text: 'Puzzle battle: your team is fixed. Only one of these four can really beat his Starmie — find the winning line.',
+      before: [['foe', 'My Starmie has never lost here. I’ll even lend you a team — let’s see if you can solve it.'], ['me', 'A puzzle? I’m in.']],
+      win: [['foe', 'You found it! Electricity cuts right through water.']], lose: [['foe', 'Not quite. Think about what Starmie fears… and try again.']] },
+    5: { id: 'silph', branch: true, title: 'Silph Co.', arena: 'skyfort' }
+  };
+  const GAUNTLET = [
+    { name: 'Rocket Grunt', keys: ['rocketgrunt', 'teamrocketgrunt', 'grunt', 'rocketgruntmale', 'rocketgruntm'], team: ['Rattata', 'Zubat', 'Ekans'], style: 'aggro' },
+    { name: 'Rocket Grunt', keys: ['rocketgruntfemale', 'rocketgruntf', 'rocketgrunt', 'teamrocketgrunt', 'grunt'], team: ['Koffing', 'Raticate', 'Golbat'], style: 'aggro' },
+    { name: 'Rocket Admin', keys: ['rocketadmin', 'archer', 'admin', 'teamrocketadmin'], team: ['Arbok', 'Weezing', 'Persian'], style: 'status' }
+  ];
+  const JENNY = { name: 'Officer Jenny', keys: ['officerjenny', 'jenny', 'policeofficer'], team: ['Growlithe', 'Machoke', 'Arcanine'], style: 'defensive', format: '3v3' };
+  const GIOVANNI_WHO = { file: 'Giovanni', leader: 'Giovanni' };
+  const SC = {
+    offer: [['foe', 'So you’re the trainer who keeps showing up where Team Rocket does business.'], ['foe', 'Silph Co. is mine. Join me, and you’ll have power those gym leaders can only dream of. Refuse, and my grunts will deal with you.']],
+    hero: [['me', 'Never. I’m taking Silph Co. back.'], ['foe', 'Then you’ll have to get through my grunts — one after another, with no rest between.']],
+    rocket: [['me', '…I’m in.'], ['foe', 'Wise. Prove it: Officer Jenny is downstairs. Make sure she doesn’t leave.']],
+    next: [['foe', 'Don’t think you’re done! Next!']],
+    heroWin: [['foe', 'Impossible… This isn’t the last you’ll see of Team Rocket.']],
+    rocketWin: [['foe', 'Excellent. Now go to Viridian. Your final badge is waiting — and so is a familiar face.']],
+    lose: [['foe', 'Pathetic. Come back when you’re worth my time.']]
+  };
+  const evs = () => { const s = sv(); s.events = s.events || {}; return s.events; };
+  const whoOf = spec => ({ file: fileFor(spec.keys || [], (spec.name || 'Trainer').replace(/\s+/g, '_')), leader: spec.name });
+
+  function choose(question, options) {
+    return new Promise(done => {
+      const ov = $('csOv'); STORY.cutscene = true;
+      ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">${esc(question)}</div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">${options.map((o, k) => `<button class="sy-btn${k ? '' : ' go'}" type="button" data-k="${k}" style="min-width:200px">${esc(o.label)}<br><small style="font-weight:600;opacity:.8">${esc(o.sub)}</small></button>`).join('')}</div></div>`;
+      ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-k]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; STORY.cutscene = false; done(options[+b.dataset.k].value); };
+    });
+  }
+
+  function startEventBattle(i, spec, extra = {}) {
+    const s = sv(), g = gymAt(i), who = whoOf(spec), fmt = extra.format || spec.format;
+    STORY.battle = { gym: i, event: extra.id || EV[i].id, stage: extra.stage, level: Math.max(1, (g.ai || g.n) - 1), practice: false, spec };
+    STORY.nextRules = { foeScale: D.diff().scale * (spec.foeScale || 1), aiStyle: spec.style, bonus: bonusNow(),
+      handicap: fmt === '1v1' ? 1 : fmt === '3v3' ? 3 : null, fixedTeam: spec.fixedTeam || null, carry: extra.carry || null };
+    if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
+    TRSEL.A = s.trainer; TRSEL.B = who.file; loadTrainer(s.trainer); loadTrainer(who.file);
+    try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
+    watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
+    $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
+    startBattle(s.team.slice(), spec.team.slice(), EV[i].arena || g.arena);
+    STORY.battle.G = G;
+  }
+  async function startEvent(i) {
+    const ev = EV[i], s = sv();
+    if (ev.branch) {
+      if (!s.branch) {
+        await playScene(SC.offer, GIOVANNI_WHO);
+        s.branch = await choose('Giovanni is waiting for your answer.', [{ label: 'Stop Team Rocket', sub: 'Fight through three Rocket battles — no healing', value: 'hero' }, { label: 'Join Team Rocket', sub: 'Your 8th gym leader becomes Professor Oak', value: 'rocket' }]);
+        saveStory(); applyBranch();
+        await playScene(s.branch === 'hero' ? SC.hero : SC.rocket, GIOVANNI_WHO);
+      }
+      if (s.branch === 'hero') { STORY.gauntlet = { k: 0 }; return startEventBattle(i, GAUNTLET[0], { id: 'silph', stage: 0, format: 'gauntlet' }); }
+      return startEventBattle(i, JENNY, { id: 'silph', format: '3v3' });
+    }
+    await playScene(ev.before, whoOf(ev), { title: ev.title, text: ev.text });
+    return startEventBattle(i, ev);
+  }
+  async function eventResult(won, b) {
+    const s = sv(), BG = b.G; STORY.battle = null; STORY.nextRules = null;
+    showOverlay('ovResults', false);
+    const ev = EV[b.gym], key = 'e' + b.event;
+    // stars: win · no faints · under par (the gauntlet scores its final fight)
+    let earned = 0; if (won && BG) { earned = 1; if (!BG.sides.A.team.some(m => m.hp <= 0)) earned++; if (BG.elapsed / 1000 <= D.PAR(Math.min(10, b.gym + 1))) earned++; }
+    if (b.event === 'silph' && s.branch === 'hero' && won && b.stage < GAUNTLET.length - 1) {       // the gauntlet goes on, no healing
+      const carry = BG.sides.A.team.map(m => Math.max(0, m.hp / m.max));
+      await playScene(SC.next, whoOf(GAUNTLET[b.stage + 1]));
+      return startEventBattle(b.gym, GAUNTLET[b.stage + 1], { id: 'silph', stage: b.stage + 1, format: 'gauntlet', carry });
+    }
+    if (won) { evs()[b.event] = true; s.stars = s.stars || {}; if (earned > (s.stars[key] || 0)) s.stars[key] = earned; }
+    saveStory(); openStoryScreen();
+    if (b.event === 'silph') await playScene(won ? (s.branch === 'hero' ? SC.heroWin : SC.rocketWin) : SC.lose, s.branch === 'hero' ? GIOVANNI_WHO : whoOf(JENNY));
+    else await playScene(won ? ev.win : ev.lose, whoOf(ev));
+    try { renderStory(); openGymCard(b.gym); } catch (e) { }
+  }
+
+  /* ---------- wrap the story flow ---------- */
+  const _sg = startGymBattle;
+  startGymBattle = async function (i) {
+    applyBranch(); if (STORY.cutscene) return;
+    const s = sv(), g = gymAt(i);
+    if (s && i === s.badges && !g.secret && EV[i] && !evs()[EV[i].id]) { closeModal(); return startEvent(i); }
+    return _sg.apply(this, arguments);
+  };
+  const _res = storyResult;
+  storyResult = function (won) { const b = STORY.battle; if (b && b.event) return eventResult(won, b); return _res.apply(this, arguments); };
+  const _render = renderStory;
+  renderStory = function () { applyBranch(); return _render.apply(this, arguments); };
+  const _card = openGymCard;
+  openGymCard = function (i) {
+    applyBranch(); const r = _card.apply(this, arguments);
+    try { const s = sv(), g = gymAt(i), extra = document.querySelector('#syModal .sy-extra'); if (!s || !extra || g.secret) return r;
+      const ev = EV[i], pending = i === s.badges && ev && !evs()[ev.id], st = STYLE[g.rulesKey || g.n], bon = BADGE_BONUS.slice(0, Math.min(8, s.badges)).map(x => x.t);
+      const d = document.createElement('div');
+      d.innerHTML = `${pending ? `<div><b>★ Event first: ${esc(ev.title)}</b> — ${esc(ev.branch ? (s.branch ? (s.branch === 'hero' ? 'Fight through three Rocket battles, no healing between.' : '3v3 against Officer Jenny.') : 'Giovanni has an offer for you… your answer changes the story.') : ev.text)} <button class="sy-btn" type="button" id="syEvSkip" style="padding:3px 10px;font-size:11px;margin-left:6px">Skip event</button></div>` : ''}
+        ${s.branch ? `<div>Path: <b>${s.branch === 'hero' ? 'Stopping Team Rocket' : 'Team Rocket'}</b></div>` : ''}
+        ${st ? `<div>${esc(g.leader)}’s style: <b>${esc(STYLE_NAME[st])}</b></div>` : ''}
+        <div>Badge bonuses: ${bon.length ? bon.map(esc).join(' · ') : '<i>none yet — each badge adds one</i>'}</div>`;
+      extra.appendChild(d);
+      const skip = $('syEvSkip'); if (skip) skip.onclick = async () => { if (ev.branch && !s.branch) { closeModal(); await playScene(SC.offer, GIOVANNI_WHO); s.branch = await choose('Giovanni is waiting for your answer.', [{ label: 'Stop Team Rocket', sub: 'Giovanni stays the 8th gym leader', value: 'hero' }, { label: 'Join Team Rocket', sub: 'Your 8th gym leader becomes Professor Oak', value: 'rocket' }]); applyBranch(); }
+        evs()[ev.id] = true; saveStory(); renderStory(); openGymCard(i); };
+    } catch (e) { console.error(e); }
+    return r;
+  };
+
+  /* ---------- back sprites: trainers turn around to throw ---------- */
+  const throwUntil = {};
+  if (typeof VFX !== 'undefined' && VFX.sendOut) { const _so = VFX.sendOut.bind(VFX); VFX.sendOut = function (S) { throwUntil[slotTeam(S)] = clock.t + 650; const n = TRSEL[slotTeam(S)]; if (n) loadTrainer(n + '_back'); return _so.apply(this, arguments); }; }
+  window.trainerOverride = S => { const n = TRSEL[S]; return n && clock.t < (throwUntil[S] || 0) && TR_ANIM[n + '_back'] ? TR_ANIM[n + '_back'] : null; };
+  applyBranch();
+})();
+
+//# sourceURL=story2.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 33: story milestone 3 (client side of the server features)
+   - Ranked queue (Online tab): unlocked by beating the story campaign.
+     Signed-in web players are verified from their synced save; phones use
+     a private device key kept on the phone.
+   - Story → PvP bridge: a title earned in story mode (Champion, badges,
+     stars, rating) is shown to online opponents, and "Use my story party"
+     loads your story team for Local or Online play.
+   - Ghost battles: a "Wandering trainer" on the story map brings a real
+     team recorded on your server from online battles.
+   ===================================================================== */
+(function milestone3() {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, put = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } };
+
+  /* ---------- identity: a private key for this device (phones), or the signed-in account (web) ---------- */
+  function deviceKey() { let k = get('arena151.rankedKey'); if (!k || k.length < 32) { const b = new Uint8Array(32); crypto.getRandomValues(b); k = btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); put('arena151.rankedKey', k); } return k; }
+  const authToken = () => { try { const a = JSON.parse(get('arena151.auth') || 'null'); return a && a.token || null; } catch (e) { return null; } };
+  function storySlots() { const out = []; for (let i = 1; i <= 9; i++) { const v = get('arena151.story.' + i); if (!v) continue; try { const s = JSON.parse(v); if (s) out.push(s); } catch (e) { } } return out; }
+  const campaignBeaten = () => storySlots().some(s => s.finishedAt || s.badges >= 10);
+  function storyTitle() {
+    const slots = storySlots(); if (!slots.length) return '';
+    const best = slots.slice().sort((a, b) => (b.badges || 0) - (a.badges || 0))[0], stars = Math.max(0, ...slots.map(s => Object.values(s.stars || {}).reduce((a, n) => a + n, 0)));
+    const champ = slots.find(s => s.finishedAt || s.badges >= 10), rating = get('arena151.rating');
+    return [champ ? (champ.branch === 'rocket' ? 'Rocket Champion' : 'Champion') : `${best.badges || 0} badges`, stars ? `★${stars}` : '', rating ? `Rating ${rating}` : ''].filter(Boolean).join(' · ');
+  }
+  if (typeof myInfo === 'function') { const _mi = myInfo; myInfo = function () { return Object.assign(_mi.apply(this, arguments), { title: storyTitle() }); }; }
+
+  /* ---------- the server's web address (from the Online tab's server field) ---------- */
+  function httpBase() {
+    const v = ($('olServer') && $('olServer').value.trim()) || get('arena151.server') || '';
+    if (!v) return /^https?:$/.test(location.protocol) ? location.origin : '';
+    const c = (typeof serverCandidates === 'function' ? serverCandidates(v) : [])[0] || ''; return c.replace(/^ws/i, 'http').replace(/\/ws\/?$/i, '');
+  }
+  async function api(method, path, body) {
+    const base = httpBase(); if (!base) throw new Error('Set your server address on the Online tab first.');
+    const tok = authToken(), r = await fetch(base + '/api' + path, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, tok ? { Authorization: 'Bearer ' + tok } : {}), body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'The server said no.'); return j;
+  }
+
+  /* ---------- the Ranked panel (Online tab) ---------- */
+  const css = document.createElement('style'); css.textContent = `
+  #rkBox{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,216,74,.07);border:1px solid rgba(255,216,74,.35);font:600 13px var(--ui,Rubik,sans-serif);color:#e4e8ff}
+  #rkBox h4{margin:0 0 6px;font:900 13px var(--ui,Rubik,sans-serif);color:#ffd84a;letter-spacing:.06em}
+  #rkBox .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  #rkBox .why{color:#ffb3cf;font-size:12px}
+  #rkBox ol{margin:6px 0 0;padding-left:20px;max-height:120px;overflow:auto;font-size:12px}#rkBox ol b{color:#ffd84a}
+  .st-btn.story-party{margin-left:4px}`;
+  document.head.appendChild(css);
+  function mountRanked() {
+    if ($('rkBox') || !$('olJoin')) return;
+    const box = document.createElement('div'); box.id = 'rkBox';
+    box.innerHTML = `<h4>RANKED</h4><div class="row"><span id="rkMe">Rating: —</span><button class="st-btn" type="button" id="rkGo">Find ranked match</button><button class="st-btn" type="button" id="rkLeave" hidden>Leave queue</button><button class="st-btn" type="button" id="rkTop">Top 10</button></div><div class="why" id="rkWhy"></div><ol id="rkList" hidden></ol>`;
+    const anchor = $('olJoin').closest('.row') || $('olJoin').parentNode; anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    $('rkGo').onclick = queue; $('rkLeave').onclick = () => { try { netSend({ t: 'rleave' }); } catch (e) { } };
+    $('rkTop').onclick = showTop; refreshMe();
+  }
+  function syncEligibility() { const ok = campaignBeaten(); const go = $('rkGo'); if (!go) return; go.disabled = !ok; $('rkWhy').textContent = ok ? '' : 'Beat the story campaign to unlock ranked.'; }
+  async function refreshMe() { syncEligibility(); try { const me = await api('POST', '/ranked/me', { deviceKey: deviceKey(), name: typeof trainerTitle === 'function' ? trainerTitle(TRSEL.A) : 'Trainer', finished: campaignBeaten() });
+      put('arena151.rating', String(me.rating)); $('rkMe').textContent = `Rating: ${me.rating} · ${me.wins}W ${me.losses}L${me.draws ? ' ' + me.draws + 'D' : ''}${me.wins + me.losses + me.draws ? ' · #' + me.rank : ''}`;
+      if (!me.eligible && me.account) $('rkWhy').textContent = 'Beat the story campaign (and let your save sync) to unlock ranked.'; } catch (e) { $('rkMe').textContent = 'Rating: — (connect to your server)'; } }
+  async function showTop() { const l = $('rkList'); l.hidden = !l.hidden; if (l.hidden) return; l.innerHTML = '<li>Loading…</li>';
+    try { const t = await api('GET', '/ranked/top'); l.innerHTML = t.top.length ? t.top.map(r => `<li><b>${r.rating}</b> ${esc(r.name)} · ${r.wins}W ${r.losses}L</li>`).join('') : '<li>No ranked matches yet.</li>'; } catch (e) { l.innerHTML = `<li>${esc(e.message)}</li>`; } }
+  async function queue() {
+    if (!campaignBeaten()) return syncEligibility();
+    try { await netConnect(); } catch (e) { return; }
+    netSend({ t: 'rqueue', ...myInfo(), token: authToken() || undefined, deviceKey: deviceKey(), finished: campaignBeaten() });
+  }
+  window.onNetExtra = m => {
+    if (m.t === 'rqueued') { netStatus(`In the ranked queue (rating ${m.rating}) — looking for an opponent…`, 'ok'); $('rkGo').hidden = true; $('rkLeave').hidden = false; }
+    else if (m.t === 'rleft') { netStatus('Left the ranked queue.', 'ok'); $('rkGo').hidden = false; $('rkLeave').hidden = true; }
+    else if (m.t === 'rmatched') { netStatus(`Ranked match found: ${m.opp} (rating ${m.oppRating})`, 'ok'); $('rkGo').hidden = false; $('rkLeave').hidden = true; }
+    else if (m.t === 'rated') { const d = m.after - m.before; put('arena151.rating', String(m.after)); if (typeof toast === 'function') toast(`Ranked: ${m.before} → ${m.after} (${d >= 0 ? '+' : ''}${d})`); setTimeout(refreshMe, 400); }
+  };
+  if (typeof beginOnline === 'function') { const _bo = beginOnline; beginOnline = function (m) { const r = _bo.apply(this, arguments); try { if (m && m.opp && m.opp.title && typeof toast === 'function') toast(`${m.opp.trainer} — ${m.opp.title}`); } catch (e) { } return r; }; }
+  setInterval(() => { mountRanked(); syncEligibility(); }, 1500); mountRanked();
+
+  /* ---------- "Use my story party" (start screen) ---------- */
+  function mountStoryParty() {
+    const row = document.querySelector('#startOv [data-def="A"]'); if (!row || document.querySelector('#startOv .story-party')) return;
+    const b = document.createElement('button'); b.className = 'st-btn story-party'; b.type = 'button'; b.textContent = '📖 Story party';
+    b.title = 'Use your story-mode team'; row.after(b);
+    b.onclick = () => { const slot = get('arena151.storySlot') || '1'; let s = null; try { s = JSON.parse(get('arena151.story.' + slot) || 'null'); } catch (e) { }
+      if (!s || !(s.team || []).length) { if (typeof toast === 'function') toast('No story party yet — start a journey in Story mode.'); return; }
+      const t = s.team.slice(0, 6); while (t.length < 6) t.push(''); setParty('A', t); try { renderStartTeams(); } catch (e) { } };
+  }
+  setInterval(mountStoryParty, 1500); mountStoryParty();
+
+  /* ---------- ghost battles: wandering trainers from real online teams ---------- */
+  if (typeof STORY === 'undefined' || typeof GYMS === 'undefined') return;
+  const STYLES = ['aggro', 'switcher', 'status', 'defensive'];
+  async function wanderingTrainer() {
+    const s = STORY.save; if (!s) return;
+    let g; try { g = await api('GET', '/ghost'); } catch (e) { if (typeof toast === 'function') toast('Set your server address on the Online tab to meet wandering trainers.'); return; }
+    const team = (g.team || []).filter(n => typeof DEX_BY_NAME !== 'undefined' && DEX_BY_NAME[String(n).split('|')[0]]);
+    if (!team.length) { if (typeof toast === 'function') toast('No wandering trainers yet — they come from online battles on your server.'); return; }
+    const file = g.trainer && typeof ALL_TRAINERS !== 'undefined' && ALL_TRAINERS.includes(g.trainer) ? g.trainer : 'Gary', who = { file, leader: 'Wandering ' + (typeof trainerTitle === 'function' ? trainerTitle(file) : file) };
+    closeModal();
+    await playScene([['foe', 'I’ve battled trainers all over — online, for real. This team has beaten people just like you.'], ['me', 'Then let’s see it.']], who, { title: 'Ghost battle', text: 'A real team recorded from an online battle on your server.' });
+    const i = Math.min(s.badges, GYMS.length - 1), lvl = Math.max(1, (gymAt(i).ai || gymAt(i).n) - 1);
+    STORY.battle = { gym: i, ghost: true, level: lvl, practice: true };
+    STORY.nextRules = { foeScale: STORY_DATA.diff().scale, aiStyle: STYLES[Math.floor(Math.random() * STYLES.length)], bonus: typeof storyRuleExtras === 'function' ? storyRuleExtras({ rival: false, n: 0 }).bonus : null };
+    if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
+    TRSEL.A = s.trainer; TRSEL.B = file; loadTrainer(s.trainer); loadTrainer(file);
+    try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
+    watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
+    $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
+    startBattle(s.team.slice(), team.slice(0, 6), 'random'); STORY.battle.G = G; STORY.battle.who = who;
+  }
+  const _res = storyResult;
+  storyResult = async function (won) {
+    const b = STORY.battle; if (!b || !b.ghost) return _res.apply(this, arguments);
+    STORY.battle = null; STORY.nextRules = null; const s = STORY.save; s.ghosts = s.ghosts || { w: 0, l: 0 }; if (won) s.ghosts.w++; else s.ghosts.l++; saveStory();
+    showOverlay('ovResults', false); openStoryScreen();
+    await playScene([['foe', won ? 'You beat a team that beat real players. Respect.' : 'Real players fear this team for a reason. See you around.']], b.who);
+    try { renderStory(); } catch (e) { }
+  };
+  function mountGhostButton() {
+    const s = STORY.save, host = [...document.querySelectorAll('#storyOv button')].find(x => /Pok[eé]dex/.test(x.textContent));
+    if (!host || document.getElementById('syGhost')) return;
+    const b = document.createElement('button'); b.id = 'syGhost'; b.type = 'button'; b.className = host.className; b.textContent = '👻 Wandering trainer';
+    b.title = 'Battle a real team recorded from online battles on your server'; host.after(b); b.onclick = wanderingTrainer;
+    b.hidden = !(s && s.badges >= 1);
+  }
+  const _render = renderStory;
+  renderStory = function () { const r = _render.apply(this, arguments); try { mountGhostButton(); const g = $('syGhost'); if (g) g.hidden = !(STORY.save && STORY.save.badges >= 1); } catch (e) { } return r; };
+  window.wanderingTrainer = wanderingTrainer;
+})();
+
+//# sourceURL=ranked.js
 </script>
 <script>
 'use strict';

@@ -48,6 +48,11 @@ db.exec(`
     app_version TEXT
   );
   CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
+  -- ranked play: a player is an account ('u:<id>') or a phone ('d:<hash of its private device key>')
+  CREATE TABLE IF NOT EXISTS rplayers (pkey TEXT PRIMARY KEY, name TEXT NOT NULL, rating REAL NOT NULL DEFAULT 1000, wins INTEGER NOT NULL DEFAULT 0, losses INTEGER NOT NULL DEFAULT 0, draws INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL);
+  CREATE TABLE IF NOT EXISTS rmatches (id INTEGER PRIMARY KEY AUTOINCREMENT, a TEXT NOT NULL, b TEXT NOT NULL, winner TEXT NOT NULL, a_before REAL, b_before REAL, a_after REAL, b_after REAL, at INTEGER NOT NULL);
+  -- ghost battles: teams seen in real online battles (trainer and team only — no names or emails)
+  CREATE TABLE IF NOT EXISTS ghosts (id INTEGER PRIMARY KEY AUTOINCREMENT, trainer TEXT NOT NULL, team TEXT NOT NULL, at INTEGER NOT NULL);
 `);
 const q = {
   userByEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
@@ -59,7 +64,18 @@ const q = {
   purgeSessions: db.prepare('DELETE FROM sessions WHERE expires < ?'),
   getSave: db.prepare('SELECT data, saved_at FROM saves WHERE user_id = ?'),
   putSave: db.prepare('INSERT INTO saves (user_id, data, saved_at, app_version) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, app_version = excluded.app_version'),
-  userCount: db.prepare('SELECT COUNT(*) AS n FROM users')
+  userCount: db.prepare('SELECT COUNT(*) AS n FROM users'),
+  rGet: db.prepare('SELECT * FROM rplayers WHERE pkey = ?'),
+  rNew: db.prepare('INSERT OR IGNORE INTO rplayers (pkey, name, updated) VALUES (?, ?, ?)'),
+  rName: db.prepare('UPDATE rplayers SET name = ? WHERE pkey = ?'),
+  rSet: db.prepare('UPDATE rplayers SET rating = ?, wins = wins + ?, losses = losses + ?, draws = draws + ?, updated = ? WHERE pkey = ?'),
+  rTop: db.prepare('SELECT name, rating, wins, losses, draws FROM rplayers WHERE wins + losses + draws > 0 ORDER BY rating DESC LIMIT ?'),
+  rRank: db.prepare('SELECT COUNT(*) AS n FROM rplayers WHERE rating > ? AND wins + losses + draws > 0'),
+  mAdd: db.prepare('INSERT INTO rmatches (a, b, winner, a_before, b_before, a_after, b_after, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
+  gAdd: db.prepare('INSERT INTO ghosts (trainer, team, at) VALUES (?, ?, ?)'),
+  gTrim: db.prepare('DELETE FROM ghosts WHERE id NOT IN (SELECT id FROM ghosts ORDER BY id DESC LIMIT 500)'),
+  gRandom: db.prepare('SELECT trainer, team FROM ghosts ORDER BY RANDOM() LIMIT 1'),
+  gCount: db.prepare('SELECT COUNT(*) AS n FROM ghosts')
 };
 const SESSION_MS = 60 * 24 * 3600 * 1000, MAX_SAVE = 4 * 1024 * 1024;
 setInterval(() => { try { q.purgeSessions.run(Date.now()); } catch (e) { } }, 3600 * 1000).unref();
@@ -109,11 +125,43 @@ function cleanSave(data) {
   return out;
 }
 
+/* ---------- ranked play ---------- */
+const validKey = k => typeof k === 'string' && /^[A-Za-z0-9_-]{32,100}$/.test(k);
+function playerKey(token, deviceKey) {                       // an account if signed in, otherwise this phone
+  if (typeof token === 'string' && /^[A-Za-z0-9_-]{20,100}$/.test(token)) { const s = q.session.get(sha256(token)); if (s && s.expires >= Date.now()) return { key: 'u:' + s.user_id, userId: s.user_id }; }
+  if (validKey(deviceKey)) return { key: 'd:' + sha256(deviceKey), userId: null };
+  return null;
+}
+function campaignBeaten(p, claim) {                          // accounts: checked against the synced save; phones: their own report
+  if (!p.userId) return !!claim;
+  const s = q.getSave.get(p.userId); if (!s) return false;
+  try { const d = JSON.parse(s.data); return Object.keys(d).some(k => { if (!/^arena151\.story\.\d$/.test(k)) return false; try { const v = JSON.parse(d[k]); return !!(v && (v.finishedAt || v.badges >= 10)); } catch (e) { return false; } }); } catch (e) { return false; }
+}
+function ratedPlayer(key, name) { const now = Date.now(); q.rNew.run(key, String(name || 'Trainer').slice(0, 24), now); if (name) q.rName.run(String(name).slice(0, 24), key); const r = q.rGet.get(key); return { ...r, rank: q.rRank.get(r.rating).n + 1 }; }
+function recordRanked(ka, kb, winner) {                      // Elo, K = 32; winner 'A', 'B' or 'draw'
+  const a = q.rGet.get(ka), b = q.rGet.get(kb); if (!a || !b) return null;
+  const ea = 1 / (1 + 10 ** ((b.rating - a.rating) / 400)), sa = winner === 'A' ? 1 : winner === 'B' ? 0 : .5, K = 32;
+  const na = Math.round((a.rating + K * (sa - ea)) * 10) / 10, nb = Math.round((b.rating + K * ((1 - sa) - (1 - ea))) * 10) / 10, now = Date.now();
+  q.rSet.run(na, sa === 1 ? 1 : 0, sa === 0 ? 1 : 0, sa === .5 ? 1 : 0, now, ka); q.rSet.run(nb, sa === 0 ? 1 : 0, sa === 1 ? 1 : 0, sa === .5 ? 1 : 0, now, kb);
+  q.mAdd.run(ka, kb, winner, a.rating, b.rating, na, nb, now);
+  return { A: { before: a.rating, after: na }, B: { before: b.rating, after: nb } };
+}
+function addGhost(trainer, team) { try { if (!Array.isArray(team) || !team.length) return; q.gAdd.run(String(trainer || 'Trainer').slice(0, 40).replace(/[^A-Za-z0-9_ .-]/g, ''), JSON.stringify(team.slice(0, 6).map(t => String(t).slice(0, 24))), Date.now()); q.gTrim.run(); } catch (e) { } }
+
 /* ---------- the API ---------- */
 async function handle(req, res, appVersion) {
   const url = req.url.split('?')[0];
   if (req.method === 'OPTIONS') return send(res, 204, {});
   try {
+    // public: the ranked leaderboard, a random ghost team, and a player's own rating (account or phone key)
+    if (req.method === 'GET' && url === '/api/ranked/top') return send(res, 200, { top: q.rTop.all(10).map(r => ({ ...r, rating: Math.round(r.rating) })) });
+    if (req.method === 'GET' && url === '/api/ghost') { const g = q.gRandom.get(); return send(res, 200, g ? { trainer: g.trainer, team: JSON.parse(g.team), pool: q.gCount.get().n } : { trainer: null, team: null, pool: 0 }); }
+    if (req.method === 'POST' && url === '/api/ranked/me') {
+      const b = await readBody(req, 4096), tm = /^Bearer\s+(\S+)$/.exec(req.headers.authorization || ''), p = playerKey(tm && tm[1], b.deviceKey);
+      if (!p) return send(res, 400, { error: 'No player key.' });
+      const r = ratedPlayer(p.key, b.name), ok = campaignBeaten(p, b.finished);
+      return send(res, 200, { rating: Math.round(r.rating), wins: r.wins, losses: r.losses, draws: r.draws, rank: r.rank, eligible: ok, account: !!p.userId });
+    }
     if (req.method === 'POST' && (url === '/api/register' || url === '/api/login')) {
       const ip = clientIp(req);
       if (limited('ip:' + ip, 30, 10 * 60 * 1000)) return send(res, 429, { error: 'Too many attempts from your network. Please wait a few minutes.' });
@@ -153,4 +201,4 @@ async function handle(req, res, appVersion) {
     return send(res, 500, { error: 'Something went wrong. Please try again.' });
   }
 }
-module.exports = { handle, userCount: () => q.userCount.get().n };
+module.exports = { handle, userCount: () => q.userCount.get().n, playerKey, campaignBeaten, ratedPlayer, recordRanked, addGhost };

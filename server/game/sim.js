@@ -57,6 +57,7 @@ function newBattle(picksA, picksB, opts = {}) {
     if (second >= 0) sd.active = second; else { sd.active = sides[T].active; sd.state = 'empty'; } sides[S] = sd; }
   return {
     doubles, picks: Object.assign({ A: picksA.slice(), B: picksB.slice() }, doubles ? { C: sides.C.team.map(m => m.pick || m.name), D: sides.D.team.map(m => m.pick || m.name) } : {}), sides,
+    rules: opts.rules || null,   // story boss twists: { weather: 'rain'|'sun'|'sand'|'hail', banA: [types the challenger may not use] }
     shots: [], marks: [], waves: [], beams: [], clash: null, time: 0, elapsed: 0, lastDmgT: 0, phase: 'intro', auto: !!opts.auto,
     timeLimit: opts.timeLimit || 0, winner: null, decision: '', log: [], hudDirty: true, nextShotGroup: 1,
     stats: { A: { dmg: 0, kos: 0, crits: 0, moves: 0 }, B: { dmg: 0, kos: 0, crits: 0, moves: 0 }, best: null }
@@ -81,6 +82,8 @@ function aiLv(S) { const l = G && G.aiLevel && G.aiLevel[slotTeam(S)]; return l 
 function aiK(S, lo, base, hi) { const l = aiLv(S); if (l > 10) return hi + (hi - base) * (l - 10) / 8; return l <= AI_CLASSIC ? lo + (base - lo) * (l - 1) / (AI_CLASSIC - 1) : base + (hi - base) * (l - AI_CLASSIC) / (10 - AI_CLASSIC); }
 function logLine(t, cls) { G.log.push(cls ? '§' + t : t); if (G.log.length > 150) G.log.shift(); if (typeof onLog === 'function') onLog(t, cls); }
 
+// permanent weather (story boss rule): rain powers Water and weakens Fire, harsh sun the reverse
+const weatherMult = mv => { const w = G && G.rules && G.rules.weather; if (w === 'rain') return mv.type === 'Water' ? 1.5 : mv.type === 'Fire' ? .5 : 1; if (w === 'sun') return mv.type === 'Fire' ? 1.5 : mv.type === 'Water' ? .5 : 1; return 1; };
 function calcDamage(u, t, mv, crit, eff, roll = true) {
   const phys = mv.cat === 'P';
   let aS = phys ? u.stages.atk : u.stages.spa, dS = phys ? t.stages.def : t.stages.spd;
@@ -93,7 +96,7 @@ function calcDamage(u, t, mv, crit, eff, roll = true) {
   const burn = phys && u.status === 'brn' ? .5 : 1;
   const r = roll ? .85 + Math.random() * .15 : .925;
   const od = G && G.overtime ? G.overtime : 1;
-  return Math.max(1, Math.floor(base * stab * eff * pinch * (crit ? 1.5 : 1) * r * burn * DMG_MULT * od));
+  return Math.max(1, Math.floor(base * stab * eff * pinch * (crit ? 1.5 : 1) * r * burn * DMG_MULT * od * weatherMult(mv)));
 }
 function statusImmune(m, st) {
   if (st === 'brn') return m.types.includes('Fire');
@@ -186,6 +189,7 @@ function tryCast(S, idx) {
   if (G.clash && inClash(S)) { if (!controlledByAI(S)) G.clash.mash[S] = (G.clash.mash[S] || 0) + 1; return !controlledByAI(S); }   // a button press during a beam lock pushes the beam
   const sd = side(S), m = act(S), mv = MOVES[m.moves[idx]];
   if (!mv || sd.state !== 'idle' || sd.cast || sd.stun > 0 || sd.gcd > 0 || m.cd[idx] > 0) return false;
+  if (G.rules && G.rules.banA && slotTeam(S) === 'A' && G.rules.banA.includes(mv.type)) return false;   // story boss rule: this type is banned for the challenger
   if (m.status === 'slp' || m.status === 'frz') return false;
   if (m.vol.recharge) return false;
   const fs = other(S);
@@ -543,6 +547,9 @@ function statusTick(S, m, dt) {
     }
   }
   if (m.conf > 0) { m.conf -= dt; if (m.conf <= 0) { m.conf = 0; VFX.text(S, 'SNAPPED OUT', '#bfffd0'); logLine(`${m.name} snapped out of its confusion!`); G.hudDirty = true; } }
+  { const wx = G.rules && G.rules.weather;   // sandstorm chips all but Rock, Ground and Steel; hail all but Ice — every 6 s
+    if ((wx === 'sand' && !m.types.some(t => t === 'Rock' || t === 'Ground' || t === 'Steel')) || (wx === 'hail' && !m.types.includes('Ice'))) { m.wxT = (m.wxT || 0) + dt;
+      if (m.wxT >= 6000) { m.wxT -= 6000; const d = Math.min(m.hp, Math.max(1, Math.floor(m.max / 16))); m.hp -= d; VFX.text(S, (wx === 'sand' ? 'SANDSTORM ' : 'HAIL ') + '-' + d, wx === 'sand' ? '#e8cf8a' : '#cfeaff'); G.hudDirty = true; G.lastDmgT = G.time; } } }
   if (m.item === 'Leftovers' && m.hp < m.max) { m.lefT += dt; if (m.lefT >= 3000) { m.lefT = 0; const h = Math.min(m.max - m.hp, Math.floor(m.max / 32)); m.hp += h; VFX.heal(S, h, true); G.hudDirty = true; } }
 }
 // Moves that can be used on the move; every other attack roots its user until it lands. Shared with online prediction.
@@ -617,13 +624,21 @@ function aiThink(S) {
   if (!present(fs)) return;
   const t = act(fs), d = dist(sd, side(fs));
   const all = u.moves.map((n, i) => ({ i, v: scoreMove(u, t, n, d) + Math.random() * aiK(S, 1.2, .08, 0) }));
+  // trainer personality (story): aggressive, switch-heavy, status-focused or defensive
+  const style = G.aiStyle && G.aiStyle[slotTeam(S)];
+  if (style) for (const x of all) { const mv = MOVES[u.moves[x.i]], st = mv.cat === 'X';
+    if (style === 'aggro') x.v *= st ? .5 : 1.25; else if (style === 'status') x.v *= st ? (t.status ? .7 : 1.9) : .9; else if (style === 'defensive') x.v *= st ? 1.5 : .95; }
   const best = all.slice().sort((a, b) => b.v - a.v)[0];
   sd.prefDist = (['contact', 'dash', 'slash', 'dig'].includes(MOVES[u.moves[best.i]].anim) ? 70 : 250 + (u.stats.spe > 90 ? 60 : 0)) + (Math.random() - .5) * aiK(S, 220, 0, 0);
+  if (style === 'aggro') sd.prefDist = Math.max(60, sd.prefDist - 50); else if (style === 'status' || style === 'defensive') sd.prefDist += 90;
   const ready = all.filter(x => u.cd[x.i] <= 0).sort((a, b) => b.v - a.v);
   // switch out of a hopeless matchup now and then
   if (S === 'B' || G.auto) {
     const weak = u.moves.every(n => MOVES[n].cat === 'X' || typeEff(MOVES[n].type, t.types) < 1);
     if (weak && sd.switchCd <= 0 && u.hp / u.max > .4 && Math.random() < aiK(S, 0, .06, .2)) { const alt = bestSwitchFor(S); if (alt != null) { requestSwitch(S, alt); return; } }
+    if (style === 'switcher' && sd.switchCd <= 0 && u.hp / u.max > .25) {            // switch-heavy: also leaves threatening matchups, often
+      const threat = t.moves.some(n => MOVES[n].cat !== 'X' && typeEff(MOVES[n].type, u.types) >= 2);
+      if ((weak || threat) && Math.random() < .3) { const alt = bestSwitchFor(S); if (alt != null) { requestSwitch(S, alt); return; } } }
   }
   if (!ready.length || ready[0].v < .04) return;
   if (Math.random() < aiK(S, .45, 0, 0)) return;                     // weaker AIs hesitate

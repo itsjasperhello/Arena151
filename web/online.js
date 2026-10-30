@@ -66,6 +66,7 @@ function leaveOnline() {
 /* ---------- messages from the server ---------- */
 function onNetMessage(m) {
   switch (m.t) {
+    case 'rqueued': case 'rleft': case 'rmatched': case 'rated': if (typeof onNetExtra === 'function') onNetExtra(m); break;   // ranked
     case 'error': netStatus(m.msg, 'err'); toast(m.msg); break;
     case 'hosted': NET.code = m.code; $('olCodeShow').textContent = m.code; netStatus('Game created. Tell your friend the code — waiting for them to join…', 'ok'); break;
     case 'joined': NET.code = m.code; netStatus('Joined! Starting…', 'ok'); break;

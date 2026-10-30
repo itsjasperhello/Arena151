@@ -74,9 +74,10 @@ function updateCooldowns() {
     const c = sd.cast, charging = !!(c && c.idx === i && G.phase === 'battle');
     const ch = charging ? (c.phase === 'wind' ? clamp(c.t / Math.max(1, WINDUP(mv)), 0, 1) : 1) : 0;
     b.style.setProperty('--ch', ch.toFixed(3)); b.classList.toggle('charging', charging);
-    const txt = charging ? (c.phase === 'wind' ? 'CHARGING' : 'FIRING') : sd.queued === i ? 'QUEUED' : cd > 0 ? (cd / 1000).toFixed(1) : '';
+    const banned = !!(G.rules && G.rules.banA && G.rules.banA.includes(mv.type)); b.classList.toggle('banned', banned);
+    const txt = banned ? 'BANNED' : charging ? (c.phase === 'wind' ? 'CHARGING' : 'FIRING') : sd.queued === i ? 'QUEUED' : cd > 0 ? (cd / 1000).toFixed(1) : '';
     const t = b.querySelector('.cdtxt'); if (t.textContent !== txt) t.textContent = txt;
-    b.classList.toggle('ready', cd <= 0 && G.phase === 'battle');
+    b.classList.toggle('ready', !banned && cd <= 0 && G.phase === 'battle');
     b.classList.toggle('queued', sd.queued === i);
     b.disabled = G.phase !== 'battle' || clock.paused || G.auto;
   }
@@ -141,12 +142,21 @@ function chooseStage() { const v = $('stageSel').value; return v === 'random' ? 
 const filledTeam = t => { const f = (t || []).filter(Boolean); return f.length ? f : [DEX[0].name]; };   // empty slots ("No Pokémon") are skipped
 async function startBattle(picksA, picksB, stageId) {
   picksA = filledTeam(picksA); picksB = filledTeam(picksB);
+  const RU = typeof storyRules === 'function' ? storyRules() : null;   // story boss twists and difficulty
+  if (RU && RU.fixedTeam) picksA = RU.fixedTeam.slice();                 // puzzle battles: a fixed team
+  if (RU && RU.handicap) picksA = picksA.slice(0, RU.handicap);
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
-  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
+  G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), rules: RU && (RU.weather || RU.banA) ? { weather: RU.weather || null, banA: RU.banA || null, handicap: RU.handicap || null } : null,
+    doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
     ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}) });   // four parties in Local doubles
   G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–13 (story mode sets the gym's)
   if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
+  if (RU && RU.aiStyle) G.aiStyle = { B: RU.aiStyle };                    // the trainer's personality
+  if (RU && RU.bonus) for (const m of G.sides.A.team) { for (const k in RU.bonus) if (k === 'hp') { m.max = Math.round(m.max * RU.bonus.hp); m.hp = m.max; } else m.stats[k] = Math.round(m.stats[k] * RU.bonus[k]); }   // badge passives
+  if (RU && RU.carry) G.sides.A.team.forEach((m, i) => { const f = RU.carry[i]; if (f != null) m.hp = Math.max(0, Math.round(m.max * f)); });   // gauntlets: no healing between fights
+  if (RU && RU.carry) { const first = G.sides.A.team.findIndex(m => m.hp > 0); if (first > 0) G.sides.A.active = first; }
+  if (RU && RU.foeScale && RU.foeScale !== 1) for (const m of G.sides.B.team) { for (const k of ['atk', 'def', 'spa', 'spd', 'spe']) m.stats[k] = Math.round(m.stats[k] * RU.foeScale); m.max = Math.round(m.max * RU.foeScale); m.hp = m.max; }   // difficulty
   // two players on one phone or tablet: both sides human (Local only)
   if (typeof NET !== 'undefined' && NET.mode === 'local' && typeof START !== 'undefined' && START.ctrl && START.ctrl.B === 'human' && typeof duoCapable === 'function' && duoCapable()) G.human = { A: START.ctrl.A === 'human', B: true };
   ['ovTitle', 'ovResults', 'ovSwitch'].forEach(id => showOverlay(id, false));
@@ -156,7 +166,7 @@ async function startBattle(picksA, picksB, stageId) {
   try {
     await playIntro(my); guard(my);
     // Red comes out and cries, then Blue; the battle waits for both, then counts down 3 · 2 · 1 · GO!
-    spawnIn('A', 0); await sendOutDone('A'); guard(my);
+    spawnIn('A', side('A').active || 0); await sendOutDone('A'); guard(my);
     if (G.doubles && side('C').state !== 'empty') { spawnIn('C', side('C').active); await sendOutDone('C'); guard(my); }
     spawnIn('B', 0); await sendOutDone('B'); guard(my);
     if (G.doubles && side('D').state !== 'empty') { spawnIn('D', side('D').active); await sendOutDone('D'); guard(my); }
