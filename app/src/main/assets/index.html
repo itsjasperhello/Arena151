@@ -9098,6 +9098,7 @@ window.addEventListener('resize', queueFit);
 setInterval(() => {
   if (typeof G === 'undefined' || !G || G.phase !== 'title' || START.open) return;
   if (typeof NET !== 'undefined' && (NET.active || NET.tour)) return;
+  if (typeof STORY !== 'undefined' && (STORY.cutscene || STORY.battle)) return;   // a story cutscene is playing, or a story battle is about to start
   showStart();
 }, 1500);
 
