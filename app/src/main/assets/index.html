@@ -13157,7 +13157,9 @@ function placeTrainers() {
    The phone apps keep their saves on the device and skip all of this.
    ===================================================================== */
 (function accountsModule() {
-  const enabled = typeof isWebVersion === 'function' && isWebVersion() && /^https?:$/.test(location.protocol);
+  const IS_WEB = typeof isWebVersion === 'function' && isWebVersion() && /^https?:$/.test(location.protocol);
+  const IS_APP = !!(window.AndroidApp || window.IOSApp);     // the phone apps: sign in from the start screen, using your server's address
+  const enabled = IS_WEB || IS_APP;
   if (!enabled) return;
   const AUTH = 'arena151.auth', GUEST = 'arena151.guest', CLOUD_AT = 'arena151.cloudAt';
   const local = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
@@ -13166,8 +13168,15 @@ function placeTrainers() {
   const collect = () => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('arena151.') && !excluded(k)) o[k] = localStorage.getItem(k); } return o; };
   const hasProgress = d => Object.keys(d || {}).some(k => /^arena151\.(story\.\d|save)/.test(k));
   const same = (a, b) => { const ka = Object.keys(a || {}).sort(), kb = Object.keys(b || {}).sort(); return ka.length === kb.length && ka.every((k, i) => k === kb[i] && a[k] === b[k]); };
+  // the phone apps reach the server at the address from the Online tab (or the sign-in form)
+  function serverBase() {
+    const v = (local('arena151.server') || '').trim(); if (!v) return '';
+    const c = (typeof serverCandidates === 'function' ? serverCandidates(v) : [])[0] || ''; return c.replace(/^ws/i, 'http').replace(/\/ws\/?$/i, '');
+  }
   async function api(method, path, body, token) {
-    const r = await fetch('/api' + path, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: body ? JSON.stringify(body) : undefined, keepalive: method === 'PUT' });
+    const base = IS_APP ? serverBase() : '';
+    if (IS_APP && !base) throw Object.assign(new Error('Enter your server address first.'), { status: 0 });
+    const r = await fetch(base + '/api' + path, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: body ? JSON.stringify(body) : undefined, keepalive: method === 'PUT' });
     let j = {}; try { j = await r.json(); } catch (e) { }
     if (!r.ok) throw Object.assign(new Error(j.error || 'Could not reach the server.'), { status: r.status });
     return j;
@@ -13205,6 +13214,8 @@ function placeTrainers() {
 #acctChip .stt{color:#7fe08a;white-space:nowrap}
 #acctChip .stt.busy{color:#ffd84a}#acctChip .stt.bad{color:#ff9a9a}
 #acctChip button{border:0;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font:800 11px var(--ui);padding:5px 9px;cursor:pointer;white-space:nowrap}
+html.appmode #signinOv{align-items:flex-start;overflow-y:auto}
+html.appmode #acctChip{position:static;flex:none;margin-right:4px}
 @media (max-height:560px){#signinOv .si{padding:12px 16px}#signinOv h1{font-size:28px}#signinOv .sub{margin:2px 0 8px}#signinOv label{margin:6px 0 3px}#signinOv input{padding:8px 10px}#signinOv .tabs{margin-bottom:8px}}`;
   document.head.appendChild(st);
 
@@ -13215,22 +13226,25 @@ function placeTrainers() {
   function renderForm(msg) {
     ov.innerHTML = `<form class="si" novalidate><h1>ARENA 151</h1><div class="sub">${mode === 'in' ? 'SIGN IN TO CONTINUE YOUR STORY' : 'CREATE AN ACCOUNT TO SAVE YOUR PROGRESS'}</div>
       <div class="tabs" role="tablist"><button type="button" role="tab" data-m="in" class="${mode === 'in' ? 'on' : ''}" aria-selected="${mode === 'in'}">Sign in</button><button type="button" role="tab" data-m="up" class="${mode === 'up' ? 'on' : ''}" aria-selected="${mode === 'up'}">Create account</button></div>
+      ${IS_APP ? `<label for="siServer">SERVER</label><input id="siServer" type="text" autocomplete="off" inputmode="url" placeholder="e.g. poke.example.com or 192.168.1.20" value="${escapeHtml(local('arena151.server') || '')}">` : ''}
       <label for="siEmail">EMAIL</label><input id="siEmail" type="email" autocomplete="email" inputmode="email" required>
       <label for="siPass">PASSWORD</label><div class="fld"><input id="siPass" type="password" autocomplete="${mode === 'in' ? 'current-password' : 'new-password'}" minlength="8" required><button type="button" class="eye" aria-label="Show password">SHOW</button></div>
       ${mode === 'up' ? '<label for="siPass2">CONFIRM PASSWORD</label><input id="siPass2" type="password" autocomplete="new-password" minlength="8" required>' : ''}
       <div class="err" id="siErr" role="alert">${msg || ''}</div>
       <button class="go" type="submit" id="siGo">${mode === 'in' ? 'Sign in' : 'Create account'}</button>
-      <button class="guest" type="button" id="siGuest">Play as a guest (saves stay on this device)</button>
+      <button class="guest" type="button" id="siGuest">${IS_APP ? 'Not now (saves stay on this phone)' : 'Play as a guest (saves stay on this device)'}</button>
       <p class="note">${mode === 'up' ? 'Use at least 8 characters. Your password is stored only as a secure hash.' : 'Your story, Pok\u00E9dex and settings are saved to your account automatically.'}</p></form>`;
     for (const b of ov.querySelectorAll('.tabs button')) b.onclick = () => { mode = b.dataset.m; renderForm(); };
     ov.querySelector('.eye').onclick = e => { const p = $('siPass'), show = p.type === 'password'; p.type = show ? 'text' : 'password'; e.target.textContent = show ? 'HIDE' : 'SHOW'; };
     $('siGuest').onclick = () => { local(GUEST, '1'); hide(); renderChip(); };
     ov.querySelector('form').onsubmit = submit;
-    setTimeout(() => $('siEmail').focus(), 30);
+    setTimeout(() => (IS_APP && !local('arena151.server') ? $('siServer') : $('siEmail')).focus(), 30);
   }
   async function submit(e) {
     e.preventDefault();
     const email = $('siEmail').value.trim(), pass = $('siPass').value, err = $('siErr'), go = $('siGo');
+    if (IS_APP) { const sv = $('siServer').value.trim(); if (!sv) { err.textContent = 'Enter your server address (the same one you use for Online).'; return; }
+      local('arena151.server', sv); const ol = $('olServer'); if (ol) ol.value = sv; if (typeof NET !== 'undefined') NET.url = sv; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { err.textContent = 'Please enter a valid email address.'; return; }
     if (pass.length < 8) { err.textContent = 'Passwords need at least 8 characters.'; return; }
     if (mode === 'up' && pass !== $('siPass2').value) { err.textContent = 'The passwords don\u2019t match.'; return; }
@@ -13239,7 +13253,7 @@ function placeTrainers() {
       const r = await api('POST', mode === 'in' ? '/login' : '/register', { email, password: pass });
       local(AUTH, JSON.stringify({ token: r.token, email: r.email })); local(GUEST, null);
       await afterSignIn(true);
-    } catch (x) { err.textContent = x.message; go.disabled = false; }
+    } catch (x) { err.textContent = x.message === 'Failed to fetch' || x.name === 'TypeError' ? 'Could not reach the server — check the address and that it is running.' : x.message; go.disabled = false; }
   }
   const show = msg => { renderForm(msg); ov.classList.add('show'); };
   const hide = () => ov.classList.remove('show');
@@ -13304,7 +13318,10 @@ function placeTrainers() {
     syncChip();
   }
   function setStatus(kind, text) { CLOUD.status = kind; const s = $('acctStt'); if (s) { s.textContent = text; s.className = 'stt' + (kind === 'busy' ? ' busy' : kind === 'bad' ? ' bad' : ''); } }
-  function syncChip() { const so = $('startOv'); chip.classList.toggle('show', !!(so && getComputedStyle(so).display !== 'none') && !ov.classList.contains('show')); }
+  function syncChip() {
+    // phones: the badge is part of the start screen's bottom row
+    if (IS_APP && chip.parentNode === document.body) { const foot = document.querySelector('#startOv .st-foot'); if (foot) foot.prepend(chip); }
+ const so = $('startOv'); chip.classList.toggle('show', !!(so && getComputedStyle(so).display !== 'none') && !ov.classList.contains('show')); }
   setInterval(syncChip, 600);
 
   /* ---------- start ---------- */
@@ -13314,7 +13331,7 @@ function placeTrainers() {
     if (a) {
       try { await api('GET', '/me', null, a.token); afterSignIn(false); }
       catch (x) { if (x.status === 401) signedOut('Your session ended. Please sign in again.'); else setStatus('bad', 'Offline'); }
-    } else if (!local(GUEST)) show();
+    } else if (!local(GUEST) && !IS_APP) show();   // the apps never block the game behind sign-in
   })();
   window.cloudSaveNow = () => upload();
 })();
