@@ -138,12 +138,11 @@
     applyBranch(); const r = _card.apply(this, arguments);
     try { const s = sv(), g = gymAt(i), extra = document.querySelector('#syModal .sy-extra'); if (!s || !extra || g.secret) return r;
       const ev = EV[i], pending = i === s.badges && ev && !evs()[ev.id], st = STYLE[g.rulesKey || g.n], bon = BADGE_BONUS.slice(0, Math.min(8, s.badges)).map(x => x.t);
-      const d = document.createElement('div');
-      d.innerHTML = `${pending ? `<div><b>★ Event first: ${esc(ev.title)}</b> — ${esc(ev.branch ? (s.branch ? (s.branch === 'hero' ? 'Fight through three Rocket battles, no healing between.' : '3v3 against Officer Jenny.') : 'Giovanni has an offer for you… your answer changes the story.') : ev.text)} <button class="sy-btn" type="button" id="syEvSkip" style="padding:3px 10px;font-size:11px;margin-left:6px">Skip event</button></div>` : ''}
-        ${s.branch ? `<div>Path: <b>${s.branch === 'hero' ? 'Stopping Team Rocket' : 'Team Rocket'}</b></div>` : ''}
-        ${st ? `<div>${esc(g.leader)}’s style: <b>${esc(STYLE_NAME[st])}</b></div>` : ''}
-        <div>Badge bonuses: ${bon.length ? bon.map(esc).join(' · ') : '<i>none yet — each badge adds one</i>'}</div>`;
-      extra.appendChild(d);
+      const html = `${pending ? `<div class="sy-tile wide alert"><h5>★ Event first · ${esc(ev.title)}</h5>${esc(ev.branch ? (s.branch ? (s.branch === 'hero' ? 'Fight through three Rocket battles, no healing between.' : '3v3 against Officer Jenny.') : 'Giovanni has an offer for you… your answer changes the story.') : ev.text)} <button class="sy-btn" type="button" id="syEvSkip" style="padding:3px 10px;font-size:11px;margin-left:6px">Skip event</button></div>` : ''}
+        ${s.branch ? `<div class="sy-tile"><h5>Your path</h5><b>${s.branch === 'hero' ? 'Stopping Team Rocket' : 'Team Rocket'}</b></div>` : ''}
+        <div class="sy-tile">${st ? `<h5>${esc(g.leader)}’s style</h5><b>${esc(STYLE_NAME[st])}</b>` : ''}<h5 style="margin-top:${st ? 5 : 0}px">Badge bonuses</h5>${bon.length ? bon.map(esc).join(' · ') : '<i>None yet — each badge adds one</i>'}</div>`;
+      const tmp = document.createElement('div'); tmp.innerHTML = html; const first = extra.firstChild;
+      for (const el of [...tmp.children]) { if (el.classList.contains('alert')) extra.insertBefore(el, first); else extra.appendChild(el); }   // notices first, then the rest
       const skip = $('syEvSkip'); if (skip) skip.onclick = async () => { if (ev.branch && !s.branch) { closeModal(); await playScene(SC.offer, GIOVANNI_WHO); s.branch = await choose('Giovanni is waiting for your answer.', [{ label: 'Stop Team Rocket', sub: 'Giovanni stays the 8th gym leader', value: 'hero' }, { label: 'Join Team Rocket', sub: 'Your 8th gym leader becomes Professor Oak', value: 'rocket' }]); applyBranch(); }
         evs()[ev.id] = true; saveStory(); renderStory(); openGymCard(i); };
     } catch (e) { console.error(e); }

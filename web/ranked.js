@@ -41,25 +41,28 @@
 
   /* ---------- the Ranked panel (Online tab) ---------- */
   const css = document.createElement('style'); css.textContent = `
-  #rkBox{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,216,74,.07);border:1px solid rgba(255,216,74,.35);font:600 13px var(--ui,Rubik,sans-serif);color:#e4e8ff}
-  #rkBox h4{margin:0 0 6px;font:900 13px var(--ui,Rubik,sans-serif);color:#ffd84a;letter-spacing:.06em}
-  #rkBox .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  #rkBox .why{color:#ffb3cf;font-size:12px}
-  #rkBox ol{margin:6px 0 0;padding-left:20px;max-height:120px;overflow:auto;font-size:12px}#rkBox ol b{color:#ffd84a}
+  /* one compact line: RANKED · rating · buttons; the reason and the top 10 below */
+  #rkBox{margin-top:8px;padding:6px 10px;border-radius:12px;background:rgba(255,216,74,.07);border:1px solid rgba(255,216,74,.35);font:600 13px var(--ui,Rubik,sans-serif);color:#e4e8ff;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+  #rkBox h4{margin:0;font:900 12px var(--ui,Rubik,sans-serif);color:#ffd84a;letter-spacing:.08em}
+  #rkBox .row{display:contents}
+  #rkBox .st-btn{padding:4px 10px;font-size:12px}
+  #rkBox .why{flex-basis:100%;color:#ffb3cf;font-size:11.5px}#rkBox .why:empty{display:none}
+  #rkBox ol{flex-basis:100%;margin:2px 0 0;padding-left:20px;max-height:84px;overflow:auto;font-size:12px}#rkBox ol b{color:#ffd84a}
+  #startOv .st-online{overflow-y:auto;overscroll-behavior:contain}   /* never clip the Online panel on small screens */
   .st-btn.story-party{margin-left:4px}`;
   document.head.appendChild(css);
   function mountRanked() {
     if ($('rkBox') || !$('olJoin')) return;
     const box = document.createElement('div'); box.id = 'rkBox';
-    box.innerHTML = `<h4>RANKED</h4><div class="row"><span id="rkMe">Rating: —</span><button class="st-btn" type="button" id="rkGo">Find ranked match</button><button class="st-btn" type="button" id="rkLeave" hidden>Leave queue</button><button class="st-btn" type="button" id="rkTop">Top 10</button></div><div class="why" id="rkWhy"></div><ol id="rkList" hidden></ol>`;
-    const anchor = $('olJoin').closest('.row') || $('olJoin').parentNode; anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    box.innerHTML = `<h4>RANKED</h4><div class="row"><span id="rkMe">Rating —</span><button class="st-btn" type="button" id="rkGo">Ranked match</button><button class="st-btn" type="button" id="rkLeave" hidden>Leave</button><button class="st-btn" type="button" id="rkTop">Top 10</button></div><div class="why" id="rkWhy"></div><ol id="rkList" hidden></ol>`;
+    const st = $('olStatus'), anchor = st || $('olJoin').closest('.row') || $('olJoin').parentNode; anchor.parentNode.insertBefore(box, anchor.nextSibling);   // below the code and status, never pushing them out of view
     $('rkGo').onclick = queue; $('rkLeave').onclick = () => { try { netSend({ t: 'rleave' }); } catch (e) { } };
     $('rkTop').onclick = showTop; refreshMe();
   }
   function syncEligibility() { const ok = campaignBeaten(); const go = $('rkGo'); if (!go) return; go.disabled = !ok; $('rkWhy').textContent = ok ? '' : 'Beat the story campaign to unlock ranked.'; }
   async function refreshMe() { syncEligibility(); try { const me = await api('POST', '/ranked/me', { deviceKey: deviceKey(), name: typeof trainerTitle === 'function' ? trainerTitle(TRSEL.A) : 'Trainer', finished: campaignBeaten() });
-      put('arena151.rating', String(me.rating)); $('rkMe').textContent = `Rating: ${me.rating} · ${me.wins}W ${me.losses}L${me.draws ? ' ' + me.draws + 'D' : ''}${me.wins + me.losses + me.draws ? ' · #' + me.rank : ''}`;
-      if (!me.eligible && me.account) $('rkWhy').textContent = 'Beat the story campaign (and let your save sync) to unlock ranked.'; } catch (e) { $('rkMe').textContent = 'Rating: — (connect to your server)'; } }
+      put('arena151.rating', String(me.rating)); $('rkMe').textContent = `${me.rating} · ${me.wins}W ${me.losses}L${me.draws ? ' ' + me.draws + 'D' : ''}${me.wins + me.losses + me.draws ? ' · #' + me.rank : ''}`; $('rkMe').title = 'Your ranked rating, record and rank';
+      if (!me.eligible && me.account) $('rkWhy').textContent = 'Beat the story campaign (and let your save sync) to unlock ranked.'; } catch (e) { $('rkMe').textContent = 'Rating —'; $('rkMe').title = 'Set your server address above to see your rating'; } }
   async function showTop() { const l = $('rkList'); l.hidden = !l.hidden; if (l.hidden) return; l.innerHTML = '<li>Loading…</li>';
     try { const t = await api('GET', '/ranked/top'); l.innerHTML = t.top.length ? t.top.map(r => `<li><b>${r.rating}</b> ${esc(r.name)} · ${r.wins}W ${r.losses}L</li>`).join('') : '<li>No ranked matches yet.</li>'; } catch (e) { l.innerHTML = `<li>${esc(e.message)}</li>`; } }
   async function queue() {

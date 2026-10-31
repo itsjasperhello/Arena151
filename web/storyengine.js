@@ -94,9 +94,22 @@
   #ruleToast{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:60;background:rgba(40,16,40,.92);border:2px solid #ff7aa8;color:#ffe2ee;border-radius:14px;padding:10px 18px;font:800 15px var(--ui,Rubik,sans-serif);text-align:center;pointer-events:none;opacity:0;transition:opacity .4s}
   #ruleToast.show{opacity:1}#ruleToast small{display:block;font-weight:600;font-size:12px;color:#ffc6da;margin-top:3px}
   .move.banned,.tmove.banned{filter:grayscale(1) brightness(.6)}
-  .sy-extra{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);font:600 13px var(--ui,Rubik,sans-serif);color:#dfe4ff;text-align:left}
-  .sy-extra b{color:#ffd84a}.sy-extra .twist{color:#ffb3cf}
-  .sy-diff{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.sy-diff button{border:0;border-radius:9px;padding:5px 12px;font:800 12px var(--ui,Rubik,sans-serif);background:#2a3456;color:#fff;cursor:pointer}
+  /* the gym card's extra info: full width under the card, as tiles side by side that wrap to fit */
+  .sy-gc>.sy-extra{grid-column:1/-1}
+  #syModal .sy-gc{width:min(900px,100%)}            /* wider card: more tiles per row, so it is shorter */
+  @media (max-height:520px){ #syModal .sy-extra .sy-tile.wide{grid-column:span 2}
+    #syModal .sy-gc .foes{margin:4px 0;gap:4px} #syModal .sy-gc .foes .m{padding:2px} #syModal .sy-gc .foes .m .p{height:30px} #syModal .sy-gc .foes .m img,#syModal .sy-gc .foes .m canvas{max-height:28px}
+    #syModal .sy-gc .quote{margin:2px 0 4px} #syModal .sy-gc .meta{margin:3px 0} #syModal .sy-gc .sy-btn{padding:5px 10px} #syModal .sy-gc{padding-top:8px;padding-bottom:8px} }
+  @media (max-height:440px){ #syModal .sy-gc .quote{display:none} #syModal{padding:4px!important} }   /* landscape phones: the leader's line is in their cutscene */
+  @media (max-height:520px){ #syModal .sy-gc .pf{min-height:118px} #syModal .sy-gc .pf img{height:112px} .sy-extra{gap:6px;margin-top:8px} .sy-tile{padding:6px 10px} .sy-tile h5{margin-bottom:2px} .sy-starwhy{font-size:11px} }
+  .sy-extra{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:8px;font:600 13px/1.35 var(--ui,Rubik,sans-serif);color:#dfe4ff;text-align:left}
+  .sy-tile{border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:8px 12px;min-width:0}
+  .sy-tile h5{margin:0 0 4px;font:900 11px var(--ui,Rubik,sans-serif);letter-spacing:.08em;text-transform:uppercase;color:#a9b6ff}
+  .sy-tile.wide{grid-column:1/-1}
+  .sy-tile.twist{background:rgba(90,24,60,.4);border-color:rgba(255,122,168,.55);color:#ffd6e6}.sy-tile.twist h5{color:#ff9cc0}
+  .sy-tile.alert{background:rgba(80,60,10,.35);border-color:rgba(255,216,74,.5)}
+  .sy-extra b{color:#ffd84a}
+  .sy-diff{display:flex;gap:6px;flex-wrap:nowrap}.sy-diff button{flex:1;border:0;border-radius:9px;padding:6px 10px;font:800 12px var(--ui,Rubik,sans-serif);background:#2a3456;color:#fff;cursor:pointer;white-space:nowrap}
   .sy-diff button.on{background:#ffd84a;color:#141c34}
   .sy-stars{font:900 22px var(--ui,Rubik,sans-serif);letter-spacing:4px;color:#ffd84a;text-shadow:0 2px 8px rgba(0,0,0,.5)}.sy-stars i{color:#4a5378;font-style:normal}
   .sy-starwhy{font:600 12px var(--ui,Rubik,sans-serif);color:#c8cde8}`;
@@ -209,15 +222,81 @@
     if (G.phase === 'battle' && shownFor !== G) { shownFor = G; const t = Object.values(RULES).find(x => x.weather === G.rules.weather && JSON.stringify(x.banA || null) === JSON.stringify(G.rules.banA || null) && (x.handicap || null) === (G.rules.handicap || null));
       if (t) { toast.innerHTML = `⚠ ${esc(t.title)}<small>${esc(t.text)}</small>`; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3800); } }
   }, 250);
-  // weather on the field
-  if (typeof drawWorldFx === 'function') { const _dwf = drawWorldFx; drawWorldFx = function () { const r = _dwf.apply(this, arguments);
-    try { const w = G && G.rules && G.rules.weather; if (w && ['battle', 'intro', 'pick'].includes(G.phase)) { const c = bctx, t = clock.t, W = c.canvas.width, H = c.canvas.height; c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
-      if (w === 'rain') { c.fillStyle = 'rgba(40,70,120,.12)'; c.fillRect(0, 0, W, H); c.strokeStyle = 'rgba(190,215,255,.55)'; c.lineWidth = 1; c.beginPath(); for (let k = 0; k < 90; k++) { const x = ((k * 97.3 + t * .55) % (W + 40)) - 20, y = ((k * 53.1 + t * .9) % (H + 40)) - 20; c.moveTo(x, y); c.lineTo(x - 4, y + 12); } c.stroke(); }
-      else if (w === 'sun') { const g = c.createRadialGradient(W * .85, -H * .1, 10, W * .85, -H * .1, H * 1.1); g.addColorStop(0, 'rgba(255,220,140,.35)'); g.addColorStop(1, 'rgba(255,160,60,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
-      else if (w === 'sand') { c.fillStyle = 'rgba(190,150,80,.16)'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(225,190,120,.6)'; for (let k = 0; k < 120; k++) { const x = ((k * 71.7 + t * .7) % (W + 20)) - 10, y = (k * 37.3 + Math.sin(t / 400 + k) * 6) % H; c.fillRect(x, y, 2, 1); } }
-      else if (w === 'hail') { c.fillStyle = 'rgba(200,225,255,.10)'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(235,245,255,.85)'; for (let k = 0; k < 70; k++) { const x = ((k * 83.9 + t * .2) % (W + 20)) - 10, y = ((k * 61.7 + t * .5) % (H + 20)) - 10; c.fillRect(x, y, 2, 2); } }
-      c.restore(); } } catch (e) { }
-    return r; }; }
+  // weather on the field, for the whole battle. Dense layers (rain, grit, hail, flakes) are batched into one path per layer,
+  // with positions computed from time — cheap enough for phones; splashes, impacts, motes and mist use the moves' particle engine.
+  if (typeof drawWorldFx === 'function' && window.PFX) {
+    const P = PFX, EM = {}, rnd = (a, b) => a + Math.random() * (b - a), T = Math.PI * 2;
+    const hash = k => { const x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+    const view = () => { const c = bctx, m = c.getTransform(), inv = m.inverse(), a = inv.transformPoint(new DOMPoint(0, 0)), b = inv.transformPoint(new DOMPoint(c.canvas.width, c.canvas.height)); return { x0: a.x, y0: a.y, x1: b.x, y1: b.y, w: b.x - a.x, h: b.y - a.y }; };
+    const n = (key, perSec) => P.due(EM[key] || (EM[key] = {}), perSec);
+    const mod = (a, m) => ((a % m) + m) % m;
+    // ---- screen-space batched layers ----
+    function rainLayers(c, W, H, t, s, q) {
+      for (const [count, speed, len, lw, col] of [[Math.round(110 * q), 1.25, 18, 1.1, 'rgba(185,212,255,.42)'], [Math.round(70 * q), 1.9, 30, 1.9, 'rgba(215,235,255,.62)']]) {
+        c.beginPath(); const L = len * s, dx = L * .22;
+        for (let k = 0; k < count; k++) { const span = H + L, y = mod(hash(k + count) * span + t * speed * s, span) - L, x = mod(hash(k * 3.1 + speed) * (W + 80) - y * .22, W + 80) - 40; c.moveTo(x, y); c.lineTo(x - dx, y + L); }
+        c.strokeStyle = col; c.lineWidth = lw * s; c.lineCap = 'round'; c.stroke(); }
+    }
+    function sandLayers(c, W, H, t, s, q) {
+      const dust = P.colTex('#c9a468', .6);                                  // big billowing dust clouds rolling across
+      for (let k = 0; k < Math.round(9 * q) + 3; k++) { const r = (90 + hash(k + 5) * 110) * s, span = W + r * 2, x = mod(hash(k) * span + t * (.09 + hash(k + 9) * .08) * s, span) - r, y = H * (.15 + hash(k + 2) * .85);
+        c.globalAlpha = .32 + hash(k + 4) * .2; c.drawImage(dust, x - r, y - r * .6, r * 2, r * 1.2); }
+      c.globalAlpha = 1;
+      for (const [count, speed, len, lw, col] of [[Math.round(150 * q), .55, 12, 1, 'rgba(226,196,140,.55)'], [Math.round(60 * q), .95, 20, 1.7, 'rgba(242,214,160,.75)']]) {
+        c.beginPath(); const L = len * s;
+        for (let k = 0; k < count; k++) { const span = W + L, x = mod(hash(k * 1.7 + speed) * span + t * speed * s, span) - L, y = mod(hash(k + 31 + count) * H + Math.sin(t / 500 + k) * 6 * s + t * .04 * s, H); c.moveTo(x, y); c.lineTo(x + L, y + L * .12); }
+        c.strokeStyle = col; c.lineWidth = lw * s; c.lineCap = 'round'; c.stroke(); }
+    }
+    function hailLayers(c, W, H, t, s, q) {
+      c.beginPath();                                                          // tumbling ice shards (one fill)
+      for (let k = 0; k < Math.round(60 * q); k++) { const sz = (2.2 + hash(k + 7) * 2.6) * s, span = H + 20 * s, y = mod(hash(k) * span + t * .62 * s, span) - 10 * s, x = mod(hash(k + 3) * (W + 60) - y * .12, W + 60) - 30, a = t / 300 + k;
+        c.moveTo(x + Math.cos(a) * sz, y + Math.sin(a) * sz); c.lineTo(x + Math.cos(a + 2.2) * sz * .6, y + Math.sin(a + 2.2) * sz * .6); c.lineTo(x + Math.cos(a + 3.14) * sz, y + Math.sin(a + 3.14) * sz); c.lineTo(x + Math.cos(a + 4.1) * sz * .6, y + Math.sin(a + 4.1) * sz * .6); c.closePath(); }
+      c.fillStyle = 'rgba(236,248,255,.92)'; c.fill(); c.strokeStyle = 'rgba(140,190,255,.7)'; c.lineWidth = .8 * s; c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.75)';                                  // snow flakes drifting
+      for (let k = 0; k < Math.round(70 * q); k++) { const span = H + 8, y = mod(hash(k + 77) * span + t * .07 * s, span) - 4, x = mod(hash(k + 91) * W + Math.sin(t / 900 + k) * 14 * s - t * .02 * s, W), r = (1 + hash(k) * 1.6) * s; c.fillRect(x - r / 2, y - r / 2, r, r); }
+    }
+    // ---- particle moments (art space) ----
+    function rainMoments(v) {
+      for (let k = n('splash', 55); k > 0; k--) { const x = rnd(v.x0, v.x1), y = rnd(v.y0 + v.h * .25, v.y1 - 4);
+        P.spawn({ kind: 'ring', x, y, vx: 0, vy: 0, drag: 1, max: rnd(.3, .45), r: rnd(2, 3), grow: 3.5, a: .75, col: 'rgba(205,230,255,.95)', lw: 1, squash: .35 });
+        for (let d = 0; d < 3; d++) P.spawn({ kind: 'drop', x, y, vx: rnd(-50, 50), vy: rnd(-110, -60), ay: 480, drag: .98, max: .3, r: 1, a: .9, col: '#dceeff' }); }
+      for (let k = n('mist', 3); k > 0; k--) P.spawn({ x: rnd(v.x0 - 40, v.x1), y: rnd(v.y0 + v.h * .45, v.y1), vx: rnd(10, 25), vy: 0, drag: 1, max: rnd(4, 6), r: rnd(45, 75), grow: .4, a: .2, img: P.steamTex() });
+    }
+    function hailMoments(v) {
+      for (let k = n('impact', 40); k > 0; k--) { const x = rnd(v.x0, v.x1), y = rnd(v.y0 + v.h * .25, v.y1 - 4);
+        P.spawn({ x, y, vx: 0, vy: 0, drag: 1, max: .25, r: 5, grow: 1.1, a: .85, img: P.whiteTex(), add: true });
+        P.spawn({ kind: 'ring', x, y, vx: 0, vy: 0, drag: 1, max: .32, r: 1.6, grow: 3.2, a: .7, col: 'rgba(220,240,255,.95)', lw: 1, squash: .4 });
+        for (let d = 0; d < 2; d++) P.spawn({ kind: 'shard', x, y, vx: rnd(-60, 60), vy: rnd(-100, -50), ay: 500, drag: .97, max: .3, r: 1.3, a: .9, col: '#eaf7ff', rot: rnd(0, T), vr: rnd(-10, 10) }); }
+    }
+    function sunMoments(v) {
+      for (let k = n('mote', 34); k > 0; k--) P.spawn({ x: rnd(v.x0, v.x1), y: rnd(v.y0 + v.h * .35, v.y1), vx: rnd(-8, 8), vy: rnd(-45, -22), drag: 1, max: rnd(1.6, 2.6), r: rnd(2, 3.6), grow: .2, a: rnd(.45, .7), img: P.hueTex(42, 100, 66), add: true });
+    }
+    function sandMoments(v) {
+      for (let k = n('puff', 14); k > 0; k--) P.spawn({ x: rnd(v.x0, v.x1), y: rnd(v.y0 + v.h * .4, v.y1), vx: rnd(60, 120), vy: rnd(-12, -4), drag: .99, max: rnd(.9, 1.4), r: rnd(6, 11), grow: 1.4, a: .35, img: P.colTex('#d8b57a', .6) });
+    }
+    const _dwf = drawWorldFx; drawWorldFx = function () {
+      const r = _dwf.apply(this, arguments);
+      try { const w = G && G.rules && G.rules.weather; if (!w || !['battle', 'intro', 'pick', 'over'].includes(G.phase)) return r;
+        if (!clock.paused && G.phase !== 'over') { const v = view(); if (w === 'rain') rainMoments(v); else if (w === 'hail') hailMoments(v); else if (w === 'sun') sunMoments(v); else if (w === 'sand') sandMoments(v); }
+        const c = bctx, W = c.canvas.width, H = c.canvas.height, t = clock.t, s = H / 360, q = P.QMUL();
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+        if (w === 'rain') { c.fillStyle = 'rgba(26,46,92,.22)'; c.fillRect(0, 0, W, H); rainLayers(c, W, H, t, s, q); }
+        else if (w === 'sand') { const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, 'rgba(184,140,74,.34)'); g.addColorStop(1, 'rgba(160,120,62,.2)'); c.fillStyle = g; c.fillRect(0, 0, W, H); sandLayers(c, W, H, t, s, q); }
+        else if (w === 'hail') { c.fillStyle = 'rgba(160,198,255,.18)'; c.fillRect(0, 0, W, H); hailLayers(c, W, H, t, s, q); }
+        else if (w === 'sun') {
+          const sx = W * .9, sy = -H * .06, pulse = 1 + Math.sin(t / 700) * .06;
+          c.fillStyle = 'rgba(255,165,60,.12)'; c.fillRect(0, 0, W, H);
+          c.globalCompositeOperation = 'lighter';
+          let g = c.createRadialGradient(sx, sy, 0, sx, sy, H * 1.05 * pulse); g.addColorStop(0, 'rgba(255,248,210,.8)'); g.addColorStop(.18, 'rgba(255,214,120,.42)'); g.addColorStop(.55, 'rgba(255,170,70,.12)'); g.addColorStop(1, 'rgba(255,150,50,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+          c.translate(sx, sy); c.rotate(t / 9000);                                 // slowly turning god rays
+          for (let k = 0; k < 14; k++) { c.rotate(T / 14); const len = H * (1.2 + (k % 3) * .25), rg = c.createLinearGradient(0, 0, len, 0); rg.addColorStop(0, 'rgba(255,236,170,.32)'); rg.addColorStop(1, 'rgba(255,236,170,0)'); c.fillStyle = rg;
+            c.beginPath(); c.moveTo(0, 0); c.lineTo(len, -H * .07); c.lineTo(len, H * .07); c.closePath(); c.fill(); }
+          c.setTransform(1, 0, 0, 1, 0, 0);
+          for (const [f, rr, a] of [[.32, .06, .2], [.52, .035, .18], [.78, .09, .12]]) { const fx = sx + (W * .35 - sx) * f, fy = sy + (H * .78 - sy) * f, fg = c.createRadialGradient(fx, fy, 0, fx, fy, H * rr); fg.addColorStop(0, `rgba(255,230,160,${a})`); fg.addColorStop(.7, `rgba(255,200,120,${a * .4})`); fg.addColorStop(1, 'rgba(255,230,160,0)'); c.fillStyle = fg; c.beginPath(); c.arc(fx, fy, H * rr, 0, T); c.fill(); }   // lens flare
+        }
+        c.restore(); } catch (e) { console.error(e); }
+      return r; };
+  }
 
   /* ---------- the gym card: twist, stars, difficulty ---------- */
   const _card = openGymCard;
@@ -226,12 +305,12 @@
     try { const s = sv(), g = gymAt(i), card = document.querySelector('#syModal > div'); if (!s || !card || g.secret) return r;
       const rivalNext = i === s.badges && RIVAL_AT[i] != null && !rv().done[i], rule = RULES[g.rulesKey || g.n], key = 'g' + (g.rulesKey || g.n), n = starsOf(key);
       const d = document.createElement('div'); d.className = 'sy-extra';
-      d.innerHTML = `${rivalNext ? `<div><b>⚔ Gary blocks the way!</b> Your rival challenges you before ${esc(g.leader)}.</div>` : ''}
-        ${rule ? `<div class="twist">⚠ <b>${esc(rule.title)}</b> — ${esc(rule.text)}</div>` : ''}
-        <div>Stars: <span class="sy-stars" style="font-size:16px">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span> <span class="sy-starwhy">win · no faints · under ${PAR(g.n)} s</span></div>
-        <div class="sy-diff" role="group" aria-label="Difficulty">${Object.entries(DIFF).map(([k, v]) => `<button type="button" data-d="${k}" class="${((s.difficulty || 'normal') === k) ? 'on' : ''}">${v.name}</button>`).join('')}</div>`;
+      d.innerHTML = `${rivalNext ? `<div class="sy-tile wide alert"><h5>⚔ Rival</h5><b>Gary blocks the way!</b> Your rival challenges you before ${esc(g.leader)}.</div>` : ''}
+        ${rule ? `<div class="sy-tile twist"><h5>⚠ Gym twist · ${esc(rule.title)}</h5>${esc(rule.text)}</div>` : ''}
+        <div class="sy-tile"><h5>Stars</h5><span class="sy-stars" style="font-size:18px">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span><div class="sy-starwhy">★ win · ★ no faints · ★ under ${PAR(g.n)} s</div></div>
+        <div class="sy-tile"><h5>Difficulty</h5><div class="sy-diff" role="group" aria-label="Difficulty">${Object.entries(DIFF).map(([k, v]) => `<button type="button" data-d="${k}" class="${((s.difficulty || 'normal') === k) ? 'on' : ''}" aria-pressed="${(s.difficulty || 'normal') === k}">${v.name}</button>`).join('')}</div></div>`;
       card.appendChild(d);
-      d.querySelectorAll('.sy-diff button').forEach(b => b.onclick = () => { s.difficulty = b.dataset.d; saveStory(); d.querySelectorAll('.sy-diff button').forEach(x => x.classList.toggle('on', x === b)); });
+      d.querySelectorAll('.sy-diff button').forEach(b => b.onclick = () => { s.difficulty = b.dataset.d; saveStory(); d.querySelectorAll('.sy-diff button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }); });
     } catch (e) { console.error(e); }
     return r;
   };
