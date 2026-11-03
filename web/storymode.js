@@ -68,7 +68,7 @@ function garyPick(playerTeam) {
   (playerTeam || []).forEach(name => { for (const G of GARY_TEAMS) { const stage = G.line.indexOf(name); if (stage >= 0 && (!best || stage > best.stage)) best = { G, stage, name }; } });
   return best ? { ...best.G, because: best.name } : { ...GARY_TEAMS[0], because: null };   // no starter in your team: Gary brings his Charizard lineup
 }
-const teamOf = g => (g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[0]) : g.team);
+const teamOf = g => (g.pickTeam ? g.pickTeam() : g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[0]) : g.team);   // Johto's champion picks his own
 const levelsOf = g => (g.n >= 10 ? null : g.levels);
 const stageName = g => (g.title ? g.title.toUpperCase() : `GYM ${g.n} OF 8`);
 const HOME = { city: 'Pallet Town', x: 230, y: 505 };

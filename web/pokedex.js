@@ -153,7 +153,8 @@ function dexGainExp(sv, sp, amount) {
 /* ---------- the Pokédex pop-up (from the map and gym cards): all 151, levels, party ---------- */
 function openDex() {
   const sv = STORY.save; if (!isDexSave(sv)) return;
-  const hasMissingNo = !!(dexEntry(sv, 'MissingNo.') || dexEntry(sv, 'MissingNo.|shiny')), dexTotal = DEX.length - (hasMissingNo ? 0 : 1);   // MissingNo. stays hidden until owned
+  const kantoOnly = typeof dexHidesJohto === 'function' && dexHidesJohto();   // Kanto journeys keep the 151
+  const hasMissingNo = !!(dexEntry(sv, 'MissingNo.') || dexEntry(sv, 'MissingNo.|shiny')), dexTotal = DEX.length - (hasMissingNo ? 0 : 1) - (kantoOnly ? DEX.filter(d => d.id >= 152).length : 0);   // MissingNo. stays hidden until owned
   const party = sv.team || [], owned = new Set(Object.keys(sv.dex || {}).map(pickBase)).size, shinies = Object.keys(sv.dex || {}).filter(pickShiny).length, ov = $('dexOv');
   const pic = n => { try { const el = monPic(n); return el; } catch (e) { return document.createElement('span'); } };
   ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${dexTotal}${shinies ? ` · \u2728 ${shinies} shiny` : ''} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
@@ -179,7 +180,7 @@ function openDex() {
     };
     grid.appendChild(el);
   };
-  for (const d of DEX) { if (d.name === 'MissingNo.' && !hasMissingNo) continue; if (d.name !== 'MissingNo.' || dexEntry(sv, d.name)) card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
+  for (const d of DEX) { if (d.name === 'MissingNo.' && !hasMissingNo) continue; if (kantoOnly && d.id >= 152) continue; if (d.name !== 'MissingNo.' || dexEntry(sv, d.name)) card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
   ov.classList.add('show');
 }
 

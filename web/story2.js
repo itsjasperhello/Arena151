@@ -33,7 +33,7 @@
     win: 'Go home and think about what kind of trainer you want to be.', lose: '…You’ve grown strong, whatever side you’re on. Take the Earth Badge.' });
   D.RULES.oak = { handicap: 5, title: 'Final exam', text: 'Oak tests everything you know: you may bring only five Pokémon, and he switches to cover every weakness.' };
   D.SCRIPT.gym.oak = [['foe', 'So it’s true. You joined Team Rocket.'], ['foe', 'Giovanni wants my research? Then you’ll have to take it from me — in battle.'], ['me', 'I’m sorry, Professor. Let’s battle.']];
-  const applyBranch = () => { const s = sv(); GYMS[7] = s && s.branch === 'rocket' ? OAK : GIOVANNI; };
+  const applyBranch = () => { if (STORY.region === 'johto') return; const s = sv(); GYMS[7] = s && s.branch === 'rocket' ? OAK : GIOVANNI; };   // Kanto only
   window.applyStoryBranch = applyBranch;
 
   /* ---------- events (before gyms 2, 4 and 6) ---------- */
@@ -48,6 +48,7 @@
       win: [['foe', 'You found it! Electricity cuts right through water.']], lose: [['foe', 'Not quite. Think about what Starmie fears… and try again.']] },
     5: { id: 'silph', branch: true, title: 'Silph Co.', arena: 'skyfort' }
   };
+  const evAt = i => (STORY.region === 'johto' && window.JOHTO_EV ? window.JOHTO_EV : EV)[i];   // the current region's events
   const GAUNTLET = [
     { name: 'Rocket Grunt', keys: ['rocketgrunt', 'teamrocketgrunt', 'grunt', 'rocketgruntmale', 'rocketgruntm'], team: ['Rattata', 'Zubat', 'Ekans'], style: 'aggro' },
     { name: 'Rocket Grunt', keys: ['rocketgruntfemale', 'rocketgruntf', 'rocketgrunt', 'teamrocketgrunt', 'grunt'], team: ['Koffing', 'Raticate', 'Golbat'], style: 'aggro' },
@@ -77,7 +78,7 @@
 
   function startEventBattle(i, spec, extra = {}) {
     const s = sv(), g = gymAt(i), who = whoOf(spec), fmt = extra.format || spec.format;
-    STORY.battle = { gym: i, event: extra.id || EV[i].id, stage: extra.stage, level: Math.max(1, (g.ai || g.n) - 1), practice: false, spec };
+    STORY.battle = { gym: i, event: extra.id || evAt(i).id, stage: extra.stage, level: Math.max(1, (g.ai || g.n) - 1), practice: false, spec };
     STORY.nextRules = { foeScale: D.diff().scale * (spec.foeScale || 1), aiStyle: spec.style, bonus: bonusNow(),
       handicap: fmt === '1v1' ? 1 : fmt === '3v3' ? 3 : null, fixedTeam: spec.fixedTeam || null, carry: extra.carry || null };
     if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
@@ -85,11 +86,11 @@
     try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
     watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
     $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
-    startBattle(s.team.slice(), spec.team.slice(), EV[i].arena || g.arena);
+    startBattle(s.team.slice(), spec.team.slice(), evAt(i).arena || g.arena);
     STORY.battle.G = G;
   }
   async function startEvent(i) {
-    const ev = EV[i], s = sv();
+    const ev = evAt(i), s = sv();
     if (ev.branch) {
       if (!s.branch) {
         await playScene(SC.offer, GIOVANNI_WHO);
@@ -100,13 +101,14 @@
       if (s.branch === 'hero') { STORY.gauntlet = { k: 0 }; return startEventBattle(i, GAUNTLET[0], { id: 'silph', stage: 0, format: 'gauntlet' }); }
       return startEventBattle(i, JENNY, { id: 'silph', format: '3v3' });
     }
-    await playScene(ev.before, whoOf(ev), { title: ev.title, text: ev.text });
+    await playScene(ev.before, whoOf(ev.stages ? ev.stages[0] : ev), { title: ev.title, text: ev.text });
+    if (ev.stages) return startEventBattle(i, ev.stages[0], { id: ev.id, stage: 0, format: 'gauntlet' });   // a gauntlet: back to back, no healing
     return startEventBattle(i, ev);
   }
   async function eventResult(won, b) {
     const s = sv(), BG = b.G; STORY.battle = null; STORY.nextRules = null;
     showOverlay('ovResults', false);
-    const ev = EV[b.gym], key = 'e' + b.event;
+    const ev = evAt(b.gym), key = 'e' + b.event;
     // stars: win · no faints · under par (the gauntlet scores its final fight)
     let earned = 0; if (won && BG) { earned = 1; if (!BG.sides.A.team.some(m => m.hp <= 0)) earned++; if (BG.elapsed / 1000 <= D.PAR(Math.min(10, b.gym + 1))) earned++; }
     if (b.event === 'silph' && s.branch === 'hero' && won && b.stage < GAUNTLET.length - 1) {       // the gauntlet goes on, no healing
@@ -114,10 +116,15 @@
       await playScene(SC.next, whoOf(GAUNTLET[b.stage + 1]));
       return startEventBattle(b.gym, GAUNTLET[b.stage + 1], { id: 'silph', stage: b.stage + 1, format: 'gauntlet', carry });
     }
+    if (ev && ev.stages && won && b.stage < ev.stages.length - 1) {          // the next fight of a gauntlet, no healing
+      const carry = BG.sides.A.team.map(m => Math.max(0, m.hp / m.max)), nx = ev.stages[b.stage + 1];
+      if (nx.line) await playScene([['foe', nx.line]], whoOf(nx));
+      return startEventBattle(b.gym, nx, { id: ev.id, stage: b.stage + 1, format: 'gauntlet', carry });
+    }
     if (won) { evs()[b.event] = true; s.stars = s.stars || {}; if (earned > (s.stars[key] || 0)) s.stars[key] = earned; }
     saveStory(); openStoryScreen();
     if (b.event === 'silph') await playScene(won ? (s.branch === 'hero' ? SC.heroWin : SC.rocketWin) : SC.lose, s.branch === 'hero' ? GIOVANNI_WHO : whoOf(JENNY));
-    else await playScene(won ? ev.win : ev.lose, whoOf(ev));
+    else await playScene(won ? ev.win : ev.lose, whoOf(ev.stages ? ev.stages[ev.stages.length - 1] : ev));
     try { renderStory(); openGymCard(b.gym); } catch (e) { }
   }
 
@@ -126,7 +133,7 @@
   startGymBattle = async function (i) {
     applyBranch(); if (STORY.cutscene) return;
     const s = sv(), g = gymAt(i);
-    if (s && i === s.badges && !g.secret && EV[i] && !evs()[EV[i].id]) { closeModal(); return startEvent(i); }
+    if (s && i === s.badges && !g.secret && evAt(i) && !evs()[evAt(i).id]) { closeModal(); return startEvent(i); }
     return _sg.apply(this, arguments);
   };
   const _res = storyResult;
@@ -137,7 +144,7 @@
   openGymCard = function (i) {
     applyBranch(); const r = _card.apply(this, arguments);
     try { const s = sv(), g = gymAt(i), extra = document.querySelector('#syModal .sy-extra'); if (!s || !extra || g.secret) return r;
-      const ev = EV[i], pending = i === s.badges && ev && !evs()[ev.id], st = STYLE[g.rulesKey || g.n], bon = BADGE_BONUS.slice(0, Math.min(8, s.badges)).map(x => x.t);
+      const ev = evAt(i), pending = i === s.badges && ev && !evs()[ev.id], st = STYLE[g.rulesKey || g.n], bon = BADGE_BONUS.slice(0, Math.min(8, s.badges)).map(x => x.t);
       const html = `${pending ? `<div class="sy-tile wide alert"><h5>★ Event first · ${esc(ev.title)}</h5>${esc(ev.branch ? (s.branch ? (s.branch === 'hero' ? 'Fight through three Rocket battles, no healing between.' : '3v3 against Officer Jenny.') : 'Giovanni has an offer for you… your answer changes the story.') : ev.text)} <button class="sy-btn" type="button" id="syEvSkip" style="padding:3px 10px;font-size:11px;margin-left:6px">Skip event</button></div>` : ''}
         ${s.branch ? `<div class="sy-tile"><h5>Your path</h5><b>${s.branch === 'hero' ? 'Stopping Team Rocket' : 'Team Rocket'}</b></div>` : ''}
         <div class="sy-tile">${st ? `<h5>${esc(g.leader)}’s style</h5><b>${esc(STYLE_NAME[st])}</b>` : ''}<h5 style="margin-top:${st ? 5 : 0}px">Badge bonuses</h5>${bon.length ? bon.map(esc).join(' · ') : '<i>None yet — each badge adds one</i>'}</div>`;

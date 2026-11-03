@@ -584,7 +584,7 @@ Object.defineProperty(TEAM_NAME, 'C', { get() { return TEAM_NAME.A; }, enumerabl
    Section 2: data — roster, types, moves
    ===================================================================== */
 // name|type1|type2|tier   tier → base stat total used for generated stats
-const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L;MissingNo.|Bird|Normal|F`;
+const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L;Chikorita|Grass||B;Bayleef|Grass||M;Meganium|Grass||F;Cyndaquil|Fire||B;Quilava|Fire||M;Typhlosion|Fire||F;Totodile|Water||B;Croconaw|Water||M;Feraligatr|Water||F;Sentret|Normal||b;Furret|Normal||g;Hoothoot|Normal|Flying|b;Noctowl|Normal|Flying|g;Ledyba|Bug|Flying|b;Ledian|Bug|Flying|k;Spinarak|Bug|Poison|b;Ariados|Bug|Poison|k;Crobat|Poison|Flying|F;Chinchou|Water|Electric|b;Lanturn|Water|Electric|f;Pichu|Electric||W;Cleffa|Fairy||W;Igglybuff|Normal|Fairy|W;Togepi|Fairy||W;Togetic|Fairy|Flying|g;Natu|Psychic|Flying|b;Xatu|Psychic|Flying|f;Mareep|Electric||B;Flaaffy|Electric||M;Ampharos|Electric||F;Bellossom|Grass||F;Marill|Water|Fairy|b;Azumarill|Water|Fairy|g;Sudowoodo|Rock||g;Politoed|Water||F;Hoppip|Grass|Flying|b;Skiploom|Grass|Flying|M;Jumpluff|Grass|Flying|g;Aipom|Normal||b;Sunkern|Grass||W;Sunflora|Grass||g;Yanma|Bug|Flying|k;Wooper|Water|Ground|b;Quagsire|Water|Ground|f;Espeon|Psychic||F;Umbreon|Dark||F;Murkrow|Dark|Flying|k;Slowking|Water|Psychic|F;Misdreavus|Ghost||k;Unown|Psychic||W;Wobbuffet|Psychic||g;Girafarig|Normal|Psychic|g;Pineco|Bug||b;Forretress|Bug|Steel|f;Dunsparce|Normal||k;Gligar|Ground|Flying|g;Steelix|Steel|Ground|F;Snubbull|Fairy||b;Granbull|Fairy||f;Qwilfish|Water|Poison|g;Scizor|Bug|Steel|F;Shuckle|Bug|Rock|k;Heracross|Bug|Fighting|F;Sneasel|Dark|Ice|g;Teddiursa|Normal||b;Ursaring|Normal||F;Slugma|Fire||b;Magcargo|Fire|Rock|g;Swinub|Ice|Ground|b;Piloswine|Ice|Ground|f;Corsola|Water|Rock|k;Remoraid|Water||b;Octillery|Water||f;Delibird|Ice|Flying|k;Mantine|Water|Flying|f;Skarmory|Steel|Flying|F;Houndour|Dark|Fire|B;Houndoom|Dark|Fire|F;Kingdra|Water|Dragon|F;Phanpy|Ground||b;Donphan|Ground||F;Porygon2|Normal||F;Stantler|Normal||g;Smeargle|Normal||k;Tyrogue|Fighting||W;Hitmontop|Fighting||g;Smoochum|Ice|Psychic|W;Elekid|Electric||b;Magby|Fire||b;Miltank|Normal||f;Blissey|Normal||F;Raikou|Electric||L;Entei|Fire||L;Suicune|Water||L;Larvitar|Rock|Ground|B;Pupitar|Rock|Ground|M;Tyranitar|Rock|Dark|L;Lugia|Psychic|Flying|X;Ho-Oh|Fire|Flying|X;Celebi|Psychic|Grass|L;MissingNo.|Bird|Normal|F`;
 const TIER_BST = { W: 200, b: 300, B: 310, k: 400, M: 405, g: 440, f: 480, F: 530, L: 590, X: 680 };
 const TIER_SIZE = { W: .62, b: .66, B: .64, k: .8, M: .8, g: .84, f: .92, F: .97, L: 1, X: 1 };
 const DEX = ROSTER_RAW.split(';').map((s, i) => { const p = s.split('|'); return { id: i + 1, name: p[0], types: p[2] ? [p[1], p[2]] : [p[1]], tier: p[3] }; });
@@ -603,7 +603,16 @@ const BASE_OVERRIDE = {
   Magikarp: [20, 10, 55, 15, 20, 80], Onix: [35, 45, 160, 30, 45, 70], Machamp: [90, 130, 80, 65, 85, 55],
   Golem: [80, 120, 130, 55, 65, 45], Starmie: [60, 75, 85, 100, 85, 115], Ditto: [48, 48, 48, 48, 48, 48],
   Eevee: [55, 55, 50, 45, 65, 55],
-  'MissingNo.': [33, 136, 0, 6, 6, 29]      // Red/Blue: HP 33, Attack 136, Defense 0, Special 6 (Sp. Atk and Sp. Def here), Speed 29
+  'MissingNo.': [33, 136, 0, 6, 6, 29],
+  // Johto (Gen 2): real base stats for the starters, legendaries and stars
+  Meganium: [80, 82, 100, 83, 100, 80], Typhlosion: [78, 84, 78, 109, 85, 100], Feraligatr: [85, 105, 100, 79, 83, 78], Crobat: [85, 90, 80, 70, 80, 130],
+  Ampharos: [90, 75, 85, 115, 90, 55], Espeon: [65, 65, 60, 130, 95, 110], Umbreon: [95, 65, 110, 60, 130, 65], Steelix: [75, 85, 200, 55, 65, 30],
+  Scizor: [70, 130, 100, 55, 80, 65], Heracross: [80, 125, 75, 40, 95, 85], Skarmory: [65, 80, 140, 40, 70, 70], Houndoom: [75, 90, 50, 110, 80, 95],
+  Kingdra: [75, 95, 95, 95, 95, 85], Blissey: [255, 10, 10, 75, 135, 55], Raikou: [90, 85, 75, 115, 100, 115], Entei: [115, 115, 85, 90, 75, 100],
+  Suicune: [100, 75, 115, 90, 115, 85], Tyranitar: [100, 134, 110, 95, 100, 61], Lugia: [106, 90, 130, 90, 154, 110], 'Ho-Oh': [106, 130, 90, 110, 154, 90],
+  Celebi: [100, 100, 100, 100, 100, 100], Porygon2: [85, 80, 90, 105, 95, 60], Miltank: [95, 80, 105, 40, 70, 100], Slowking: [95, 75, 80, 100, 110, 30],
+  Wobbuffet: [190, 33, 58, 33, 58, 33], Shuckle: [20, 10, 230, 10, 230, 5], Donphan: [90, 120, 120, 60, 60, 50], Ursaring: [90, 130, 75, 75, 75, 55],
+  Politoed: [90, 75, 75, 90, 100, 70], Bellossom: [75, 80, 95, 90, 100, 50], Lanturn: [125, 58, 58, 76, 76, 67], Xatu: [65, 75, 70, 95, 70, 95]      // Red/Blue: HP 33, Attack 136, Defense 0, Special 6 (Sp. Atk and Sp. Def here), Speed 29
 };
 // Type archetype weights: hp, atk, def, spa, spd, spe
 const ARCH = {
@@ -612,7 +621,8 @@ const ARCH = {
   Ice: [1.05, .95, .95, 1.1, 1, .95], Fighting: [1.05, 1.4, .9, .6, .9, 1], Poison: [1, 1, 1, .95, .95, 1],
   Ground: [1, 1.2, 1.15, .8, .85, .9], Rock: [.95, 1.15, 1.4, .75, .8, .8], Bug: [.9, 1.1, 1, .9, .95, 1.05],
   Ghost: [.8, .8, .8, 1.35, .9, 1.25], Dragon: [1.05, 1.25, 1, 1.05, 1, 1], Fairy: [1.2, .8, .9, 1.05, 1.15, .85],
-  Steel: [.85, .9, 1.4, 1.1, .9, .8], Flying: [.95, 1.05, .9, .95, .9, 1.25]
+  Steel: [.85, .9, 1.4, 1.1, .9, .8], Flying: [.95, 1.05, .9, .95, .9, 1.25],
+  Dark: [.95, 1.2, .9, .95, .9, 1.15]          // Johto: physical and quick (Murkrow, Sneasel, Houndour)
 };
 const TYPE_COLOR = {
   Normal: '#b9b7a3', Fire: '#ff7d3b', Water: '#4a9dff', Grass: '#4cc860', Electric: '#ffd02e', Psychic: '#ff6fb1',
@@ -725,7 +735,27 @@ M('Aerial Ace', 'Flying', 'P', 60, null, 0, 'slash');
 M('Air Slash', 'Flying', 'S', 75, 95, 0, 'wind', { fl: 30 });
 M('Drill Peck', 'Flying', 'P', 80, 100, 0, 'contact');
 M('Brave Bird', 'Flying', 'P', 120, 100, 0, 'contact', { rc: 1 / 3 });
-M('Sky Attack', 'Flying', 'P', 140, 90, 0, 'contact', { charge: 900 });   // Gen 1: 140 power, 90% accuracy, a charging turn first
+M('Sky Attack', 'Flying', 'P', 140, 90, 0, 'contact', { charge: 900 });
+// ---- Johto (Gen 2) moves ----
+M('Sacred Fire', 'Fire', 'P', 100, 95, 0, 'burst', { st: ['brn', 50], thaw: 1 });          // Ho-Oh
+M('Aeroblast', 'Flying', 'S', 100, 95, 0, 'beam', { hc: 1 });                               // Lugia
+M('Megahorn', 'Bug', 'P', 120, 85, 0, 'contact', {});                                       // Heracross
+M('Steel Wing', 'Steel', 'P', 70, 90, 0, 'contact', { self: { def: 1 }, sch: 10 });
+M('Dynamic Punch', 'Fighting', 'P', 100, 50, 0, 'contact', { cf: 100 });
+M('Zap Cannon', 'Electric', 'S', 120, 50, 0, 'projectile', { st: ['par', 100] });
+M('Ancient Power', 'Rock', 'S', 60, 100, 0, 'projectile', { self: { atk: 1, def: 1, spa: 1, spd: 1, spe: 1 }, sch: 10 });
+M('Faint Attack', 'Dark', 'P', 60, null, 0, 'dash', {});                                      // never misses
+M('Pursuit', 'Dark', 'P', 40, 100, 1, 'dash', {});
+M('Icy Wind', 'Ice', 'S', 55, 95, 0, 'wind', { tg: { spe: -1 }, ch: 100 });
+M('Spark', 'Electric', 'P', 65, 100, 0, 'contact', { st: ['par', 30] });
+M('Twister', 'Dragon', 'S', 40, 100, 0, 'wind', { fl: 20 });
+M('Moonlight', 'Fairy', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Fury Cutter', 'Bug', 'P', 40, 95, 0, 'slash', { hc: 1 });
+// Johto moves are marked Gen 2; Sacred Fire and Aeroblast are signatures (Ho-Oh, Lugia only). Automatic movesets never give
+// Gen 2 moves to Gen 1 Pokémon (Kanto movesets stay exactly as they were) and never hand out a signature move.
+for (const n of ['Sacred Fire', 'Aeroblast', 'Megahorn', 'Steel Wing', 'Dynamic Punch', 'Zap Cannon', 'Ancient Power', 'Faint Attack', 'Pursuit', 'Icy Wind', 'Spark', 'Twister', 'Moonlight', 'Fury Cutter']) MOVES[n].gen = 2;
+MOVES['Sacred Fire'].sig = MOVES['Aeroblast'].sig = true;
+let MOVESET_GEN = 1;   // Gen 1: 140 power, 90% accuracy, a charging turn first
 M('Hurricane', 'Flying', 'S', 110, 70, 0, 'wind', { cf: 30 });
 // Psychic
 M('Confusion', 'Psychic', 'S', 50, 100, 0, 'psy', { cf: 10 });
@@ -779,6 +809,19 @@ M('Crunch', 'Dark', 'P', 80, 100, 0, 'contact', { tg: { def: -1 }, ch: 20 });
 
 // Hand-picked movesets for signature teams; every other species gets a generated set.
 const MOVESET_OVERRIDE = {
+  // Johto signatures and new Gen 2 moves
+  'Ho-Oh': ['Sacred Fire', 'Brave Bird', 'Earthquake', 'Recover'], Lugia: ['Aeroblast', 'Psychic', 'Ice Beam', 'Recover'], Celebi: ['Giga Drain', 'Psychic', 'Ancient Power', 'Recover'],
+  Heracross: ['Megahorn', 'Close Combat', 'Rock Slide', 'Swords Dance'], Scizor: ['Steel Wing', 'X-Scissor', 'Quick Attack', 'Swords Dance'], Skarmory: ['Steel Wing', 'Drill Peck', 'Aerial Ace', 'Iron Defense'],
+  Tyranitar: ['Crunch', 'Stone Edge', 'Earthquake', 'Dragon Dance'], Umbreon: ['Faint Attack', 'Moonlight', 'Shadow Ball', 'Iron Tail'], Espeon: ['Psychic', 'Dazzling Gleam', 'Shadow Ball', 'Calm Mind'],
+  Ampharos: ['Zap Cannon', 'Thunderbolt', 'Dragon Pulse', 'Signal Beam'], Porygon2: ['Zap Cannon', 'Ice Beam', 'Psybeam', 'Recover'], Sneasel: ['Faint Attack', 'Ice Shard', 'Slash', 'Agility'],
+  Murkrow: ['Faint Attack', 'Drill Peck', 'Pursuit', 'Agility'], Houndoom: ['Crunch', 'Flamethrower', 'Faint Attack', 'Sludge Bomb'], Houndour: ['Pursuit', 'Ember', 'Bite', 'Faint Attack'],
+  Kingdra: ['Twister', 'Hydro Pump', 'Dragon Pulse', 'Ice Beam'], Piloswine: ['Icy Wind', 'Earthquake', 'Blizzard', 'Rock Slide'], Delibird: ['Icy Wind', 'Drill Peck', 'Blizzard', 'Brave Bird'],
+  Suicune: ['Hydro Pump', 'Ice Beam', 'Icy Wind', 'Calm Mind'], Raikou: ['Thunder', 'Spark', 'Crunch', 'Calm Mind'], Entei: ['Flare Blitz', 'Fire Blast', 'Crunch', 'Extreme Speed'],
+  Lanturn: ['Spark', 'Hydro Pump', 'Thunderbolt', 'Ice Beam'], Yanma: ['Ancient Power', 'Bug Buzz', 'Air Slash', 'Quick Attack'], Corsola: ['Ancient Power', 'Surf', 'Recover', 'Ice Beam'],
+  Togetic: ['Ancient Power', 'Dazzling Gleam', 'Aerial Ace', 'Charm'], Granbull: ['Play Rough', 'Crunch', 'Dynamic Punch', 'Charm'], Ursaring: ['Body Slam', 'Crunch', 'Dynamic Punch', 'Swords Dance'],
+  Hitmontop: ['Close Combat', 'Dynamic Punch', 'Quick Attack', 'Bulk Up'], Tyrogue: ['Mach Punch', 'Brick Break', 'Tackle', 'Bulk Up'], Pichu: ['Spark', 'Thunder Shock', 'Charm', 'Quick Attack'],
+  Elekid: ['Spark', 'Thunder Punch', 'Quick Attack', 'Thunder Wave'], Ariados: ['Fury Cutter', 'Poison Jab', 'Pin Missile', 'String Shot'], Ledian: ['Fury Cutter', 'Mach Punch', 'Air Slash', 'Agility'],
+  Gligar: ['Faint Attack', 'Earthquake', 'X-Scissor', 'Wing Attack'], Sudowoodo: ['Rock Slide', 'Faint Attack', 'Brick Break', 'Rock Throw'], Xatu: ['Psychic', 'Air Slash', 'Faint Attack', 'Calm Mind'],
   'MissingNo.': ['Water Gun', 'Water Gun', 'Sky Attack'],   // exactly as in Red/Blue: three moves, Water Gun twice
   Pikachu: ['Thunderbolt', 'Volt Tackle', 'Quick Attack', 'Iron Tail'],
   Charizard: ['Flamethrower', 'Air Slash', 'Dragon Pulse', 'Earth Power'],
@@ -843,7 +886,7 @@ function levelStats(b) { // level 50, neutral nature, no training
   return { hp: b.hp + 60, atk: b.atk + 5, def: b.def + 5, spa: b.spa + 5, spd: b.spd + 5, spe: b.spe + 5 };
 }
 function pickBy(list, r) { return list[Math.floor(r() * list.length)]; }
-function movesOfType(type, cat) { return Object.values(MOVES).filter(m => m.type === type && m.cat === cat).sort((a, b) => a.pow - b.pow); }
+function movesOfType(type, cat) { return Object.values(MOVES).filter(m => m.type === type && m.cat === cat && !m.sig && !(m.gen === 2 && MOVESET_GEN === 1)).sort((a, b) => a.pow - b.pow); }
 function buildMoveset(d, stats) {
   const out = buildMovesetRaw(d, stats);
   // Balance (16.2): a Pokémon with a healing move (Recover, Rest) can't also carry other status moves — no heal + boost/status stalling.
@@ -856,6 +899,7 @@ function buildMoveset(d, stats) {
 }
 function buildMovesetRaw(d, stats) {
   if (MOVESET_OVERRIDE[d.name]) return MOVESET_OVERRIDE[d.name].slice();
+  MOVESET_GEN = d.id >= 152 ? 2 : 1;   // which moves the automatic builder may use
   const r = mulberry(hashStr(d.name) ^ 0xa11ce);
   const pref = stats.atk >= stats.spa ? 'P' : 'S', alt = pref === 'P' ? 'S' : 'P';
   const small = 'Wb B'.includes(d.tier);
@@ -5138,7 +5182,9 @@ sig('Charm', {
      XL  2.0 - 4.0 m     x1.68   Snorlax, Lapras, Dragonair, Arbok
      XXL over 4 m        x1.95   only Onix and Gyarados
    ===================================================================== */
-const HEIGHT_M = { 'MissingNo.': 1.0, 'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
+const HEIGHT_M = { 'MissingNo.': 1.0,
+  /* Johto (Gen 2) */ 'Chikorita': 0.9, 'Bayleef': 1.2, 'Meganium': 1.8, 'Cyndaquil': 0.5, 'Quilava': 0.9, 'Typhlosion': 1.7, 'Totodile': 0.6, 'Croconaw': 1.1, 'Feraligatr': 2.3, 'Sentret': 0.8, 'Furret': 1.8, 'Hoothoot': 0.7, 'Noctowl': 1.6, 'Ledyba': 1.0, 'Ledian': 1.4, 'Spinarak': 0.5, 'Ariados': 1.1, 'Crobat': 1.8, 'Chinchou': 0.5, 'Lanturn': 1.2, 'Pichu': 0.3, 'Cleffa': 0.3, 'Igglybuff': 0.3, 'Togepi': 0.3, 'Togetic': 0.6, 'Natu': 0.2, 'Xatu': 1.5, 'Mareep': 0.6, 'Flaaffy': 0.8, 'Ampharos': 1.4, 'Bellossom': 0.4, 'Marill': 0.4, 'Azumarill': 0.8, 'Sudowoodo': 1.2, 'Politoed': 1.1, 'Hoppip': 0.4, 'Skiploom': 0.6, 'Jumpluff': 0.8, 'Aipom': 0.8, 'Sunkern': 0.3, 'Sunflora': 0.8, 'Yanma': 1.2, 'Wooper': 0.4, 'Quagsire': 1.4, 'Espeon': 0.9, 'Umbreon': 1.0, 'Murkrow': 0.5, 'Slowking': 2.0, 'Misdreavus': 0.7, 'Unown': 0.5, 'Wobbuffet': 1.3, 'Girafarig': 1.5, 'Pineco': 0.6, 'Forretress': 1.2, 'Dunsparce': 1.5, 'Gligar': 1.1, 'Steelix': 9.2, 'Snubbull': 0.6, 'Granbull': 1.4, 'Qwilfish': 0.5, 'Scizor': 1.8, 'Shuckle': 0.6, 'Heracross': 1.5, 'Sneasel': 0.9, 'Teddiursa': 0.6, 'Ursaring': 1.8, 'Slugma': 0.7, 'Magcargo': 0.8, 'Swinub': 0.4, 'Piloswine': 1.1, 'Corsola': 0.6, 'Remoraid': 0.6, 'Octillery': 0.9, 'Delibird': 0.9, 'Mantine': 2.1, 'Skarmory': 1.7, 'Houndour': 0.6, 'Houndoom': 1.4, 'Kingdra': 1.8, 'Phanpy': 0.5, 'Donphan': 1.1, 'Porygon2': 0.6, 'Stantler': 1.4, 'Smeargle': 1.2, 'Tyrogue': 0.7, 'Hitmontop': 1.4, 'Smoochum': 0.4, 'Elekid': 0.6, 'Magby': 0.7, 'Miltank': 1.2, 'Blissey': 1.5, 'Raikou': 1.9, 'Entei': 2.1, 'Suicune': 2.0, 'Larvitar': 0.6, 'Pupitar': 1.2, 'Tyranitar': 2.0, 'Lugia': 5.2, 'Ho-Oh': 3.8, 'Celebi': 0.6,
+  'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
 const MEGA_HEIGHT_M = { Venusaur: 2.4, Beedrill: 1.4, Pidgeot: 2.2, Slowbro: 2.0, Kangaskhan: 2.2, Aerodactyl: 2.1, Mewtwo: 2.3, Pinsir: 1.7 };
 const SIZE_CLASSES = [
   { id: 'XS', max: .4, scale: 1.00, label: 'Extra small' }, { id: 'S', max: .79, scale: 1.10, label: 'Small' }, { id: 'M', max: 1.3, scale: 1.22, label: 'Medium' },
@@ -7342,6 +7388,134 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
 <script>
 'use strict';
 /* =====================================================================
+   Section 34: Johto (Gen 2) move effects — same cinematic standard as the
+   rest: wind-ups, trails, typed explosions, shockwaves, debris and light,
+   built on the shared toolkit (FXK) and particle engine (PFX).
+   ===================================================================== */
+(function johtoMoveFx() {
+  if (!window.FXK || !window.PFX || !window.PFX3 || typeof MFX === 'undefined') return;
+  const { body, dim, flash, shake, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, rnd, N, T } = FXK;
+  const { AURA, hit, windup, ghostEvery, hitPt, skyBolts, featherBurst, starShape } = PFX3;
+  const spawn = PFX.spawn;
+  const reg = (names, r) => { for (const n of names.split('|')) { const old = MFX[n] || {}, o = Object.assign({}, old);
+    for (const k of ['exec', 'impact', 'dash', 'shot']) if (r[k]) { const f = r[k]; o[k] = (...a) => { try { return f(...a); } catch (e) { console.error(e); } }; }
+    MFX[n] = o; } };
+  const rainbow = ['255,90,90', '255,170,60', '255,235,90', '110,230,120', '90,180,255', '190,120,255'];
+
+  // ---- Sacred Fire (Ho-Oh): a rainbow-gold rite, then a sacred pillar of flame on the target ----
+  reg('Sacred Fire', {
+    exec: S => { const b = body(S); dim(.35, 1300, '30,10,0'); magicCircle(S, '255,210,110', 1200, 1.2); pillar(b.i, b.feet, { w: 34 * b.k, h: 150, ms: 900, col: '255,220,140' });
+      for (let k = 0; k < 6; k++) later(k * 70, () => shock(b.i, b.feet - 4, { r0: 8, r1: 46 * b.k + k * 6, col: rainbow[k], w: 4, ms: 520, squash: .38 }));
+      for (let n = 0; n < N(40); n++) later(rnd(0, 500), () => spawn({ x: b.i + rnd(-20, 20) * b.k, y: b.feet, vx: rnd(-14, 14), vy: rnd(-150, -80), drag: .97, max: rnd(.6, 1), r: rnd(5, 10), grow: .6, a: .9, img: PFX.hueTex(rnd(10, 45), 100, 60), add: true })); },
+    impact: (S, mv, crit) => { const h = hitPt(S); flash('255,230,170', .45); shake(7, 380); pillar(h.x, h.b.feet, { w: 46 * h.b.k, h: 220, ms: 1000, col: '255,200,90' });
+      EX.fire(h.x, h.y, 1.4); for (let k = 0; k < 6; k++) later(k * 60, () => shock(h.x, h.b.feet, { r0: 10, r1: 90 + k * 14, col: rainbow[k], w: 5, ms: 560, squash: .4 }));
+      sparks(h.x, h.y, 34, { cols: ['#fff6c0', '#ffd060', '#ff8a3a'], v: [140, 360], grav: -40 }); star(h.x, h.y, { size: 34, col: '#ffe080' }); }
+  });
+  // ---- Aeroblast (Lugia): a silver-blue vortex wind-up and a spiralling air blast ----
+  reg('Aeroblast', {
+    exec: S => { const b = body(S); windup(S, '200,225,255', null, 30); speedLines(b.i, b.j, '#dfeeff', 520, 32); dim(.3, 1000, '0,10,30');
+      for (let k = 0; k < 3; k++) later(k * 90, () => ribbon(arcPath(b.i, b.j, 26 * b.k + k * 8, k * 2, k * 2 + T * .9, .5), { w: 6, ms: 420, core: '#ffffff', edge: '#a8d2ff', glow: 'rgba(150,200,255,A)' })); },
+    impact: S => { const h = hitPt(S); flash('220,235,255', .4); shake(6, 340);
+      for (let k = 0; k < 4; k++) later(k * 55, () => ribbon(arcPath(h.x, h.y, 18 + k * 12, k * 1.6, k * 1.6 + T * .85, .55), { w: 7 - k, ms: 460, core: '#ffffff', edge: '#9cc8ff', glow: 'rgba(140,190,255,A)' }));
+      shock(h.x, h.y, { r1: 92, col: '200,230,255', w: 7, ms: 460 }); try { featherBurst(h.x, h.y, 14); } catch (e) { } sparks(h.x, h.y, 22, { cols: ['#ffffff', '#cfe6ff'], v: [160, 360], grav: 60 }); }
+  });
+  // ---- Megahorn: a green charge, a horn-thrust streak, a huge impact ----
+  reg('Megahorn', {
+    exec: S => windup(S, '170,240,110', 95, 28),
+    dash: S => { AURA.speed(S, '#c8f080'); AURA.hue(S, 95, 120, .8); ghostEvery(S, 55, '#b8f070', 240, .45); },
+    impact: S => { const h = hit(S, { size: 1.45, shk: 8, col: '200,255,140', star: '#d8ff7a', lines: true, fl: .3, flc: '#eaffd0' });
+      const a = side(other(S)), dir = Math.sign(side(S).x - a.x) || 1; ribbon(linePath(h.x - dir * 70, h.y - 6, h.x + dir * 16, h.y + 2, 0), { w: 14, ms: 300, core: '#ffffff', edge: '#a8ec60', glow: 'rgba(170,240,100,A)', head: .8 });
+      later(80, () => shock(h.x, h.y, { r1: 110, col: '190,255,120', w: 9, ms: 480 })); debris(h.x, h.b.feet, 12, { cols: [['#6b8a3a', '#a8c870'], ['#556b2f', '#8aa860']] }); try { EX.bug && EX.bug(h.x, h.y, 1.2); } catch (e) { } }
+  });
+  // ---- Steel Wing: a metallic trail and two gleaming wing slashes ----
+  reg('Steel Wing', {
+    exec: S => windup(S, '220,230,245'),
+    dash: S => { AURA.speed(S, '#e6eef8'); ghostEvery(S, 60, '#d8e4f4', 230, .45); },
+    impact: S => { const h = hitPt(S); try { PFX4.slashSet(S, [[-38, -24, 34, 16, 14], [38, -24, -34, 16, -14]], { core: '#ffffff', edge: 'rgba(205,220,240,.95)', glow: 'rgba(190,210,240,A)', w: 15, starCol: '#ffffff', heavy: .6 }); } catch (e) { }
+      sparks(h.x, h.y, 26, { cols: ['#ffffff', '#cfd8e8', '#ffe8a0'], v: [180, 380], grav: 260, len: 12 }); shock(h.x, h.y, { r1: 70, col: '220,230,245', w: 5, ms: 360 }); shake(4, 240); }
+  });
+  // ---- Dynamic Punch: an orange charge, a giant fist impact, confusion stars ----
+  reg('Dynamic Punch', {
+    exec: S => { windup(S, '255,170,80', 28, 30); const b = body(S); glowAt(b.i, b.j, 30 * b.k, '255,150,60', 500, .6); },
+    dash: S => { AURA.speed(S, '#ffb060'); AURA.flame(S); ghostEvery(S, 55, '#ffa050', 240, .45); },
+    impact: S => { const h = hit(S, { size: 1.7, shk: 10, col: '255,190,110', star: '#ffb040', lines: true, fl: .45, flc: '#fff0d0' });
+      for (let k = 0; k < 2; k++) later(k * 110, () => shock(h.x, h.y, { r1: 100 + k * 40, col: k ? '255,140,60' : '255,220,150', w: 9 - k * 3, ms: 520 }));
+      EX.fire(h.x, h.y, .8); debris(h.x, h.b.feet, 14);
+      fx({ max: 1.6, draw: (c, q) => { for (let i = 0; i < 4; i++) { const a = q * 11 + i * T / 4, b = body(S); c.globalAlpha = q < .8 ? 1 : (1 - q) / .2; starShape(c, b.i + Math.cos(a) * 20 * b.k, b.j - b.h * .55 + Math.sin(a) * 6, 5, i % 2 ? '#ffe24a' : '#ff9ad0'); } c.globalAlpha = 1; } }); }
+  });
+  // ---- Zap Cannon: a crackling electric sphere, then a thunderous blast ----
+  reg('Zap Cannon', {
+    exec: S => { const b = body(S); windup(S, '255,240,120', 52, 30); dim(.32, 1000, '10,10,0'); glowAt(b.i, b.j, 34 * b.k, '255,240,120', 600, .7); },
+    shot: p => { const c = bctx, x = bx(p.x), y = by(p.y);
+      orb(c, x, y, 13, { core: '255,255,240', mid: '255,230,80', rim: '255,250,180', arcs: 5, pulse: .14 });
+      if (Math.random() < .6) spawn({ kind: 'streak', x, y, vx: rnd(-120, 120), vy: rnd(-120, 120), drag: .9, max: .15, r: 1, a: .9, col: 'rgba(255,245,150,.95)', len: 9, lw: 1.4, layer: 1 }); },
+    impact: S => { const h = hitPt(S); flash('255,250,190', .5); shake(8, 420); EX.electric(h.x, h.y, 1.4); try { skyBolts(h.x, h.y, 4, 60); } catch (e) { }
+      shock(h.x, h.y, { r1: 120, col: '255,240,120', w: 8, ms: 500 }); sparks(h.x, h.y, 36, { cols: ['#ffffff', '#fff27a', '#ffd640'], v: [180, 420], grav: 120 }); }
+  });
+  // ---- Ancient Power: rocks rise in a golden aura and fly as a glowing boulder ----
+  reg('Ancient Power', {
+    exec: S => { const b = body(S); glowAt(b.i, b.j, 40 * b.k, '255,215,140', 700, .5); magicCircle(S, '230,190,110', 900, 1);
+      for (let n = 0; n < N(10); n++) { const a = rnd(0, T), r = rnd(22, 40) * b.k; spawn({ kind: 'chunk', x: b.i + Math.cos(a) * r, y: b.feet - rnd(0, 6), vx: 0, vy: rnd(-90, -50), drag: .96, max: .8, r: rnd(3, 5), a: 1, col: rnd(0, 1) < .5 ? '#a8946a' : '#c8b080', rot: rnd(0, T), vr: rnd(-4, 4) }); } },
+    shot: p => { const c = bctx, x = bx(p.x), y = by(p.y); c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y, 0, x, y, 18); g.addColorStop(0, 'rgba(255,230,160,.8)'); g.addColorStop(1, 'rgba(255,200,100,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, 18, 0, T); c.fill(); c.restore();
+      c.save(); c.translate(x, y); c.rotate(clock.t / 120); c.fillStyle = '#9a8458'; c.strokeStyle = '#ffe0a0'; c.lineWidth = 1.2; c.beginPath(); for (let k = 0; k < 7; k++) { const a = k / 7 * T, r = 7 + (k % 2) * 2; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill(); c.stroke(); c.restore();
+      if (Math.random() < .5) spawn({ x, y, vx: rnd(-20, 20), vy: rnd(-20, 20), drag: .95, max: .35, r: rnd(2, 4), a: .7, img: PFX.hueTex(40, 90, 70), add: true }); },
+    impact: S => { const h = hitPt(S); shake(6, 340); try { EX.rock ? EX.rock(h.x, h.y, 1.2) : debris(h.x, h.b.feet, 16); } catch (e) { debris(h.x, h.b.feet, 16); }
+      shock(h.x, h.y, { r1: 90, col: '255,215,140', w: 6, ms: 460 }); glowAt(h.x, h.y, 50, '255,215,140', 380, .6); debris(h.x, h.b.feet, 10); }
+  });
+  // ---- Faint Attack: the user melts into shadow and strikes from nowhere ----
+  reg('Faint Attack', {
+    exec: S => { const b = body(S); ghost(S, '#6a4a9a', 420, .7); dim(.4, 900, '10,0,20'); puff(b.i, b.j, 10, { r: [10, 18] }); },
+    dash: S => { ghostEvery(S, 45, '#5a3a8a', 300, .55); AURA.smoke(S); },
+    impact: S => { const h = hitPt(S); try { PFX4.slashSet(S, [[-30, -26, 30, 18, 10]], { core: '#f0e0ff', edge: 'rgba(120,70,180,.95)', glow: 'rgba(90,40,160,A)', w: 16, starCol: '#b48cff', heavy: .4 }); } catch (e) { }
+      shock(h.x, h.y, { r1: 80, col: '120,70,200', w: 6, ms: 420 }); try { EX.ghost(h.x, h.y, .8); } catch (e) { } shake(5, 260); }
+  });
+  // ---- Pursuit: a fast dark dash and a claw ----
+  reg('Pursuit', {
+    dash: S => { const b = body(S); speedLines(b.i, b.j, '#8a6ac0', 300, 18); ghostEvery(S, 40, '#4a2a7a', 220, .5); AURA.speed(S, '#9a7ad0'); },
+    impact: S => { const h = hitPt(S); try { PFX4.slashSet(S, [[-24, -20, 22, 14, 8], [-14, 4, 26, -12, -6]], { core: '#ffffff', edge: 'rgba(110,70,170,.95)', glow: 'rgba(90,50,150,A)', w: 11, starCol: '#a080ff' }); } catch (e) { } shake(3, 200); }
+  });
+  // ---- Icy Wind: frosty gust ribbons carrying snow, then a frost ring ----
+  reg('Icy Wind', {
+    exec: S => { const a = body(S), b = body(other(S)); for (let k = 0; k < 4; k++) later(k * 80, () => ribbon(linePath(a.i, a.j - 6 + k * 6, b.i, b.j - 6 + k * 6, (k - 1.5) * 22), { w: 7, ms: 520, core: '#ffffff', edge: '#bfe8ff', glow: 'rgba(170,220,255,A)', head: .5 }));
+      for (let n = 0; n < N(36); n++) later(rnd(0, 360), () => { const f = rnd(0, 1); spawn({ x: a.i + (b.i - a.i) * f, y: a.j + (b.j - a.j) * f + rnd(-18, 18), vx: (b.i - a.i) * .8, vy: rnd(-20, 20), drag: .96, max: rnd(.35, .6), r: rnd(1.5, 3), a: .9, img: PFX.whiteTex(), add: true }); }); },
+    impact: S => { const h = hitPt(S); EX.ice(h.x, h.y, .9); shock(h.x, h.b.feet, { r1: 80, col: '200,235,255', w: 5, squash: .4, ms: 520 }); sparks(h.x, h.y, 18, { cols: ['#ffffff', '#cfefff'], v: [100, 260], grav: 160 }); }
+  });
+  // ---- Spark: an electric charge and a crackling tackle ----
+  reg('Spark', {
+    exec: S => windup(S, '255,240,120', 52, 20),
+    dash: S => { AURA.elec(S); ghostEvery(S, 60, '#fff07a', 220, .4); },
+    impact: S => { const h = hit(S, { shk: 5, col: '255,245,170', star: '#fff27a' }); EX.electric(h.x, h.y, .7); sparks(h.x, h.y, 22, { cols: ['#ffffff', '#fff27a'], v: [160, 340], grav: 140 }); }
+  });
+  // ---- Twister: a spinning dragon tornado lifts the target ----
+  reg('Twister', {
+    exec: S => windup(S, '180,140,255', 265, 22),
+    impact: S => { const h = hitPt(S), b = h.b; shake(5, 600);
+      fx({ max: 1.1, add: true, draw: (c, q) => { const k = q < .2 ? q / .2 : q > .75 ? (1 - q) / .25 : 1; c.save(); c.globalCompositeOperation = 'lighter';
+        for (let r = 0; r < 7; r++) { const y = b.feet - r * b.h * .2, rad = (10 + r * 6) * b.k, a0 = clock.t / 90 + r; c.strokeStyle = `rgba(${r % 2 ? '170,130,255' : '120,200,255'},${.65 * k})`; c.lineWidth = 3 - r * .25;
+          c.beginPath(); c.ellipse(b.i, y, rad, rad * .3, 0, a0, a0 + T * .7); c.stroke(); } c.restore(); } });
+      for (let n = 0; n < N(18); n++) later(rnd(0, 700), () => spawn({ x: b.i + rnd(-24, 24) * b.k, y: b.feet, vx: rnd(-40, 40), vy: rnd(-180, -100), drag: .97, max: rnd(.5, .8), r: rnd(2, 4), a: .9, img: PFX.hueTex(rnd(250, 280), 90, 70), add: true }));
+      try { EX.dragon(h.x, h.y, .7); } catch (e) { } }
+  });
+  // ---- Moonlight: a glowing moon over the user, silver motes falling ----
+  reg('Moonlight', {
+    exec: S => { const b = body(S); dim(.45, 1400, '5,8,30'); magicCircle(S, '210,220,255', 1300, 1.1); pillar(b.i, b.feet, { w: 30 * b.k, h: 130, ms: 1100, col: '220,230,255' });
+      fx({ max: 1.4, add: true, draw: (c, q) => { const k = q < .2 ? q / .2 : q > .75 ? (1 - q) / .25 : 1, mx = b.i, my = b.j - b.h * 1.1, r = 16 * b.k; c.save(); c.globalCompositeOperation = 'lighter';
+        const g = c.createRadialGradient(mx, my, 0, mx, my, r * 3); g.addColorStop(0, `rgba(240,245,255,${.9 * k})`); g.addColorStop(.35, `rgba(200,215,255,${.5 * k})`); g.addColorStop(1, 'rgba(160,180,255,0)'); c.fillStyle = g; c.beginPath(); c.arc(mx, my, r * 3, 0, T); c.fill();
+        c.globalCompositeOperation = 'source-over'; c.fillStyle = `rgba(250,250,255,${k})`; c.beginPath(); c.arc(mx, my, r, 0, T); c.fill(); c.fillStyle = `rgba(20,24,60,${.85 * k})`; c.beginPath(); c.arc(mx + r * .45, my - r * .2, r * .85, 0, T); c.fill(); c.restore(); } });
+      for (let n = 0; n < N(36); n++) later(rnd(0, 900), () => spawn({ x: b.i + rnd(-30, 30) * b.k, y: b.j - b.h, vx: rnd(-8, 8), vy: rnd(30, 60), drag: 1, max: rnd(.8, 1.2), r: rnd(1.5, 3), a: .9, img: PFX.whiteTex(), add: true })); }
+  });
+  // ---- Fury Cutter: three escalating green slashes ----
+  reg('Fury Cutter', {
+    dash: S => { AURA.speed(S, '#c8f080'); ghostEvery(S, 60, '#b8e070', 200, .35); },
+    impact: S => { try { PFX4.slashSet(S, [[-26, -18, 24, 14, 8], [24, -20, -24, 16, -8], [-34, -4, 36, 0, 14]], { core: '#ffffff', edge: 'rgba(170,230,110,.95)', glow: 'rgba(150,220,90,A)', w: 12, starCol: '#d8ff7a', gap: 90, heavy: .5 }); } catch (e) { } }
+  });
+})();
+
+//# sourceURL=fxgen2.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
    Section 9: HUD and DOM
    ===================================================================== */
 const statusChip = st => st ? `<span class="chip st" style="background:${STATUS_INFO[st].color}">${STATUS_INFO[st].label}</span>` : '';
@@ -9267,7 +9441,7 @@ playCry = function (name) { if (pickBase(name) !== 'MissingNo.') return _playCry
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '16.6';
+const APP_VERSION = '16.7';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -9942,7 +10116,7 @@ function garyPick(playerTeam) {
   (playerTeam || []).forEach(name => { for (const G of GARY_TEAMS) { const stage = G.line.indexOf(name); if (stage >= 0 && (!best || stage > best.stage)) best = { G, stage, name }; } });
   return best ? { ...best.G, because: best.name } : { ...GARY_TEAMS[0], because: null };   // no starter in your team: Gary brings his Charizard lineup
 }
-const teamOf = g => (g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[0]) : g.team);
+const teamOf = g => (g.pickTeam ? g.pickTeam() : g.n === 10 ? garyPick(STORY.save && STORY.save.team).team.map(t => t[0]) : g.team);   // Johto's champion picks his own
 const levelsOf = g => (g.n >= 10 ? null : g.levels);
 const stageName = g => (g.title ? g.title.toUpperCase() : `GYM ${g.n} OF 8`);
 const HOME = { city: 'Pallet Town', x: 230, y: 505 };
@@ -10726,7 +10900,8 @@ function dexGainExp(sv, sp, amount) {
 /* ---------- the Pokédex pop-up (from the map and gym cards): all 151, levels, party ---------- */
 function openDex() {
   const sv = STORY.save; if (!isDexSave(sv)) return;
-  const hasMissingNo = !!(dexEntry(sv, 'MissingNo.') || dexEntry(sv, 'MissingNo.|shiny')), dexTotal = DEX.length - (hasMissingNo ? 0 : 1);   // MissingNo. stays hidden until owned
+  const kantoOnly = typeof dexHidesJohto === 'function' && dexHidesJohto();   // Kanto journeys keep the 151
+  const hasMissingNo = !!(dexEntry(sv, 'MissingNo.') || dexEntry(sv, 'MissingNo.|shiny')), dexTotal = DEX.length - (hasMissingNo ? 0 : 1) - (kantoOnly ? DEX.filter(d => d.id >= 152).length : 0);   // MissingNo. stays hidden until owned
   const party = sv.team || [], owned = new Set(Object.keys(sv.dex || {}).map(pickBase)).size, shinies = Object.keys(sv.dex || {}).filter(pickShiny).length, ov = $('dexOv');
   const pic = n => { try { const el = monPic(n); return el; } catch (e) { return document.createElement('span'); } };
   ov.innerHTML = `<div class="dx"><div class="dx-top"><div class="lens"></div><h3>POKÉDEX<small>Caught ${owned} / ${dexTotal}${shinies ? ` · \u2728 ${shinies} shiny` : ''} · Party ${party.length} / 6 · tap a Pokémon to add or remove it from your party</small></h3><button class="dx-close" type="button" aria-label="Close">✕</button></div>
@@ -10752,7 +10927,7 @@ function openDex() {
     };
     grid.appendChild(el);
   };
-  for (const d of DEX) { if (d.name === 'MissingNo.' && !hasMissingNo) continue; if (d.name !== 'MissingNo.' || dexEntry(sv, d.name)) card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
+  for (const d of DEX) { if (d.name === 'MissingNo.' && !hasMissingNo) continue; if (kantoOnly && d.id >= 152) continue; if (d.name !== 'MissingNo.' || dexEntry(sv, d.name)) card(d, d.name); if (dexEntry(sv, d.name + '|shiny')) card(d, d.name + '|shiny'); }
   ov.classList.add('show');
 }
 
@@ -11427,11 +11602,12 @@ function openLocations(opts = {}) {
   const draw = () => {
     const q = LOC.q.trim().toLowerCase(), list = $('lcList'); list.innerHTML = '';
     for (const b of ov.querySelectorAll('.lc-bar button')) b.classList.toggle('on', b.dataset.s === LOC.show);
-    let rows = DEX.filter(d => d.name !== 'MissingNo.').map(d => ({ d, I: locInfo(d.name), got: owned(d.name) || owned(d.name + '|shiny') }));   // MissingNo.'s whereabouts stay a secret
+    const kantoOnly = typeof dexHidesJohto === 'function' && dexHidesJohto();
+    let rows = DEX.filter(d => d.name !== 'MissingNo.' && !(kantoOnly && d.id >= 152)).map(d => ({ d, I: locInfo(d.name), got: owned(d.name) || owned(d.name + '|shiny') }));   // MissingNo.'s whereabouts stay a secret
     if (q) rows = rows.filter(r => r.d.name.toLowerCase().includes(q) || String(r.d.id) === q);
     if (LOC.leg !== 'all') { const L = +LOC.leg; rows = rows.filter(r => r.I.routes.some(x => x.leg === L)); rows.sort((a, b) => b.I.routes.find(x => x.leg === L).pct - a.I.routes.find(x => x.leg === L).pct); }
     if (LOC.show === 'new') rows = rows.filter(r => !r.got); else if (LOC.show === 'got') rows = rows.filter(r => r.got);
-    ov.querySelector('.lc-top small').textContent = `${rows.length} Pokémon shown · caught ${DEX.filter(d => d.name !== 'MissingNo.' && (owned(d.name) || owned(d.name + '|shiny'))).length} / ${DEX.length - 1}`;
+    ov.querySelector('.lc-top small').textContent = `${rows.length} Pokémon shown · caught ${DEX.filter(d => d.name !== 'MissingNo.' && !(kantoOnly && d.id >= 152) && (owned(d.name) || owned(d.name + '|shiny'))).length} / ${DEX.length - 1 - (kantoOnly ? DEX.filter(d => d.id >= 152).length : 0)}`;
     if (!rows.length) { list.innerHTML = '<div class="none">No Pokémon match.</div>'; return; }
     for (const { d, I, got } of rows.slice(0, 160)) {
       const lines = [];
@@ -11801,7 +11977,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
 
   /* ---------- save helpers ---------- */
   const sv = () => STORY.save;
-  const rv = () => { const s = sv(); s.rival = s.rival || { w: 0, l: 0, done: {} }; s.rival.done = s.rival.done || {}; return s.rival; };
+  const rv = () => { const s = sv(), k = STORY.rivalKey || 'rival'; s[k] = s[k] || { w: 0, l: 0, done: {} }; s[k].done = s[k].done || {}; return s[k]; };   // one record per region's rival
   const mood = () => { const r = rv(), d = r.w - r.l; return d >= 2 ? 'bitter' : d >= 1 ? 'rattled' : 'cocky'; };
   const diff = () => DIFF[(sv() && sv().difficulty) || 'normal'] || DIFF.normal;
   const starsOf = key => ((sv() && sv().stars) || {})[key] || 0;
@@ -11869,7 +12045,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
     });
   }
   window.playScene = playScene;
-  window.STORY_DATA = { RULES, SCRIPT, DIFF, PAR, diff, mood, rv, starsOf, imgOf };
+  window.STORY_DATA = { RULES, SCRIPT, DIFF, PAR, diff, mood, rv, starsOf, imgOf, RIVAL_AT, RIVAL_BASE, GARY, rivalCounter: null };   // a region can swap the rival in
 
   /* ---------- rules for the next story battle ---------- */
   STORY.nextRules = null;
@@ -11879,8 +12055,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
 
   /* ---------- the rival ---------- */
   function rivalTeam(k) {
-    const pick = garyPick(sv().team), line = GARY_TEAMS.find(G => G.counter === pick.counter) ? null : null;
-    const counterLine = (GARY_TEAMS.map(G => G.line).find(l => l.includes(pick.counter))) || ['Charmander', 'Charmeleon', 'Charizard'];
+    const counterLine = window.STORY_DATA.rivalCounter ? window.STORY_DATA.rivalCounter() : (() => { const pick = garyPick(sv().team); return (GARY_TEAMS.map(G => G.line).find(l => l.includes(pick.counter))) || ['Charmander', 'Charmeleon', 'Charizard']; })();
     const list = RIVAL_BASE[k].map(n => n === '*1' ? counterLine[1] : n === '*2' ? counterLine[2] : n);
     const size = Math.max(2, Math.min(list.length, (sv().team || []).length));   // grows with yours
     return list.slice(list.length - size);                                        // keeps his starter, sheds the earliest picks
@@ -12035,7 +12210,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
     try { const s = sv(), g = gymAt(i), card = document.querySelector('#syModal > div'); if (!s || !card || g.secret) return r;
       const rivalNext = i === s.badges && RIVAL_AT[i] != null && !rv().done[i], rule = RULES[g.rulesKey || g.n], key = 'g' + (g.rulesKey || g.n), n = starsOf(key);
       const d = document.createElement('div'); d.className = 'sy-extra';
-      d.innerHTML = `${rivalNext ? `<div class="sy-tile wide alert"><h5>⚔ Rival</h5><b>Gary blocks the way!</b> Your rival challenges you before ${esc(g.leader)}.</div>` : ''}
+      d.innerHTML = `${rivalNext ? `<div class="sy-tile wide alert"><h5>⚔ Rival</h5><b>${esc(GARY.leader)} blocks the way!</b> Your rival challenges you before ${esc(g.leader)}.</div>` : ''}
         ${rule ? `<div class="sy-tile twist"><h5>⚠ Gym twist · ${esc(rule.title)}</h5>${esc(rule.text)}</div>` : ''}
         <div class="sy-tile"><h5>Stars</h5><span class="sy-stars" style="font-size:18px">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span><div class="sy-starwhy">★ win · ★ no faints · ★ under ${PAR(g.n)} s</div></div>
         <div class="sy-tile"><h5>Difficulty</h5><div class="sy-diff" role="group" aria-label="Difficulty">${Object.entries(DIFF).map(([k, v]) => `<button type="button" data-d="${k}" class="${((s.difficulty || 'normal') === k) ? 'on' : ''}" aria-pressed="${(s.difficulty || 'normal') === k}">${v.name}</button>`).join('')}</div></div>`;
@@ -12049,7 +12224,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
   renderStory = function () {
     const r = _render.apply(this, arguments);
     try { const s = sv(); if (!s) return r;
-      document.querySelectorAll('#syMap g.gym[data-g]').forEach(node => { const i = +node.dataset.g; if (i >= TOTAL) return; const n = starsOf('g' + GYMS[i].n); if (!n) return;
+      document.querySelectorAll('#syMap g.gym[data-g]').forEach(node => { const i = +node.dataset.g; if (i >= TOTAL) return; const n = starsOf('g' + (GYMS[i].rulesKey || GYMS[i].n)); if (!n) return;
         const t = document.createElementNS('http://www.w3.org/2000/svg', 'text'); t.setAttribute('y', '58'); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'gstars');
         t.setAttribute('style', 'font:900 15px Rubik,sans-serif;fill:#ffd84a;paint-order:stroke;stroke:#141c34;stroke-width:4px'); t.textContent = '★'.repeat(n) + '☆'.repeat(3 - n); node.appendChild(t); });
     } catch (e) { }
@@ -12096,7 +12271,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
     win: 'Go home and think about what kind of trainer you want to be.', lose: '…You’ve grown strong, whatever side you’re on. Take the Earth Badge.' });
   D.RULES.oak = { handicap: 5, title: 'Final exam', text: 'Oak tests everything you know: you may bring only five Pokémon, and he switches to cover every weakness.' };
   D.SCRIPT.gym.oak = [['foe', 'So it’s true. You joined Team Rocket.'], ['foe', 'Giovanni wants my research? Then you’ll have to take it from me — in battle.'], ['me', 'I’m sorry, Professor. Let’s battle.']];
-  const applyBranch = () => { const s = sv(); GYMS[7] = s && s.branch === 'rocket' ? OAK : GIOVANNI; };
+  const applyBranch = () => { if (STORY.region === 'johto') return; const s = sv(); GYMS[7] = s && s.branch === 'rocket' ? OAK : GIOVANNI; };   // Kanto only
   window.applyStoryBranch = applyBranch;
 
   /* ---------- events (before gyms 2, 4 and 6) ---------- */
@@ -12111,6 +12286,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
       win: [['foe', 'You found it! Electricity cuts right through water.']], lose: [['foe', 'Not quite. Think about what Starmie fears… and try again.']] },
     5: { id: 'silph', branch: true, title: 'Silph Co.', arena: 'skyfort' }
   };
+  const evAt = i => (STORY.region === 'johto' && window.JOHTO_EV ? window.JOHTO_EV : EV)[i];   // the current region's events
   const GAUNTLET = [
     { name: 'Rocket Grunt', keys: ['rocketgrunt', 'teamrocketgrunt', 'grunt', 'rocketgruntmale', 'rocketgruntm'], team: ['Rattata', 'Zubat', 'Ekans'], style: 'aggro' },
     { name: 'Rocket Grunt', keys: ['rocketgruntfemale', 'rocketgruntf', 'rocketgrunt', 'teamrocketgrunt', 'grunt'], team: ['Koffing', 'Raticate', 'Golbat'], style: 'aggro' },
@@ -12140,7 +12316,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
 
   function startEventBattle(i, spec, extra = {}) {
     const s = sv(), g = gymAt(i), who = whoOf(spec), fmt = extra.format || spec.format;
-    STORY.battle = { gym: i, event: extra.id || EV[i].id, stage: extra.stage, level: Math.max(1, (g.ai || g.n) - 1), practice: false, spec };
+    STORY.battle = { gym: i, event: extra.id || evAt(i).id, stage: extra.stage, level: Math.max(1, (g.ai || g.n) - 1), practice: false, spec };
     STORY.nextRules = { foeScale: D.diff().scale * (spec.foeScale || 1), aiStyle: spec.style, bonus: bonusNow(),
       handicap: fmt === '1v1' ? 1 : fmt === '3v3' ? 3 : null, fixedTeam: spec.fixedTeam || null, carry: extra.carry || null };
     if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
@@ -12148,11 +12324,11 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
     try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
     watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
     $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
-    startBattle(s.team.slice(), spec.team.slice(), EV[i].arena || g.arena);
+    startBattle(s.team.slice(), spec.team.slice(), evAt(i).arena || g.arena);
     STORY.battle.G = G;
   }
   async function startEvent(i) {
-    const ev = EV[i], s = sv();
+    const ev = evAt(i), s = sv();
     if (ev.branch) {
       if (!s.branch) {
         await playScene(SC.offer, GIOVANNI_WHO);
@@ -12163,13 +12339,14 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
       if (s.branch === 'hero') { STORY.gauntlet = { k: 0 }; return startEventBattle(i, GAUNTLET[0], { id: 'silph', stage: 0, format: 'gauntlet' }); }
       return startEventBattle(i, JENNY, { id: 'silph', format: '3v3' });
     }
-    await playScene(ev.before, whoOf(ev), { title: ev.title, text: ev.text });
+    await playScene(ev.before, whoOf(ev.stages ? ev.stages[0] : ev), { title: ev.title, text: ev.text });
+    if (ev.stages) return startEventBattle(i, ev.stages[0], { id: ev.id, stage: 0, format: 'gauntlet' });   // a gauntlet: back to back, no healing
     return startEventBattle(i, ev);
   }
   async function eventResult(won, b) {
     const s = sv(), BG = b.G; STORY.battle = null; STORY.nextRules = null;
     showOverlay('ovResults', false);
-    const ev = EV[b.gym], key = 'e' + b.event;
+    const ev = evAt(b.gym), key = 'e' + b.event;
     // stars: win · no faints · under par (the gauntlet scores its final fight)
     let earned = 0; if (won && BG) { earned = 1; if (!BG.sides.A.team.some(m => m.hp <= 0)) earned++; if (BG.elapsed / 1000 <= D.PAR(Math.min(10, b.gym + 1))) earned++; }
     if (b.event === 'silph' && s.branch === 'hero' && won && b.stage < GAUNTLET.length - 1) {       // the gauntlet goes on, no healing
@@ -12177,10 +12354,15 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
       await playScene(SC.next, whoOf(GAUNTLET[b.stage + 1]));
       return startEventBattle(b.gym, GAUNTLET[b.stage + 1], { id: 'silph', stage: b.stage + 1, format: 'gauntlet', carry });
     }
+    if (ev && ev.stages && won && b.stage < ev.stages.length - 1) {          // the next fight of a gauntlet, no healing
+      const carry = BG.sides.A.team.map(m => Math.max(0, m.hp / m.max)), nx = ev.stages[b.stage + 1];
+      if (nx.line) await playScene([['foe', nx.line]], whoOf(nx));
+      return startEventBattle(b.gym, nx, { id: ev.id, stage: b.stage + 1, format: 'gauntlet', carry });
+    }
     if (won) { evs()[b.event] = true; s.stars = s.stars || {}; if (earned > (s.stars[key] || 0)) s.stars[key] = earned; }
     saveStory(); openStoryScreen();
     if (b.event === 'silph') await playScene(won ? (s.branch === 'hero' ? SC.heroWin : SC.rocketWin) : SC.lose, s.branch === 'hero' ? GIOVANNI_WHO : whoOf(JENNY));
-    else await playScene(won ? ev.win : ev.lose, whoOf(ev));
+    else await playScene(won ? ev.win : ev.lose, whoOf(ev.stages ? ev.stages[ev.stages.length - 1] : ev));
     try { renderStory(); openGymCard(b.gym); } catch (e) { }
   }
 
@@ -12189,7 +12371,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
   startGymBattle = async function (i) {
     applyBranch(); if (STORY.cutscene) return;
     const s = sv(), g = gymAt(i);
-    if (s && i === s.badges && !g.secret && EV[i] && !evs()[EV[i].id]) { closeModal(); return startEvent(i); }
+    if (s && i === s.badges && !g.secret && evAt(i) && !evs()[evAt(i).id]) { closeModal(); return startEvent(i); }
     return _sg.apply(this, arguments);
   };
   const _res = storyResult;
@@ -12200,7 +12382,7 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
   openGymCard = function (i) {
     applyBranch(); const r = _card.apply(this, arguments);
     try { const s = sv(), g = gymAt(i), extra = document.querySelector('#syModal .sy-extra'); if (!s || !extra || g.secret) return r;
-      const ev = EV[i], pending = i === s.badges && ev && !evs()[ev.id], st = STYLE[g.rulesKey || g.n], bon = BADGE_BONUS.slice(0, Math.min(8, s.badges)).map(x => x.t);
+      const ev = evAt(i), pending = i === s.badges && ev && !evs()[ev.id], st = STYLE[g.rulesKey || g.n], bon = BADGE_BONUS.slice(0, Math.min(8, s.badges)).map(x => x.t);
       const html = `${pending ? `<div class="sy-tile wide alert"><h5>★ Event first · ${esc(ev.title)}</h5>${esc(ev.branch ? (s.branch ? (s.branch === 'hero' ? 'Fight through three Rocket battles, no healing between.' : '3v3 against Officer Jenny.') : 'Giovanni has an offer for you… your answer changes the story.') : ev.text)} <button class="sy-btn" type="button" id="syEvSkip" style="padding:3px 10px;font-size:11px;margin-left:6px">Skip event</button></div>` : ''}
         ${s.branch ? `<div class="sy-tile"><h5>Your path</h5><b>${s.branch === 'hero' ? 'Stopping Team Rocket' : 'Team Rocket'}</b></div>` : ''}
         <div class="sy-tile">${st ? `<h5>${esc(g.leader)}’s style</h5><b>${esc(STYLE_NAME[st])}</b>` : ''}<h5 style="margin-top:${st ? 5 : 0}px">Badge bonuses</h5>${bon.length ? bon.map(esc).join(' · ') : '<i>None yet — each badge adds one</i>'}</div>`;
@@ -12357,6 +12539,322 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
 })();
 
 //# sourceURL=ranked.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 35: Johto (Gen 2) support
+   - Catch rates for the 100 Johto Pokémon (their Gen 2 values)
+   - Generation helpers, and Gen 1 / Gen 2 / All tabs in the Pokémon
+     chooser (they work together with the search box)
+   ===================================================================== */
+const GEN_OF = name => { const d = typeof DEX_BY_NAME !== 'undefined' && DEX_BY_NAME[String(name).split('|')[0]]; return d && d.id >= 152 ? 2 : 1; };
+(function johtoSupport() {
+  const $ = id => document.getElementById(id);
+  // ---- catch rates (story mode) ----
+  if (typeof CATCH_RATE !== 'undefined') Object.assign(CATCH_RATE, {
+    Chikorita: 45, Bayleef: 45, Meganium: 45, Cyndaquil: 45, Quilava: 45, Typhlosion: 45, Totodile: 45, Croconaw: 45, Feraligatr: 45, Sentret: 255, Furret: 90, Hoothoot: 255, Noctowl: 90,
+    Ledyba: 255, Ledian: 90, Spinarak: 255, Ariados: 90, Crobat: 90, Chinchou: 190, Lanturn: 75, Pichu: 190, Cleffa: 150, Igglybuff: 170, Togepi: 190, Togetic: 75, Natu: 190, Xatu: 75,
+    Mareep: 235, Flaaffy: 120, Ampharos: 45, Bellossom: 45, Marill: 190, Azumarill: 75, Sudowoodo: 65, Politoed: 45, Hoppip: 255, Skiploom: 120, Jumpluff: 45, Aipom: 45, Sunkern: 235,
+    Sunflora: 120, Yanma: 75, Wooper: 255, Quagsire: 90, Espeon: 45, Umbreon: 45, Murkrow: 30, Slowking: 70, Misdreavus: 45, Unown: 225, Wobbuffet: 45, Girafarig: 60, Pineco: 190,
+    Forretress: 75, Dunsparce: 190, Gligar: 60, Steelix: 25, Snubbull: 190, Granbull: 75, Qwilfish: 45, Scizor: 25, Shuckle: 190, Heracross: 45, Sneasel: 60, Teddiursa: 120, Ursaring: 60,
+    Slugma: 190, Magcargo: 75, Swinub: 225, Piloswine: 75, Corsola: 60, Remoraid: 190, Octillery: 75, Delibird: 45, Mantine: 25, Skarmory: 25, Houndour: 120, Houndoom: 45, Kingdra: 45,
+    Phanpy: 120, Donphan: 60, Porygon2: 45, Stantler: 45, Smeargle: 45, Tyrogue: 75, Hitmontop: 45, Smoochum: 45, Elekid: 45, Magby: 45, Miltank: 45, Blissey: 30, Raikou: 3, Entei: 3,
+    Suicune: 3, Larvitar: 45, Pupitar: 45, Tyranitar: 45, Lugia: 3, 'Ho-Oh': 3, Celebi: 45 });
+  // ---- the chooser: Gen 1 / Gen 2 / All ----
+  let gen = (() => { try { return localStorage.getItem('arena151.pickGen') || 'all'; } catch (e) { return 'all'; } })();
+  const css = document.createElement('style'); css.textContent = `
+  #stPick .pk-gen{display:flex;gap:4px;flex:none}#stPick .pk-gen button{border:0;border-radius:9px;padding:6px 10px;font:800 12px var(--ui,Rubik,sans-serif);background:#2a3456;color:#fff;cursor:pointer;white-space:nowrap}
+  #stPick .pk-gen button.on{background:#ffd84a;color:#141c34}
+  #stGridPk button.gen-off{display:none!important}`;
+  document.head.appendChild(css);
+  function applyGen() { const grid = $('stGridPk'); if (!grid) return; for (const b of grid.querySelectorAll('button[data-n]')) b.classList.toggle('gen-off', gen !== 'all' && String(GEN_OF(b.dataset.n)) !== gen);
+    document.querySelectorAll('#stPick .pk-gen button').forEach(x => { x.classList.toggle('on', x.dataset.g === gen); x.setAttribute('aria-pressed', String(x.dataset.g === gen)); }); }
+  function mountTabs() { const top = document.querySelector('#stPick .pk-top'); if (!top || top.querySelector('.pk-gen')) return;
+    const box = document.createElement('div'); box.className = 'pk-gen'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Generation');
+    box.innerHTML = [['all', 'All'], ['1', 'Gen 1 · Kanto'], ['2', 'Gen 2 · Johto']].map(([g, t]) => `<button type="button" data-g="${g}">${t}</button>`).join('');
+    const search = $('stSearch'); if (search) search.after(box); else top.prepend(box);
+    box.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; gen = b.dataset.g; try { localStorage.setItem('arena151.pickGen', gen); } catch (x) { } applyGen(); }; }
+  if (typeof openMonPicker === 'function') { const _o = openMonPicker; openMonPicker = function () { const r = _o.apply(this, arguments); mountTabs(); applyGen(); return r; }; }
+  window.applyPickGen = applyGen;
+})();
+
+//# sourceURL=gen2.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 36: JOHTO — the second story region (like DLC)
+   Three story types for a new journey: Kanto (exactly the original), Johto,
+   or Combined (Kanto, then set sail for Johto with the same team).
+   Loading a journey switches the region: gyms, map, routes, route trainers,
+   starters, badges, the rival (Silver), events and evolutions. Kanto's own
+   data is snapshotted at load and restored exactly for Kanto journeys.
+   ===================================================================== */
+(function johtoRegion() {
+  if (typeof STORY === 'undefined' || typeof GYMS === 'undefined' || typeof KANTO === 'undefined' || !window.STORY_DATA) return;
+  const $ = id => document.getElementById(id), D = STORY_DATA;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const arena = (...ids) => ids.find(id => typeof STAGES !== 'undefined' && STAGES[id]) || 'random';
+
+  /* ---------- Johto's gym leaders, Elite Four member and Champion ---------- */
+  const J = [
+    { n: 1, rulesKey: 'j1', style: 'aggro', leader: 'Falkner', file: 'Falkner', city: 'Violet City', type: 'Flying', badge: 'Zephyr Badge', arena: arena('castle', 'summit'), x: 395, y: 240,
+      team: ['Hoothoot', 'Spearow', 'Natu', 'Doduo', 'Farfetch’d', 'Pidgeotto'], levels: [9, 10, 10, 11, 12, 13],
+      hello: 'People call Flying Pokémon weak. I’ll show you the real power of the magnificent bird Pokémon!', win: 'Grounded! Come back when you can reach the sky.', lose: 'For my father’s sake… take the Zephyr Badge.' },
+    { n: 2, rulesKey: 'j2', style: 'switcher', leader: 'Bugsy', file: 'Bugsy', city: 'Azalea Town', type: 'Bug', badge: 'Hive Badge', arena: arena('ruins', 'meteor'), x: 375, y: 400,
+      team: ['Ledyba', 'Spinarak', 'Paras', 'Metapod', 'Kakuna', 'Scyther'], levels: [14, 15, 15, 16, 16, 18],
+      hello: 'I’ve studied Bug Pokémon more than anyone. Let me show you what I’ve learned!', win: 'My research pays off! Study harder.', lose: 'Whoa, amazing! You’re an expert on Pokémon! Here’s the Hive Badge.' },
+    { n: 3, rulesKey: 'j3', style: 'aggro', leader: 'Whitney', file: 'Whitney', city: 'Goldenrod City', type: 'Normal', badge: 'Plain Badge', arena: arena('plaza', 'grand'), x: 265, y: 200,
+      team: ['Sentret', 'Aipom', 'Teddiursa', 'Clefairy', 'Snubbull', 'Miltank'], levels: [18, 19, 19, 20, 20, 22],
+      hello: 'Everyone was into Pokémon, so I got into it too! They’re super cute — and super strong!', win: 'Waaah… just kidding! I won! Hehe.', lose: '…Sniff… Waaaah! Fine, take the Plain Badge!' },
+    { n: 4, rulesKey: 'j4', style: 'status', leader: 'Morty', file: 'Morty', city: 'Ecruteak City', type: 'Ghost', badge: 'Fog Badge', arena: arena('meteor', 'cavern'), x: 345, y: 155,
+      team: ['Murkrow', 'Noctowl', 'Misdreavus', 'Hypno', 'Xatu', 'Gengar'], levels: [23, 24, 24, 25, 25, 27],
+      hello: 'I see the legendary rainbow Pokémon in my visions. Will it appear before you? Let us find out.', win: 'Your vision is still clouded.', lose: 'I see… your journey will take you far. The Fog Badge is yours.' },
+    { n: 5, rulesKey: 'j5', style: 'aggro', leader: 'Chuck', file: 'Chuck', city: 'Cianwood City', type: 'Fighting', badge: 'Storm Badge', arena: arena('cerulean', 'summit'), x: 85, y: 240,
+      team: ['Machoke', 'Hitmontop', 'Primeape', 'Heracross', 'Granbull', 'Poliwrath'], levels: [27, 28, 28, 29, 29, 31],
+      hello: 'WAHAHAH! I train under the waterfall every day! You’ll never beat my fighting spirit!', win: 'HAH! More training under the falls for you!', lose: 'Gwaaah! You’re strong! Take the Storm Badge!' },
+    { n: 6, rulesKey: 'j6', style: 'defensive', leader: 'Jasmine', file: 'Jasmine', city: 'Olivine City', type: 'Steel', badge: 'Mineral Badge', arena: arena('vermilion', 'castle'), x: 315, y: 300,
+      team: ['Magneton', 'Skarmory', 'Forretress', 'Scizor', 'Ampharos', 'Steelix'], levels: [30, 31, 31, 32, 33, 35],
+      hello: '…Thank you for helping at the lighthouse. But this is different. Please, let me show you my Steel Pokémon.', win: 'Um… I’m sorry. Please train a little more.', lose: '…You’re a better trainer than me. Please accept the Mineral Badge.' },
+    { n: 7, rulesKey: 'j7', style: 'defensive', leader: 'Pryce', file: 'Pryce', city: 'Mahogany Town', type: 'Ice', badge: 'Glacier Badge', arena: arena('cavern', 'ice'), x: 490, y: 160,
+      team: ['Dewgong', 'Piloswine', 'Sneasel', 'Delibird', 'Jynx', 'Lapras'], levels: [32, 33, 33, 34, 35, 36],
+      hello: 'Pokémon have many experiences in their lives, just like us. I have seen and suffered much. Let me show you what I mean.', win: 'Hmm. The ice did not crack.', lose: 'Ah, I am impressed by your prowess. The Glacier Badge is yours.' },
+    { n: 8, rulesKey: 'j8', style: 'aggro', leader: 'Clair', file: 'Clair', city: 'Blackthorn City', type: 'Dragon', badge: 'Rising Badge', arena: arena('summit', 'castle'), x: 580, y: 155,
+      team: ['Arbok', 'Gyarados', 'Aerodactyl', 'Charizard', 'Dragonair', 'Kingdra'], levels: [36, 37, 38, 38, 39, 41],
+      hello: 'I am Clair, the world’s best Dragon master. Do you still want to take me on?', win: 'Hmph. As expected.', lose: '…I lost? I don’t believe it. …Fine. The Rising Badge is yours.' },
+    { n: 9, rulesKey: 'j9', style: 'switcher', leader: 'Karen', file: 'Karen', city: 'Indigo Plateau', type: 'Dark', badge: 'Elite Four', arena: arena('grand', 'hall'), x: 775, y: 180,
+      team: ['Crobat', 'Vileplume', 'Weezing', 'Houndoom', 'Tyranitar', 'Umbreon'], levels: [45, 46, 46, 47, 48, 50],
+      hello: 'I am Karen of the Elite Four. Strong Pokémon, weak Pokémon — that is only selfish perception. Truly skilled trainers try to win with their favorites.', win: 'You remind me of who I was before I learned that.', lose: 'Well, aren’t you good. I like that in a trainer. Go on — the Champion is waiting.' },
+    { n: 10, rulesKey: 'j10', style: 'switcher', leader: 'Silver', file: 'Silver', city: 'Indigo Plateau', type: 'Rival', badge: 'Champion', arena: arena('hall', 'grand'), x: 805, y: 155,
+      team: ['Sneasel', 'Crobat', 'Magneton', 'Gengar', 'Alakazam', 'Feraligatr'], levels: [52, 53, 52, 54, 54, 56],
+      hello: 'So you made it here. I’ve been waiting — the Champion’s room is mine.', win: 'Hmph. Still weak.', lose: '…I lost. But I’m not the same as before. Neither are my Pokémon.' }
+  ];
+  // Silver takes the Johto starter that is strong against yours
+  const LINES = { grass: ['Chikorita', 'Bayleef', 'Meganium'], fire: ['Cyndaquil', 'Quilava', 'Typhlosion'], water: ['Totodile', 'Croconaw', 'Feraligatr'] };
+  function silverCounter() {
+    const s = STORY.save, have = new Set([...(s && s.team || []), ...Object.keys((s && s.dex) || {})].map(n => String(n).split('|')[0]));
+    const has = (...ns) => ns.some(n => have.has(n));
+    if (has('Chikorita', 'Bayleef', 'Meganium', 'Bulbasaur', 'Ivysaur', 'Venusaur')) return LINES.fire;
+    if (has('Cyndaquil', 'Quilava', 'Typhlosion', 'Charmander', 'Charmeleon', 'Charizard')) return LINES.water;
+    if (has('Totodile', 'Croconaw', 'Feraligatr', 'Squirtle', 'Wartortle', 'Blastoise')) return LINES.grass;
+    return LINES.water;
+  }
+  J[9].pickTeam = () => ['Sneasel', 'Crobat', 'Magneton', 'Gengar', 'Alakazam', silverCounter()[2]];
+
+  /* ---------- the Johto map (story/johto_map.webp, 2576×1438) ---------- */
+  const JMAP = { img: 'story/johto_map.webp', w: 2576, h: 1438, home: { x: 2230, y: 1010, city: 'New Bark Town' },
+    gyms: { 1: [1180, 720], 2: [1120, 1200], 3: [800, 600], 4: [1040, 470], 5: [260, 720], 6: [940, 900], 7: [1470, 480], 8: [1740, 460], 9: [2330, 540], 10: [2420, 455] },
+    legs: [
+      [[2230, 1010], [2050, 1000], [1880, 1005], [1700, 1000], [1450, 995], [1380, 930], [1300, 860], [1230, 790], [1180, 720]],      // Route 29 → Cherrygrove → Routes 30 · 31
+      [[1180, 720], [1200, 800], [1210, 880], [1190, 960], [1160, 1060], [1120, 1200]],                                              // Route 32 → Union Cave → Route 33
+      [[1120, 1200], [1040, 1170], [980, 1100], [960, 1000], [910, 880], [860, 740], [800, 600]],                                   // Ilex Forest → Route 34
+      [[800, 600], [880, 600], [960, 630], [1000, 580], [1030, 520], [1040, 470]],                                                   // Route 35 → National Park → Routes 36 · 37
+      [[1040, 470], [960, 500], [900, 560], [870, 680], [910, 800], [940, 900], [800, 940], [640, 930], [470, 860], [330, 780], [260, 720]],   // Routes 38 · 39 → Olivine → Sea Routes 40 · 41
+      [[260, 720], [330, 780], [470, 860], [640, 930], [800, 940], [940, 900]],                                                      // Sea Routes 41 · 40 → Olivine
+      [[940, 900], [900, 800], [870, 680], [930, 540], [1040, 470], [1150, 480], [1260, 470], [1370, 470], [1470, 480]],            // Ecruteak → Route 42 · Mt. Mortar → Mahogany
+      [[1470, 480], [1560, 470], [1650, 465], [1740, 460]],                                                                           // Route 44 → Ice Path
+      [[1740, 460], [1760, 580], [1780, 720], [1820, 880], [1960, 960], [2120, 950], [2240, 860], [2300, 720], [2330, 540]],         // Routes 45 · 46 → 27 · 26 → Victory Road
+      [[2330, 540], [2380, 500], [2420, 455]]                                                                                         // the Champion's room
+    ] };
+  const JNAMES = ['Route 29 → Cherrygrove City → Routes 30 · 31', 'Route 32 → Union Cave → Route 33', 'Ilex Forest → Route 34', 'Route 35 → National Park → Routes 36 · 37',
+    'Routes 38 · 39 → Olivine City → Sea Routes 40 · 41', 'Sea Routes 41 · 40 → Olivine City', 'Route 42 → Mt. Mortar → Mahogany Town', 'Route 44 → Ice Path',
+    'Routes 45 · 46 → Routes 27 · 26 → Victory Road', 'Indigo Plateau · the Champion’s room', 'Victory Road → Route 28 → Mt. Silver'];
+  const JASH = [[2420, 455], [2440, 420], [2380, 400], [2300, 430]];
+  /* ---------- wild Pokémon on Johto's routes (Pokédex runs) ---------- */
+  const JROUTES = [
+    { leg: 0, name: 'Route 29 · Cherrygrove · Routes 30 · 31', scene: 'meadow', mons: [['Sentret', 2, 4, 10], ['Pidgey', 2, 4, 10], ['Rattata', 2, 4, 8], ['Hoothoot', 3, 5, 7], ['Ledyba', 3, 5, 6], ['Spinarak', 3, 5, 6], ['Caterpie', 3, 4, 5], ['Weedle', 3, 4, 5], ['Hoppip', 3, 5, 5], ['Poliwag', 4, 5, 3], ['Bellsprout', 4, 5, 4], ['Zubat', 4, 5, 3], ['Pichu', 4, 5, 1], ['Togepi', 5, 5, .4]] },
+    { leg: 1, name: 'Route 32 · Union Cave · Route 33', scene: 'cave', mons: [['Mareep', 6, 8, 8], ['Wooper', 6, 8, 7], ['Ekans', 6, 8, 6], ['Geodude', 6, 8, 8], ['Zubat', 6, 9, 8], ['Onix', 8, 10, 3], ['Sandshrew', 7, 9, 5], ['Hoppip', 7, 9, 5], ['Bellsprout', 6, 8, 5], ['Rattata', 6, 8, 5], ['Quagsire', 12, 12, 1], ['Lapras', 15, 15, .2]] },
+    { leg: 2, name: 'Ilex Forest · Route 34', scene: 'forest', mons: [['Oddish', 10, 12, 7], ['Paras', 10, 12, 6], ['Caterpie', 10, 11, 4], ['Metapod', 10, 12, 4], ['Weedle', 10, 11, 4], ['Kakuna', 10, 12, 4], ['Zubat', 10, 12, 5], ['Psyduck', 11, 12, 5], ['Drowzee', 11, 13, 5], ['Abra', 11, 12, 3], ['Snubbull', 11, 13, 4], ['Jigglypuff', 11, 13, 4], ['Pineco', 11, 13, 5], ['Ditto', 12, 12, 1], ['Celebi', 30, 30, .03]] },
+    { leg: 3, name: 'Route 35 · National Park · Routes 36 · 37', scene: 'safari', mons: [['Nidoran♀', 13, 15, 6], ['Nidoran♂', 13, 15, 6], ['Yanma', 13, 15, 4], ['Sunkern', 12, 14, 7], ['Scyther', 15, 15, 1.5], ['Pinsir', 15, 15, 1.5], ['Venonat', 13, 15, 5], ['Growlithe', 13, 15, 4], ['Vulpix', 13, 15, 4], ['Stantler', 14, 16, 4], ['Ledian', 14, 16, 3], ['Sudowoodo', 20, 20, .6], ['Eevee', 15, 15, .5], ['Ho-Oh', 50, 50, .03]] },
+    { leg: 4, name: 'Routes 38 · 39 · Olivine · Sea Routes 40 · 41', scene: 'sea', mons: [['Tauros', 16, 18, 5], ['Miltank', 16, 18, 5], ['Magnemite', 16, 18, 6], ['Farfetch’d', 16, 18, 3], ['Tentacool', 16, 20, 9], ['Mantine', 18, 20, 3], ['Chinchou', 18, 20, 6], ['Shellder', 18, 20, 5], ['Krabby', 18, 20, 5], ['Corsola', 18, 20, 3], ['Remoraid', 18, 20, 5], ['Raikou', 40, 40, .05], ['Lugia', 50, 50, .03]] },
+    { leg: 5, name: 'Sea Routes 41 · 40 · Olivine Lighthouse', scene: 'tower', mons: [['Tentacruel', 22, 24, 5], ['Mantine', 22, 24, 4], ['Qwilfish', 22, 24, 5], ['Lanturn', 23, 25, 3], ['Octillery', 23, 25, 3], ['Slowpoke', 22, 24, 6], ['Gastly', 22, 24, 5], ['Haunter', 23, 25, 3], ['Krabby', 22, 24, 5], ['Magnemite', 22, 24, 5], ['Entei', 40, 40, .05]] },
+    { leg: 6, name: 'Route 42 · Mt. Mortar · Lake of Rage', scene: 'cave', mons: [['Machop', 26, 28, 7], ['Marill', 26, 28, 6], ['Spearow', 26, 28, 5], ['Zubat', 26, 28, 5], ['Golbat', 27, 29, 4], ['Geodude', 26, 28, 5], ['Mankey', 26, 28, 5], ['Magikarp', 20, 25, 6], ['Gyarados', 30, 30, 1], ['Girafarig', 27, 29, 3], ['Murkrow', 27, 29, 3], ['Tyrogue', 28, 28, 1], ['Suicune', 40, 40, .05]] },
+    { leg: 7, name: 'Route 44 · Ice Path', scene: 'mountain', mons: [['Swinub', 30, 32, 8], ['Delibird', 30, 32, 4], ['Sneasel', 31, 33, 4], ['Jynx', 31, 33, 4], ['Zubat', 30, 32, 5], ['Golbat', 31, 33, 5], ['Poliwhirl', 30, 32, 4], ['Lickitung', 31, 33, 3], ['Tangela', 30, 32, 4], ['Weepinbell', 30, 32, 4], ['Smoochum', 30, 30, 2]] }
+  ].map(r => ({ ...r, mons: r.mons.map(([a, lo, hi, w]) => [a, lo, hi, Math.round(Math.sqrt(w) * 1000) / 1000]) }));   // the same rarity balance as Kanto
+  /* ---------- optional battles: Johto route trainers ---------- */
+  const JMINORS = [
+    { id: 'j-joey', name: 'Youngster Joey', keys: ['youngster'], where: 'Route 30', at: [1320, 880], unlock: 0, ai: 1, arena: arena('plaza'), team: [['Rattata', 6], ['Sentret', 5], ['Pidgey', 5]],
+      hello: 'My Rattata is in the top percentage of all Rattata! Wanna battle?', lose: 'Aww… my top-percentage Rattata…', win: 'Told ya! Top percentage!' },
+    { id: 'j-sage', name: 'Sage Li', keys: ['sage', 'channeler'], where: 'Sprout Tower', at: [1230, 650], unlock: 0, ai: 2, arena: arena('grand'), team: [['Bellsprout', 9], ['Hoothoot', 9], ['Gastly', 10], ['Natu', 10]],
+      hello: 'The tower sways, yet it stands. Show me that your bond with your Pokémon is as steady.', lose: 'Your bond is strong. Go in peace.', win: 'Sway like the pillar, and try again.' },
+    { id: 'j-wade', name: 'Bug Catcher Wade', keys: ['bugcatcher'], where: 'Route 31', at: [1260, 800], unlock: 1, ai: 2, arena: arena('ruins'), team: [['Caterpie', 12], ['Ledyba', 12], ['Spinarak', 13], ['Metapod', 13], ['Weedle', 12]],
+      hello: 'I caught all of these in the grass by Dark Cave!', lose: 'My bugs got squished…', win: 'Bugs win again!' },
+    { id: 'j-beverly', name: 'Pokéfan Beverly', keys: ['pokefan', 'pokefanf', 'lass', 'beauty'], where: 'National Park', at: [960, 640], unlock: 3, ai: 3, arena: arena('plaza'), team: [['Snubbull', 18], ['Marill', 18], ['Clefairy', 19], ['Togetic', 20]],
+      hello: 'Aren’t my Pokémon simply adorable? They’re strong, too!', lose: 'Oh my, you’re good.', win: 'Cute AND strong!' },
+    { id: 'j-kirk', name: 'Swimmer Kirk', keys: ['swimmer'], where: 'Sea Route 41', at: [560, 900], unlock: 4, ai: 4, arena: arena('cerulean'), team: [['Tentacool', 24], ['Chinchou', 24], ['Qwilfish', 25], ['Seaking', 26]],
+      hello: 'The currents around the Whirl Islands are rough. Can you keep up?', lose: 'Swept away!', win: 'Too slow for these waters!' },
+    { id: 'j-anthony', name: 'Hiker Anthony', keys: ['hiker'], where: 'Mt. Mortar', at: [1260, 470], unlock: 6, ai: 5, arena: arena('cavern', 'meteor'), team: [['Geodude', 30], ['Machoke', 31], ['Graveler', 32], ['Onix', 32], ['Donphan', 33]],
+      hello: 'I’ve climbed every peak in Johto. Mt. Mortar is my backyard!', lose: 'Whoa, avalanche!', win: 'Solid as a mountain!' },
+    { id: 'j-gaven', name: 'Cooltrainer Gaven', keys: ['cooltrainermale', 'cooltrainerm', 'acetrainermale', 'acetrainerm'], where: 'Route 44', at: [1600, 470], unlock: 7, ai: 6, arena: arena('summit'), team: [['Victreebel', 36], ['Kingler', 36], ['Flareon', 37], ['Ampharos', 38]],
+      hello: 'The Ice Path ahead is brutal. Prove you can make it!', lose: 'You’re ready for Blackthorn.', win: 'Turn back while you can.' },
+    { id: 'j-lola', name: 'Ace Trainer Lola', keys: ['cooltrainerfemale', 'cooltrainerf', 'acetrainerfemale', 'acetrainerf'], where: 'Route 27', at: [1990, 960], unlock: 8, ai: 7, arena: arena('castle'), team: [['Dragonair', 42], ['Togetic', 42], ['Clefable', 43], ['Starmie', 44]],
+      hello: 'Only the strongest trainers make it to Victory Road. Let’s see if you’re one of them.', lose: 'You’re the real thing.', win: 'Not yet. Train more.' }
+  ];
+  /* ---------- gym twists and scenes (keyed j1–j10; the engine finds them by the gym's key) ---------- */
+  Object.assign(D.RULES, {
+    j1: { banA: ['Rock'], title: 'Tower winds', text: 'High winds at the top of Violet Gym: your ROCK moves are banned.' },
+    j2: { banA: ['Fire'], title: 'Hive rules', text: 'No open flames near the hive: your FIRE moves are banned.' },
+    j3: { handicap: 4, title: 'Whitney’s rules', text: 'Whitney insists on fair play — her way: bring only your first FOUR Pokémon.' },
+    j4: { banA: ['Dark', 'Ghost'], title: 'Spirit veil', text: 'The spirits of Ecruteak shield Morty: your DARK and GHOST moves are banned.' },
+    j5: { weather: 'rain', title: 'Waterfall training', text: 'Chuck trains under a waterfall: permanent RAIN — Water moves 50% harder, Fire 50% weaker.' },
+    j6: { weather: 'sand', title: 'Steel sandstorm', text: 'A permanent SANDSTORM chips every Pokémon that isn’t Rock, Ground or Steel — Jasmine’s team is immune.' },
+    j7: { weather: 'hail', title: 'Frozen gym', text: 'Permanent HAIL chips every Pokémon that isn’t Ice.' },
+    j8: { banA: ['Ice'], title: 'Dragon’s Den heat', text: 'The heat of the Dragon’s Den melts ice: your ICE moves are banned.' },
+    j9: { handicap: 5, title: 'Favorites only', text: 'Karen’s test: bring only your first FIVE Pokémon — your favorites.' }
+  });
+  Object.assign(D.SCRIPT.gym, {
+    j1: [['foe', 'Hmph. You think you can climb to the top of my gym?'], ['foe', 'The winds up here will keep your rocks on the ground!'], ['me', 'Then we’ll fly higher.']],
+    j2: [['foe', 'You came all the way from Violet? I’ve been studying Bug Pokémon this whole time!'], ['me', 'Show me what you’ve learned.']],
+    j3: [['foe', 'Hi! I’m Whitney! Everyone’s into Pokémon, so I am too!'], ['foe', 'And my Miltank is super strong. Let’s go!'], ['me', 'Ready when you are.']],
+    j4: [['foe', 'Here in Ecruteak, Pokémon are revered. I have trained here all my life to see the legendary Pokémon.'], ['me', 'Then let’s see your training.']],
+    j5: [['foe', 'WAHAHAH! So you’ve come this far! Let me tell you, I’m tough!'], ['foe', 'My Pokémon will crush stones and shatter bones! Watch this!'], ['me', 'Bring it on!']],
+    j6: [['foe', 'Thank you for helping Amphy at the lighthouse.'], ['foe', '…But a battle is a battle. I use the clad-in-steel Steel type.'], ['me', 'I’m ready, Jasmine.']],
+    j7: [['foe', 'Pokémon have many experiences in their lives, just like we do. I, too, have seen and suffered much.'], ['me', 'Then teach me.']],
+    j8: [['foe', 'I am Clair. The world’s best Dragon master.'], ['foe', 'I can hold my own against even the Pokémon League’s Elite Four. Do you still want to take me on?'], ['me', 'Yes.']],
+    j9: [['foe', 'I am Karen of the Elite Four. You’re the trainer who came through Victory Road?'], ['foe', 'I love the Dark type. I find its wild, tough image so appealing.'], ['me', 'Let’s battle.']]
+  });
+  /* ---------- Silver: Johto's rival ---------- */
+  const SILVER = { file: 'Silver', leader: 'Silver' };
+  const SRIVAL_AT = { 2: 0, 5: 1, 8: 2 };                 // before Whitney, before Jasmine, and on Victory Road before Karen
+  const SRIVAL_BASE = [['Gastly', 'Zubat', '*1'], ['Haunter', 'Golbat', 'Magnemite', 'Sneasel', '*1'], ['Haunter', 'Crobat', 'Magneton', 'Sneasel', 'Kadabra', '*2']];
+  const SRIVAL_SCRIPT = {
+    before: [
+      { cocky: [['foe', '…You again. You’re the kid from New Bark Town.'], ['foe', 'I don’t care about weak Pokémon. I only want the strong ones. Let me show you.']],
+        rattled: [['foe', 'You beat me once. That was luck.'], ['me', 'Want to find out?']],
+        bitter: [['foe', 'Every time… why do you keep beating me?'], ['me', 'Maybe because I trust my Pokémon.']] },
+      { cocky: [['foe', 'Team Rocket? Pathetic. They group together because they’re weak.'], ['foe', 'I’m going to be the strongest trainer — alone. Move.']],
+        rattled: [['foe', 'I’ve been training harder than anyone. My team has changed.'], ['me', 'So has mine.']],
+        bitter: [['foe', 'My Pokémon… they don’t listen like yours do. Why?'], ['me', 'Battle me and find out.']] },
+      { cocky: [['foe', 'Victory Road is no place for you. Turn back.'], ['me', 'Not a chance.']],
+        rattled: [['foe', 'This is where it ends. I won’t lose here.'], ['me', 'Let’s go, Silver.']],
+        bitter: [['foe', '…I’ve been thinking about what you said. About trusting Pokémon.'], ['foe', 'I still want to beat you. But I want to do it right this time.']] }
+    ],
+    win: { cocky: [['foe', '…Tch. A fluke. I won’t lose again.']], rattled: [['foe', '…Hmph. Get out of my way.']], bitter: [['foe', '…I see. You’re stronger. For now.']] },
+    lose: { cocky: [['foe', 'Weak. Just like I thought.']], rattled: [['foe', 'That’s what happens when you get in my way.']], bitter: [['foe', 'Finally… I won. …Why doesn’t it feel the way I thought it would?']] }
+  };
+  const SCHAMP = {
+    cocky: [['foe', 'So you made it here. Good. I’ve been waiting to crush you in front of everyone.'], ['me', 'Let’s settle it, Silver.']],
+    rattled: [['foe', 'The Champion’s room. Of course it’s you who shows up.'], ['foe', 'This time I fight with my Pokémon, not just with them.'], ['me', 'I can see that. Let’s go.']],
+    bitter: [['foe', 'You taught me something on this journey. I hate that you did.'], ['foe', 'Now — one last battle. Everything we have.'], ['me', 'Everything we have.']]
+  };
+  /* ---------- Johto story events (before gyms 2, 4, 5, 7 and 8) ---------- */
+  window.JOHTO_EV = {
+    1: { id: 'jwell', title: 'Slowpoke Well', arena: arena('cavern', 'meteor'), text: 'Team Rocket is cutting off Slowpoke tails! Two Rocket battles back to back — no healing between.',
+      before: [['foe', 'What do you want, kid? We’re busy selling SlowpokeTails!'], ['me', 'Leave those Slowpoke alone!']],
+      stages: [{ name: 'Rocket Grunt', keys: ['rocketgrunt', 'teamrocketgrunt', 'grunt'], team: ['Rattata', 'Zubat', 'Koffing'], style: 'aggro' },
+        { name: 'Rocket Executive', keys: ['rocketexecutive', 'proton', 'rocketadmin'], team: ['Golbat', 'Weezing', 'Arbok'], style: 'status', line: 'You beat my grunt? Then I’ll handle you myself!' }],
+      win: [['foe', 'Fine, we’ll pull out of the well… but Team Rocket isn’t finished in Johto!']], lose: [['foe', 'Ha! Kids should stay out of the well!']] },
+    3: { id: 'jkimono', title: 'Dance Theater', format: '1v1', name: 'Kimono Girl', keys: ['kimonogirl', 'kimono'], team: ['Espeon'], style: 'switcher', arena: arena('grand', 'hall'),
+      text: 'A 1v1 duel with a Kimono Girl at the Dance Theater: your lead against her Espeon.',
+      before: [['foe', 'Welcome to the Dance Theater. We dance with our Pokémon as one.'], ['foe', 'Will you show me one Pokémon, and your bond with it?'], ['me', 'Gladly.']],
+      win: [['foe', 'Beautiful. The bond between you two is true.']], lose: [['foe', 'Your steps are not yet in harmony. Please, come again.']] },
+    4: { id: 'jlight', title: 'Glitter Lighthouse puzzle', format: 'puzzle', name: 'Sailor', keys: ['sailor'], team: ['Steelix'], fixedTeam: ['Flaaffy', 'Togetic', 'Scyther', 'Croconaw'], foeScale: 1.6, style: 'defensive', arena: arena('vermilion', 'castle'),
+      text: 'Puzzle battle: a sailor’s Steelix blocks the lighthouse stairs. Your team is fixed — only one of these four can really beat it.',
+      before: [['foe', 'Jasmine’s Amphy is sick up there, and nobody gets past my Steelix!'], ['foe', 'Here, use my crew’s Pokémon. Let’s see if you can figure it out.'], ['me', 'A puzzle? I’m in.']],
+      win: [['foe', 'Water! Of course — Steelix is part Ground. Go on up, the lighthouse is yours.']], lose: [['foe', 'Think about what Steelix is weak to… and try again.']] },
+    6: { id: 'jgyarados', title: 'Lake of Rage', format: '1v1', name: 'Red Gyarados', keys: [], team: ['Gyarados|shiny'], foeScale: 1.25, style: 'aggro', arena: arena('cerulean'),
+      text: 'The Red Gyarados rises from the Lake of Rage! A 1v1 battle: your lead against it.',
+      before: [['foe', 'GYAAAAAAH!'], ['me', 'A red Gyarados… Team Rocket must be behind this. Let’s calm it down!']],
+      win: [['me', 'It’s calm now. Something is forcing Pokémon to evolve here… Team Rocket.']], lose: [['foe', 'GYAAAH!']] },
+    7: { id: 'jradio', title: 'Radio Tower takeover', arena: arena('plaza', 'grand'), text: 'Team Rocket has seized Goldenrod’s Radio Tower! Three Rocket battles back to back — no healing between.',
+      before: [['foe', 'Team Rocket has taken over the Radio Tower! We’ll broadcast a message to Giovanni!'], ['me', 'Not on my watch.']],
+      stages: [{ name: 'Rocket Grunt', keys: ['rocketgrunt', 'teamrocketgrunt', 'grunt'], team: ['Raticate', 'Koffing', 'Golbat'], style: 'aggro' },
+        { name: 'Executive Ariana', keys: ['ariana', 'rocketexecutivef', 'rocketadmin'], team: ['Arbok', 'Vileplume', 'Murkrow'], style: 'status', line: 'You won’t get past me. I’ll make you regret coming here.' },
+        { name: 'Executive Archer', keys: ['archer', 'rocketexecutive', 'rocketadmin'], team: ['Houndoom', 'Crobat', 'Weezing'], style: 'switcher', line: 'I am Archer, Team Rocket’s acting boss. This ends now.' }],
+      win: [['foe', 'Team Rocket… is finished. Giovanni… we failed you.']], lose: [['foe', 'The Radio Tower is ours! Hahaha!']] }
+  };
+  /* ---------- evolutions: Johto lines always; cross-generation ones only in Johto ---------- */
+  Object.assign(EVO, { Chikorita: ['Bayleef', 16], Bayleef: ['Meganium', 32], Cyndaquil: ['Quilava', 14], Quilava: ['Typhlosion', 36], Totodile: ['Croconaw', 18], Croconaw: ['Feraligatr', 30],
+    Sentret: ['Furret', 15], Hoothoot: ['Noctowl', 20], Ledyba: ['Ledian', 18], Spinarak: ['Ariados', 22], Chinchou: ['Lanturn', 27], Pichu: ['Pikachu', 12], Cleffa: ['Clefairy', 12],
+    Igglybuff: ['Jigglypuff', 12], Togepi: ['Togetic', 15], Natu: ['Xatu', 25], Mareep: ['Flaaffy', 15], Flaaffy: ['Ampharos', 30], Marill: ['Azumarill', 18], Hoppip: ['Skiploom', 18],
+    Skiploom: ['Jumpluff', 27], Sunkern: ['Sunflora', 20], Wooper: ['Quagsire', 20], Pineco: ['Forretress', 31], Snubbull: ['Granbull', 23], Teddiursa: ['Ursaring', 30], Slugma: ['Magcargo', 38],
+    Swinub: ['Piloswine', 33], Remoraid: ['Octillery', 25], Houndour: ['Houndoom', 24], Phanpy: ['Donphan', 25], Tyrogue: ['Hitmontop', 20], Smoochum: ['Jynx', 30], Elekid: ['Electabuzz', 30],
+    Magby: ['Magmar', 30], Larvitar: ['Pupitar', 30], Pupitar: ['Tyranitar', 55] });
+  const CROSS = { Golbat: ['Crobat', 40], Onix: ['Steelix', 35], Scyther: ['Scizor', 40], Seadra: ['Kingdra', 45], Chansey: ['Blissey', 40], Porygon: ['Porygon2', 35] };
+  const EEVEE_K = EVO.Eevee ? JSON.parse(JSON.stringify(EVO.Eevee)) : null;
+
+  /* ---------- the region switch ---------- */
+  const K = { gyms: GYMS.slice(), map: { img: KANTO.img, w: KANTO.w, h: KANTO.h, home: KANTO.home, gyms: KANTO.gyms, legs: KANTO.legs },
+    names: ROUTE_NAMES.slice(), ash: ASH_LEG.map(p => p.slice()), routes: ROUTES.slice(), minors: typeof MINORS !== 'undefined' ? MINORS.slice() : [], starters: STARTERS.slice(),
+    badges: BADGE_FILES.slice(), rivalAt: Object.assign({}, D.RIVAL_AT), rivalBase: D.RIVAL_BASE.map(a => a.slice()), gary: Object.assign({}, D.GARY), rival: D.SCRIPT.rival, champ: D.SCRIPT.champion };
+  const fill = (arr, items) => { arr.splice(0, arr.length, ...items); };
+  const swapObj = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
+  const regionOf = s => (!s ? 'kanto' : s.region === 'johto' ? 'johto' : s.region === 'combined' ? (s.phase || 'kanto') : 'kanto');
+  function applyRegion(R) {
+    if (STORY.region === R && GYMS[0] === (R === 'johto' ? J[0] : K.gyms[0])) return;
+    const jo = R === 'johto';
+    fill(GYMS, jo ? J : K.gyms);
+    Object.assign(KANTO, jo ? JMAP : K.map);
+    fill(ROUTE_NAMES, jo ? JNAMES : K.names); fill(ASH_LEG, jo ? JASH : K.ash);
+    fill(ROUTES, jo ? JROUTES : K.routes); if (typeof MINORS !== 'undefined') fill(MINORS, jo ? JMINORS : K.minors);
+    fill(STARTERS, jo ? ['Chikorita', 'Cyndaquil', 'Totodile'] : K.starters);
+    fill(BADGE_FILES, jo ? ['zephyr', 'hive', 'plain', 'fog', 'storm', 'mineral', 'glacier', 'rising', 'elite', 'champion'] : K.badges);
+    swapObj(D.RIVAL_AT, jo ? SRIVAL_AT : K.rivalAt); fill(D.RIVAL_BASE, jo ? SRIVAL_BASE : K.rivalBase); swapObj(D.GARY, jo ? SILVER : K.gary);
+    D.SCRIPT.rival = jo ? SRIVAL_SCRIPT : K.rival; D.SCRIPT.champion = jo ? SCHAMP : K.champ; D.rivalCounter = jo ? silverCounter : null;
+    for (const [a, v] of Object.entries(CROSS)) { if (jo) EVO[a] = v; else delete EVO[a]; }        // cross-generation evolutions: Johto only
+    if (EEVEE_K) EVO.Eevee = jo ? [EEVEE_K[0].concat(['Espeon', 'Umbreon']), EEVEE_K[1]] : JSON.parse(JSON.stringify(EEVEE_K));
+    STORY.region = R; STORY.rivalKey = jo ? 'rivalJ' : 'rival';
+    if (!jo && typeof applyStoryBranch === 'function') applyStoryBranch();                         // Kanto: Giovanni or Professor Oak, by the save's choice
+    STORY.kanto = true;
+  }
+  window.applyRegion = applyRegion; window.storyRegion = () => STORY.region || 'kanto';
+  const sync = () => applyRegion(regionOf(STORY.save));
+  STORY.region = 'kanto'; STORY.rivalKey = 'rival';
+
+  /* ---------- choosing the story type for a new journey ---------- */
+  function chooseRegion() {
+    return new Promise(done => {
+      const ov = $('csOv'); STORY.cutscene = true;
+      const opts = [['kanto', 'Kanto', 'The original journey — 8 gyms, Lance and Gary.'], ['johto', 'Johto', 'A new region — 8 Johto gyms, Karen and your rival Silver.'], ['combined', 'Combined', 'Kanto first, then set sail for Johto with the same team.']];
+      ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">Where will your journey begin?</div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">${opts.map(([v, t, sub], k) => `<button class="sy-btn${k ? '' : ' go'}" type="button" data-r="${v}" style="min-width:190px">${t}<br><small style="font-weight:600;opacity:.85">${sub}</small></button>`).join('')}</div><button class="sy-btn" type="button" data-r="" style="margin-top:10px">Cancel</button></div>`;
+      ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-r]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; STORY.cutscene = false; done(b.dataset.r || null); };
+    });
+  }
+  const _begin = beginJourney;
+  beginJourney = async function (fresh) {
+    if (fresh) { const r = await chooseRegion(); if (!r) return; STORY.nextRegion = r; applyRegion(r === 'johto' ? 'johto' : 'kanto'); }
+    else sync();
+    return _begin.apply(this, arguments);
+  };
+  const _save = saveStory;
+  saveStory = function () {                                       // a new journey takes the chosen story type
+    const s = STORY.save; if (s && STORY.nextRegion && !s.region && !s.badges) { s.region = STORY.nextRegion; if (s.region === 'combined') s.phase = 'kanto'; STORY.nextRegion = null; }
+    return _save.apply(this, arguments);
+  };
+  const _open = openStoryScreen;
+  openStoryScreen = function () { sync(); const r = _open.apply(this, arguments); setTimeout(offerJohto, 900); return r; };
+  const _render = renderStory;
+  renderStory = function () { sync(); const r = _render.apply(this, arguments); try { tagRegion(); } catch (e) { } return r; };
+  if (typeof useSlot === 'function') { const _use = useSlot; useSlot = function () { const r = _use.apply(this, arguments); try { sync(); } catch (e) { } return r; }; }
+  const _sg = startGymBattle; startGymBattle = function () { sync(); return _sg.apply(this, arguments); };
+  const _card = openGymCard; openGymCard = function () { sync(); return _card.apply(this, arguments); };
+  function tagRegion() { const h = [...document.querySelectorAll('#storyOv h1, #storyOv h2, #storyOv .sy-title')].find(e => /BADGE JOURNEY/i.test(e.textContent)); if (!h || h.querySelector('.sy-reg')) return;
+    const t = document.createElement('span'); t.className = 'sy-reg'; t.style.cssText = 'margin-left:10px;font-size:.55em;letter-spacing:.12em;color:#9fd0ff;vertical-align:middle';
+    const s = STORY.save; t.textContent = s && s.region === 'combined' ? `· COMBINED · ${String(STORY.region).toUpperCase()}` : `· ${String(STORY.region).toUpperCase()}`; h.appendChild(t); }
+  // Combined journeys: after Kanto's Champion, set sail for Johto with the same team
+  let offering = false;
+  async function offerJohto() {
+    const s = STORY.save; if (offering || !s || s.region !== 'combined' || (s.phase || 'kanto') !== 'kanto' || s.badges < TOTAL || !STORY.open || STORY.cutscene || STORY.battle) return;
+    offering = true;
+    try { const ov = $('csOv'); STORY.cutscene = true;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’re Kanto’s Champion! The S.S. Aqua is ready to sail for Johto — your team and Pokédex come with you.</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Set sail for Johto</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+        ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
+      STORY.cutscene = false;
+      if (go) { s.kanto = { badges: s.badges, wins: s.wins, losses: s.losses, at: Date.now() }; s.phase = 'johto'; s.badges = 0; saveStory(); sync(); renderStory();
+        setTimeout(() => { try { openGymCard(0); } catch (e) { } }, 400); }
+    } finally { offering = false; STORY.cutscene = false; }
+  }
+  // the Johto badges until their images are added: a generated badge in the badge's colours
+  const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'] };
+  document.addEventListener('error', e => { const im = e.target; if (!im || im.tagName !== 'IMG' || !/story\/badges\/(\w+)\.png/.test(im.src || '')) return; const k = RegExp.$1, c = BADGE_COL[k]; if (!c || im.dataset.fb) return; im.dataset.fb = '1';
+    im.src = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" fill="${c[0]}" stroke="${c[1]}" stroke-width="3"/><circle cx="20" cy="20" r="7" fill="${c[1]}" opacity=".85"/></svg>`); }, true);
+  // Kanto journeys keep the Kanto Pokédex (151); Johto and Combined show all 251
+  window.dexHidesJohto = () => (STORY.region || 'kanto') === 'kanto' && !(STORY.save && STORY.save.region === 'combined');
+  sync();
+})();
+
+//# sourceURL=johto.js
 </script>
 <script>
 'use strict';

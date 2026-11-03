@@ -71,7 +71,7 @@
 
   /* ---------- save helpers ---------- */
   const sv = () => STORY.save;
-  const rv = () => { const s = sv(); s.rival = s.rival || { w: 0, l: 0, done: {} }; s.rival.done = s.rival.done || {}; return s.rival; };
+  const rv = () => { const s = sv(), k = STORY.rivalKey || 'rival'; s[k] = s[k] || { w: 0, l: 0, done: {} }; s[k].done = s[k].done || {}; return s[k]; };   // one record per region's rival
   const mood = () => { const r = rv(), d = r.w - r.l; return d >= 2 ? 'bitter' : d >= 1 ? 'rattled' : 'cocky'; };
   const diff = () => DIFF[(sv() && sv().difficulty) || 'normal'] || DIFF.normal;
   const starsOf = key => ((sv() && sv().stars) || {})[key] || 0;
@@ -139,7 +139,7 @@
     });
   }
   window.playScene = playScene;
-  window.STORY_DATA = { RULES, SCRIPT, DIFF, PAR, diff, mood, rv, starsOf, imgOf };
+  window.STORY_DATA = { RULES, SCRIPT, DIFF, PAR, diff, mood, rv, starsOf, imgOf, RIVAL_AT, RIVAL_BASE, GARY, rivalCounter: null };   // a region can swap the rival in
 
   /* ---------- rules for the next story battle ---------- */
   STORY.nextRules = null;
@@ -149,8 +149,7 @@
 
   /* ---------- the rival ---------- */
   function rivalTeam(k) {
-    const pick = garyPick(sv().team), line = GARY_TEAMS.find(G => G.counter === pick.counter) ? null : null;
-    const counterLine = (GARY_TEAMS.map(G => G.line).find(l => l.includes(pick.counter))) || ['Charmander', 'Charmeleon', 'Charizard'];
+    const counterLine = window.STORY_DATA.rivalCounter ? window.STORY_DATA.rivalCounter() : (() => { const pick = garyPick(sv().team); return (GARY_TEAMS.map(G => G.line).find(l => l.includes(pick.counter))) || ['Charmander', 'Charmeleon', 'Charizard']; })();
     const list = RIVAL_BASE[k].map(n => n === '*1' ? counterLine[1] : n === '*2' ? counterLine[2] : n);
     const size = Math.max(2, Math.min(list.length, (sv().team || []).length));   // grows with yours
     return list.slice(list.length - size);                                        // keeps his starter, sheds the earliest picks
@@ -305,7 +304,7 @@
     try { const s = sv(), g = gymAt(i), card = document.querySelector('#syModal > div'); if (!s || !card || g.secret) return r;
       const rivalNext = i === s.badges && RIVAL_AT[i] != null && !rv().done[i], rule = RULES[g.rulesKey || g.n], key = 'g' + (g.rulesKey || g.n), n = starsOf(key);
       const d = document.createElement('div'); d.className = 'sy-extra';
-      d.innerHTML = `${rivalNext ? `<div class="sy-tile wide alert"><h5>⚔ Rival</h5><b>Gary blocks the way!</b> Your rival challenges you before ${esc(g.leader)}.</div>` : ''}
+      d.innerHTML = `${rivalNext ? `<div class="sy-tile wide alert"><h5>⚔ Rival</h5><b>${esc(GARY.leader)} blocks the way!</b> Your rival challenges you before ${esc(g.leader)}.</div>` : ''}
         ${rule ? `<div class="sy-tile twist"><h5>⚠ Gym twist · ${esc(rule.title)}</h5>${esc(rule.text)}</div>` : ''}
         <div class="sy-tile"><h5>Stars</h5><span class="sy-stars" style="font-size:18px">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span><div class="sy-starwhy">★ win · ★ no faints · ★ under ${PAR(g.n)} s</div></div>
         <div class="sy-tile"><h5>Difficulty</h5><div class="sy-diff" role="group" aria-label="Difficulty">${Object.entries(DIFF).map(([k, v]) => `<button type="button" data-d="${k}" class="${((s.difficulty || 'normal') === k) ? 'on' : ''}" aria-pressed="${(s.difficulty || 'normal') === k}">${v.name}</button>`).join('')}</div></div>`;
@@ -319,7 +318,7 @@
   renderStory = function () {
     const r = _render.apply(this, arguments);
     try { const s = sv(); if (!s) return r;
-      document.querySelectorAll('#syMap g.gym[data-g]').forEach(node => { const i = +node.dataset.g; if (i >= TOTAL) return; const n = starsOf('g' + GYMS[i].n); if (!n) return;
+      document.querySelectorAll('#syMap g.gym[data-g]').forEach(node => { const i = +node.dataset.g; if (i >= TOTAL) return; const n = starsOf('g' + (GYMS[i].rulesKey || GYMS[i].n)); if (!n) return;
         const t = document.createElementNS('http://www.w3.org/2000/svg', 'text'); t.setAttribute('y', '58'); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'gstars');
         t.setAttribute('style', 'font:900 15px Rubik,sans-serif;fill:#ffd84a;paint-order:stroke;stroke:#141c34;stroke-width:4px'); t.textContent = '★'.repeat(n) + '☆'.repeat(3 - n); node.appendChild(t); });
     } catch (e) { }

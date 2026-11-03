@@ -39,7 +39,7 @@ Object.defineProperty(TEAM_NAME, 'C', { get() { return TEAM_NAME.A; }, enumerabl
    Section 2: data — roster, types, moves
    ===================================================================== */
 // name|type1|type2|tier   tier → base stat total used for generated stats
-const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L;MissingNo.|Bird|Normal|F`;
+const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L;Chikorita|Grass||B;Bayleef|Grass||M;Meganium|Grass||F;Cyndaquil|Fire||B;Quilava|Fire||M;Typhlosion|Fire||F;Totodile|Water||B;Croconaw|Water||M;Feraligatr|Water||F;Sentret|Normal||b;Furret|Normal||g;Hoothoot|Normal|Flying|b;Noctowl|Normal|Flying|g;Ledyba|Bug|Flying|b;Ledian|Bug|Flying|k;Spinarak|Bug|Poison|b;Ariados|Bug|Poison|k;Crobat|Poison|Flying|F;Chinchou|Water|Electric|b;Lanturn|Water|Electric|f;Pichu|Electric||W;Cleffa|Fairy||W;Igglybuff|Normal|Fairy|W;Togepi|Fairy||W;Togetic|Fairy|Flying|g;Natu|Psychic|Flying|b;Xatu|Psychic|Flying|f;Mareep|Electric||B;Flaaffy|Electric||M;Ampharos|Electric||F;Bellossom|Grass||F;Marill|Water|Fairy|b;Azumarill|Water|Fairy|g;Sudowoodo|Rock||g;Politoed|Water||F;Hoppip|Grass|Flying|b;Skiploom|Grass|Flying|M;Jumpluff|Grass|Flying|g;Aipom|Normal||b;Sunkern|Grass||W;Sunflora|Grass||g;Yanma|Bug|Flying|k;Wooper|Water|Ground|b;Quagsire|Water|Ground|f;Espeon|Psychic||F;Umbreon|Dark||F;Murkrow|Dark|Flying|k;Slowking|Water|Psychic|F;Misdreavus|Ghost||k;Unown|Psychic||W;Wobbuffet|Psychic||g;Girafarig|Normal|Psychic|g;Pineco|Bug||b;Forretress|Bug|Steel|f;Dunsparce|Normal||k;Gligar|Ground|Flying|g;Steelix|Steel|Ground|F;Snubbull|Fairy||b;Granbull|Fairy||f;Qwilfish|Water|Poison|g;Scizor|Bug|Steel|F;Shuckle|Bug|Rock|k;Heracross|Bug|Fighting|F;Sneasel|Dark|Ice|g;Teddiursa|Normal||b;Ursaring|Normal||F;Slugma|Fire||b;Magcargo|Fire|Rock|g;Swinub|Ice|Ground|b;Piloswine|Ice|Ground|f;Corsola|Water|Rock|k;Remoraid|Water||b;Octillery|Water||f;Delibird|Ice|Flying|k;Mantine|Water|Flying|f;Skarmory|Steel|Flying|F;Houndour|Dark|Fire|B;Houndoom|Dark|Fire|F;Kingdra|Water|Dragon|F;Phanpy|Ground||b;Donphan|Ground||F;Porygon2|Normal||F;Stantler|Normal||g;Smeargle|Normal||k;Tyrogue|Fighting||W;Hitmontop|Fighting||g;Smoochum|Ice|Psychic|W;Elekid|Electric||b;Magby|Fire||b;Miltank|Normal||f;Blissey|Normal||F;Raikou|Electric||L;Entei|Fire||L;Suicune|Water||L;Larvitar|Rock|Ground|B;Pupitar|Rock|Ground|M;Tyranitar|Rock|Dark|L;Lugia|Psychic|Flying|X;Ho-Oh|Fire|Flying|X;Celebi|Psychic|Grass|L;MissingNo.|Bird|Normal|F`;
 const TIER_BST = { W: 200, b: 300, B: 310, k: 400, M: 405, g: 440, f: 480, F: 530, L: 590, X: 680 };
 const TIER_SIZE = { W: .62, b: .66, B: .64, k: .8, M: .8, g: .84, f: .92, F: .97, L: 1, X: 1 };
 const DEX = ROSTER_RAW.split(';').map((s, i) => { const p = s.split('|'); return { id: i + 1, name: p[0], types: p[2] ? [p[1], p[2]] : [p[1]], tier: p[3] }; });
@@ -58,7 +58,16 @@ const BASE_OVERRIDE = {
   Magikarp: [20, 10, 55, 15, 20, 80], Onix: [35, 45, 160, 30, 45, 70], Machamp: [90, 130, 80, 65, 85, 55],
   Golem: [80, 120, 130, 55, 65, 45], Starmie: [60, 75, 85, 100, 85, 115], Ditto: [48, 48, 48, 48, 48, 48],
   Eevee: [55, 55, 50, 45, 65, 55],
-  'MissingNo.': [33, 136, 0, 6, 6, 29]      // Red/Blue: HP 33, Attack 136, Defense 0, Special 6 (Sp. Atk and Sp. Def here), Speed 29
+  'MissingNo.': [33, 136, 0, 6, 6, 29],
+  // Johto (Gen 2): real base stats for the starters, legendaries and stars
+  Meganium: [80, 82, 100, 83, 100, 80], Typhlosion: [78, 84, 78, 109, 85, 100], Feraligatr: [85, 105, 100, 79, 83, 78], Crobat: [85, 90, 80, 70, 80, 130],
+  Ampharos: [90, 75, 85, 115, 90, 55], Espeon: [65, 65, 60, 130, 95, 110], Umbreon: [95, 65, 110, 60, 130, 65], Steelix: [75, 85, 200, 55, 65, 30],
+  Scizor: [70, 130, 100, 55, 80, 65], Heracross: [80, 125, 75, 40, 95, 85], Skarmory: [65, 80, 140, 40, 70, 70], Houndoom: [75, 90, 50, 110, 80, 95],
+  Kingdra: [75, 95, 95, 95, 95, 85], Blissey: [255, 10, 10, 75, 135, 55], Raikou: [90, 85, 75, 115, 100, 115], Entei: [115, 115, 85, 90, 75, 100],
+  Suicune: [100, 75, 115, 90, 115, 85], Tyranitar: [100, 134, 110, 95, 100, 61], Lugia: [106, 90, 130, 90, 154, 110], 'Ho-Oh': [106, 130, 90, 110, 154, 90],
+  Celebi: [100, 100, 100, 100, 100, 100], Porygon2: [85, 80, 90, 105, 95, 60], Miltank: [95, 80, 105, 40, 70, 100], Slowking: [95, 75, 80, 100, 110, 30],
+  Wobbuffet: [190, 33, 58, 33, 58, 33], Shuckle: [20, 10, 230, 10, 230, 5], Donphan: [90, 120, 120, 60, 60, 50], Ursaring: [90, 130, 75, 75, 75, 55],
+  Politoed: [90, 75, 75, 90, 100, 70], Bellossom: [75, 80, 95, 90, 100, 50], Lanturn: [125, 58, 58, 76, 76, 67], Xatu: [65, 75, 70, 95, 70, 95]      // Red/Blue: HP 33, Attack 136, Defense 0, Special 6 (Sp. Atk and Sp. Def here), Speed 29
 };
 // Type archetype weights: hp, atk, def, spa, spd, spe
 const ARCH = {
@@ -67,7 +76,8 @@ const ARCH = {
   Ice: [1.05, .95, .95, 1.1, 1, .95], Fighting: [1.05, 1.4, .9, .6, .9, 1], Poison: [1, 1, 1, .95, .95, 1],
   Ground: [1, 1.2, 1.15, .8, .85, .9], Rock: [.95, 1.15, 1.4, .75, .8, .8], Bug: [.9, 1.1, 1, .9, .95, 1.05],
   Ghost: [.8, .8, .8, 1.35, .9, 1.25], Dragon: [1.05, 1.25, 1, 1.05, 1, 1], Fairy: [1.2, .8, .9, 1.05, 1.15, .85],
-  Steel: [.85, .9, 1.4, 1.1, .9, .8], Flying: [.95, 1.05, .9, .95, .9, 1.25]
+  Steel: [.85, .9, 1.4, 1.1, .9, .8], Flying: [.95, 1.05, .9, .95, .9, 1.25],
+  Dark: [.95, 1.2, .9, .95, .9, 1.15]          // Johto: physical and quick (Murkrow, Sneasel, Houndour)
 };
 const TYPE_COLOR = {
   Normal: '#b9b7a3', Fire: '#ff7d3b', Water: '#4a9dff', Grass: '#4cc860', Electric: '#ffd02e', Psychic: '#ff6fb1',
@@ -180,7 +190,27 @@ M('Aerial Ace', 'Flying', 'P', 60, null, 0, 'slash');
 M('Air Slash', 'Flying', 'S', 75, 95, 0, 'wind', { fl: 30 });
 M('Drill Peck', 'Flying', 'P', 80, 100, 0, 'contact');
 M('Brave Bird', 'Flying', 'P', 120, 100, 0, 'contact', { rc: 1 / 3 });
-M('Sky Attack', 'Flying', 'P', 140, 90, 0, 'contact', { charge: 900 });   // Gen 1: 140 power, 90% accuracy, a charging turn first
+M('Sky Attack', 'Flying', 'P', 140, 90, 0, 'contact', { charge: 900 });
+// ---- Johto (Gen 2) moves ----
+M('Sacred Fire', 'Fire', 'P', 100, 95, 0, 'burst', { st: ['brn', 50], thaw: 1 });          // Ho-Oh
+M('Aeroblast', 'Flying', 'S', 100, 95, 0, 'beam', { hc: 1 });                               // Lugia
+M('Megahorn', 'Bug', 'P', 120, 85, 0, 'contact', {});                                       // Heracross
+M('Steel Wing', 'Steel', 'P', 70, 90, 0, 'contact', { self: { def: 1 }, sch: 10 });
+M('Dynamic Punch', 'Fighting', 'P', 100, 50, 0, 'contact', { cf: 100 });
+M('Zap Cannon', 'Electric', 'S', 120, 50, 0, 'projectile', { st: ['par', 100] });
+M('Ancient Power', 'Rock', 'S', 60, 100, 0, 'projectile', { self: { atk: 1, def: 1, spa: 1, spd: 1, spe: 1 }, sch: 10 });
+M('Faint Attack', 'Dark', 'P', 60, null, 0, 'dash', {});                                      // never misses
+M('Pursuit', 'Dark', 'P', 40, 100, 1, 'dash', {});
+M('Icy Wind', 'Ice', 'S', 55, 95, 0, 'wind', { tg: { spe: -1 }, ch: 100 });
+M('Spark', 'Electric', 'P', 65, 100, 0, 'contact', { st: ['par', 30] });
+M('Twister', 'Dragon', 'S', 40, 100, 0, 'wind', { fl: 20 });
+M('Moonlight', 'Fairy', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Fury Cutter', 'Bug', 'P', 40, 95, 0, 'slash', { hc: 1 });
+// Johto moves are marked Gen 2; Sacred Fire and Aeroblast are signatures (Ho-Oh, Lugia only). Automatic movesets never give
+// Gen 2 moves to Gen 1 Pokémon (Kanto movesets stay exactly as they were) and never hand out a signature move.
+for (const n of ['Sacred Fire', 'Aeroblast', 'Megahorn', 'Steel Wing', 'Dynamic Punch', 'Zap Cannon', 'Ancient Power', 'Faint Attack', 'Pursuit', 'Icy Wind', 'Spark', 'Twister', 'Moonlight', 'Fury Cutter']) MOVES[n].gen = 2;
+MOVES['Sacred Fire'].sig = MOVES['Aeroblast'].sig = true;
+let MOVESET_GEN = 1;   // Gen 1: 140 power, 90% accuracy, a charging turn first
 M('Hurricane', 'Flying', 'S', 110, 70, 0, 'wind', { cf: 30 });
 // Psychic
 M('Confusion', 'Psychic', 'S', 50, 100, 0, 'psy', { cf: 10 });
@@ -234,6 +264,19 @@ M('Crunch', 'Dark', 'P', 80, 100, 0, 'contact', { tg: { def: -1 }, ch: 20 });
 
 // Hand-picked movesets for signature teams; every other species gets a generated set.
 const MOVESET_OVERRIDE = {
+  // Johto signatures and new Gen 2 moves
+  'Ho-Oh': ['Sacred Fire', 'Brave Bird', 'Earthquake', 'Recover'], Lugia: ['Aeroblast', 'Psychic', 'Ice Beam', 'Recover'], Celebi: ['Giga Drain', 'Psychic', 'Ancient Power', 'Recover'],
+  Heracross: ['Megahorn', 'Close Combat', 'Rock Slide', 'Swords Dance'], Scizor: ['Steel Wing', 'X-Scissor', 'Quick Attack', 'Swords Dance'], Skarmory: ['Steel Wing', 'Drill Peck', 'Aerial Ace', 'Iron Defense'],
+  Tyranitar: ['Crunch', 'Stone Edge', 'Earthquake', 'Dragon Dance'], Umbreon: ['Faint Attack', 'Moonlight', 'Shadow Ball', 'Iron Tail'], Espeon: ['Psychic', 'Dazzling Gleam', 'Shadow Ball', 'Calm Mind'],
+  Ampharos: ['Zap Cannon', 'Thunderbolt', 'Dragon Pulse', 'Signal Beam'], Porygon2: ['Zap Cannon', 'Ice Beam', 'Psybeam', 'Recover'], Sneasel: ['Faint Attack', 'Ice Shard', 'Slash', 'Agility'],
+  Murkrow: ['Faint Attack', 'Drill Peck', 'Pursuit', 'Agility'], Houndoom: ['Crunch', 'Flamethrower', 'Faint Attack', 'Sludge Bomb'], Houndour: ['Pursuit', 'Ember', 'Bite', 'Faint Attack'],
+  Kingdra: ['Twister', 'Hydro Pump', 'Dragon Pulse', 'Ice Beam'], Piloswine: ['Icy Wind', 'Earthquake', 'Blizzard', 'Rock Slide'], Delibird: ['Icy Wind', 'Drill Peck', 'Blizzard', 'Brave Bird'],
+  Suicune: ['Hydro Pump', 'Ice Beam', 'Icy Wind', 'Calm Mind'], Raikou: ['Thunder', 'Spark', 'Crunch', 'Calm Mind'], Entei: ['Flare Blitz', 'Fire Blast', 'Crunch', 'Extreme Speed'],
+  Lanturn: ['Spark', 'Hydro Pump', 'Thunderbolt', 'Ice Beam'], Yanma: ['Ancient Power', 'Bug Buzz', 'Air Slash', 'Quick Attack'], Corsola: ['Ancient Power', 'Surf', 'Recover', 'Ice Beam'],
+  Togetic: ['Ancient Power', 'Dazzling Gleam', 'Aerial Ace', 'Charm'], Granbull: ['Play Rough', 'Crunch', 'Dynamic Punch', 'Charm'], Ursaring: ['Body Slam', 'Crunch', 'Dynamic Punch', 'Swords Dance'],
+  Hitmontop: ['Close Combat', 'Dynamic Punch', 'Quick Attack', 'Bulk Up'], Tyrogue: ['Mach Punch', 'Brick Break', 'Tackle', 'Bulk Up'], Pichu: ['Spark', 'Thunder Shock', 'Charm', 'Quick Attack'],
+  Elekid: ['Spark', 'Thunder Punch', 'Quick Attack', 'Thunder Wave'], Ariados: ['Fury Cutter', 'Poison Jab', 'Pin Missile', 'String Shot'], Ledian: ['Fury Cutter', 'Mach Punch', 'Air Slash', 'Agility'],
+  Gligar: ['Faint Attack', 'Earthquake', 'X-Scissor', 'Wing Attack'], Sudowoodo: ['Rock Slide', 'Faint Attack', 'Brick Break', 'Rock Throw'], Xatu: ['Psychic', 'Air Slash', 'Faint Attack', 'Calm Mind'],
   'MissingNo.': ['Water Gun', 'Water Gun', 'Sky Attack'],   // exactly as in Red/Blue: three moves, Water Gun twice
   Pikachu: ['Thunderbolt', 'Volt Tackle', 'Quick Attack', 'Iron Tail'],
   Charizard: ['Flamethrower', 'Air Slash', 'Dragon Pulse', 'Earth Power'],
@@ -298,7 +341,7 @@ function levelStats(b) { // level 50, neutral nature, no training
   return { hp: b.hp + 60, atk: b.atk + 5, def: b.def + 5, spa: b.spa + 5, spd: b.spd + 5, spe: b.spe + 5 };
 }
 function pickBy(list, r) { return list[Math.floor(r() * list.length)]; }
-function movesOfType(type, cat) { return Object.values(MOVES).filter(m => m.type === type && m.cat === cat).sort((a, b) => a.pow - b.pow); }
+function movesOfType(type, cat) { return Object.values(MOVES).filter(m => m.type === type && m.cat === cat && !m.sig && !(m.gen === 2 && MOVESET_GEN === 1)).sort((a, b) => a.pow - b.pow); }
 function buildMoveset(d, stats) {
   const out = buildMovesetRaw(d, stats);
   // Balance (16.2): a Pokémon with a healing move (Recover, Rest) can't also carry other status moves — no heal + boost/status stalling.
@@ -311,6 +354,7 @@ function buildMoveset(d, stats) {
 }
 function buildMovesetRaw(d, stats) {
   if (MOVESET_OVERRIDE[d.name]) return MOVESET_OVERRIDE[d.name].slice();
+  MOVESET_GEN = d.id >= 152 ? 2 : 1;   // which moves the automatic builder may use
   const r = mulberry(hashStr(d.name) ^ 0xa11ce);
   const pref = stats.atk >= stats.spa ? 'P' : 'S', alt = pref === 'P' ? 'S' : 'P';
   const small = 'Wb B'.includes(d.tier);
