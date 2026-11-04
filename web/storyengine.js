@@ -211,8 +211,12 @@
   const _startBattle = startBattle;
   startBattle = async function () {
     const sc = STORY.pendingScene; STORY.pendingScene = null;
-    if (sc && STORY.battle) { const b = STORY.battle; await playScene(sc.lines, sc.who, sc.twist); if (STORY.battle !== b) return; const p = _startBattle.apply(this, arguments); b.G = G; return p; }
-    return _startBattle.apply(this, arguments);
+    // the battle object can be created after a short wait (for example while a new arena loads): once it exists, make sure the
+    // story's record points at it, so the win or loss is always credited to the right story battle
+    const bind = (b, p) => { const G0 = G; let n = 0; const tick = () => { if (STORY.battle !== b) return; if (G && G !== G0) { b.G = G; return; } if (++n < 200) setTimeout(tick, 50); };
+      if (G !== G0) b.G = G; else setTimeout(tick, 0); Promise.resolve(p).then(() => { if (STORY.battle === b && G) b.G = G; }).catch(() => { }); return p; };
+    if (sc && STORY.battle) { const b = STORY.battle; await playScene(sc.lines, sc.who, sc.twist); if (STORY.battle !== b) return; const G0 = G, p = _startBattle.apply(this, arguments); if (G !== G0) b.G = G; return bind(b, p); }
+    const b = STORY.battle, p = _startBattle.apply(this, arguments); return b ? bind(b, p) : p;
   };
   /* ---------- battles: apply the rules, show the twist ---------- */
   let shownFor = null;

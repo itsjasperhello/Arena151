@@ -33,7 +33,7 @@
     win: 'Go home and think about what kind of trainer you want to be.', lose: '…You’ve grown strong, whatever side you’re on. Take the Earth Badge.' });
   D.RULES.oak = { handicap: 5, title: 'Final exam', text: 'Oak tests everything you know: you may bring only five Pokémon, and he switches to cover every weakness.' };
   D.SCRIPT.gym.oak = [['foe', 'So it’s true. You joined Team Rocket.'], ['foe', 'Giovanni wants my research? Then you’ll have to take it from me — in battle.'], ['me', 'I’m sorry, Professor. Let’s battle.']];
-  const applyBranch = () => { if (STORY.region === 'johto') return; const s = sv(); GYMS[7] = s && s.branch === 'rocket' ? OAK : GIOVANNI; };   // Kanto only
+  const applyBranch = () => { if (STORY.region && STORY.region !== 'kanto') return; const s = sv(); GYMS[7] = s && s.branch === 'rocket' ? OAK : GIOVANNI; };   // Kanto only
   window.applyStoryBranch = applyBranch;
 
   /* ---------- events (before gyms 2, 4 and 6) ---------- */
@@ -48,7 +48,7 @@
       win: [['foe', 'You found it! Electricity cuts right through water.']], lose: [['foe', 'Not quite. Think about what Starmie fears… and try again.']] },
     5: { id: 'silph', branch: true, title: 'Silph Co.', arena: 'skyfort' }
   };
-  const evAt = i => (STORY.region === 'johto' && window.JOHTO_EV ? window.JOHTO_EV : EV)[i];   // the current region's events
+  const evAt = i => (((window.REGION_EV || {})[STORY.region]) || EV)[i];   // the current region's events
   const GAUNTLET = [
     { name: 'Rocket Grunt', keys: ['rocketgrunt', 'teamrocketgrunt', 'grunt', 'rocketgruntmale', 'rocketgruntm'], team: ['Rattata', 'Zubat', 'Ekans'], style: 'aggro' },
     { name: 'Rocket Grunt', keys: ['rocketgruntfemale', 'rocketgruntf', 'rocketgrunt', 'teamrocketgrunt', 'grunt'], team: ['Koffing', 'Raticate', 'Golbat'], style: 'aggro' },

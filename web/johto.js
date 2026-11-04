@@ -195,25 +195,29 @@
     badges: BADGE_FILES.slice(), rivalAt: Object.assign({}, D.RIVAL_AT), rivalBase: D.RIVAL_BASE.map(a => a.slice()), gary: Object.assign({}, D.GARY), rival: D.SCRIPT.rival, champ: D.SCRIPT.champion };
   const fill = (arr, items) => { arr.splice(0, arr.length, ...items); };
   const swapObj = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
-  const regionOf = s => (!s ? 'kanto' : s.region === 'johto' ? 'johto' : s.region === 'combined' ? (s.phase || 'kanto') : 'kanto');
+  const regionOf = s => (!s ? 'kanto' : s.region === 'combined' ? (s.phase || 'kanto') : (s.region === 'johto' || s.region === 'hoenn') ? s.region : 'kanto');
+  const JR = { gyms: J, map: JMAP, names: JNAMES, ash: JASH, routes: JROUTES, minors: JMINORS, starters: ['Chikorita', 'Cyndaquil', 'Totodile'],
+    badges: ['zephyr', 'hive', 'plain', 'fog', 'storm', 'mineral', 'glacier', 'rising', 'elite', 'champion'], rivalAt: SRIVAL_AT, rivalBase: SRIVAL_BASE, rival: SILVER,
+    rivalScript: SRIVAL_SCRIPT, champ: SCHAMP, counter: silverCounter, rivalKey: 'rivalJ' };
+  window.REGION_EV = Object.assign(window.REGION_EV || {}, { johto: window.JOHTO_EV });
+  const regionData = R => (R === 'johto' ? JR : R === 'hoenn' ? window.HOENN || null : null);
   function applyRegion(R) {
-    if (STORY.region === R && GYMS[0] === (R === 'johto' ? J[0] : K.gyms[0])) return;
-    const jo = R === 'johto';
-    fill(GYMS, jo ? J : K.gyms);
-    Object.assign(KANTO, jo ? JMAP : K.map);
-    fill(ROUTE_NAMES, jo ? JNAMES : K.names); fill(ASH_LEG, jo ? JASH : K.ash);
-    fill(ROUTES, jo ? JROUTES : K.routes); if (typeof MINORS !== 'undefined') fill(MINORS, jo ? JMINORS : K.minors);
-    fill(STARTERS, jo ? ['Chikorita', 'Cyndaquil', 'Totodile'] : K.starters);
-    fill(BADGE_FILES, jo ? ['zephyr', 'hive', 'plain', 'fog', 'storm', 'mineral', 'glacier', 'rising', 'elite', 'champion'] : K.badges);
-    swapObj(D.RIVAL_AT, jo ? SRIVAL_AT : K.rivalAt); fill(D.RIVAL_BASE, jo ? SRIVAL_BASE : K.rivalBase); swapObj(D.GARY, jo ? SILVER : K.gary);
-    D.SCRIPT.rival = jo ? SRIVAL_SCRIPT : K.rival; D.SCRIPT.champion = jo ? SCHAMP : K.champ; D.rivalCounter = jo ? silverCounter : null;
-    for (const [a, v] of Object.entries(CROSS)) { if (jo) EVO[a] = v; else delete EVO[a]; }        // cross-generation evolutions: Johto only
-    if (EEVEE_K) EVO.Eevee = jo ? [EEVEE_K[0].concat(['Espeon', 'Umbreon']), EEVEE_K[1]] : JSON.parse(JSON.stringify(EEVEE_K));
-    STORY.region = R; STORY.rivalKey = jo ? 'rivalJ' : 'rival';
-    if (!jo && typeof applyStoryBranch === 'function') applyStoryBranch();                         // Kanto: Giovanni or Professor Oak, by the save's choice
+    const X = regionData(R); if (!X) R = 'kanto';
+    if (STORY.region === R && GYMS[0] === (X ? X.gyms[0] : K.gyms[0])) return;
+    fill(GYMS, X ? X.gyms : K.gyms);
+    Object.assign(KANTO, X ? X.map : K.map);
+    fill(ROUTE_NAMES, X ? X.names : K.names); fill(ASH_LEG, X ? X.ash : K.ash);
+    fill(ROUTES, X ? X.routes : K.routes); if (typeof MINORS !== 'undefined') fill(MINORS, X ? X.minors : K.minors);
+    fill(STARTERS, X ? X.starters : K.starters); fill(BADGE_FILES, X ? X.badges : K.badges);
+    swapObj(D.RIVAL_AT, X ? X.rivalAt : K.rivalAt); fill(D.RIVAL_BASE, X ? X.rivalBase : K.rivalBase); swapObj(D.GARY, X ? X.rival : K.gary);
+    D.SCRIPT.rival = X ? X.rivalScript : K.rival; D.SCRIPT.champion = X ? X.champ : K.champ; D.rivalCounter = X ? X.counter : null;
+    for (const [a, v] of Object.entries(CROSS)) { if (X) EVO[a] = v; else delete EVO[a]; }        // cross-generation evolutions: outside Kanto only
+    if (EEVEE_K) EVO.Eevee = X ? [EEVEE_K[0].concat(['Espeon', 'Umbreon']), EEVEE_K[1]] : JSON.parse(JSON.stringify(EEVEE_K));
+    STORY.region = R; STORY.rivalKey = X ? X.rivalKey : 'rival';
+    if (!X && typeof applyStoryBranch === 'function') applyStoryBranch();                          // Kanto: Giovanni or Professor Oak, by the save's choice
     STORY.kanto = true;
   }
-  window.applyRegion = applyRegion; window.storyRegion = () => STORY.region || 'kanto';
+  window.applyRegion = applyRegion; window.storyRegion = () => STORY.region || 'kanto'; window.syncRegion = () => sync();
   const sync = () => applyRegion(regionOf(STORY.save));
   STORY.region = 'kanto'; STORY.rivalKey = 'rival';
 
@@ -221,24 +225,26 @@
   function chooseRegion() {
     return new Promise(done => {
       const ov = $('csOv'); STORY.cutscene = true;
-      const opts = [['kanto', 'Kanto', 'The original journey — 8 gyms, Lance and Gary.'], ['johto', 'Johto', 'A new region — 8 Johto gyms, Karen and your rival Silver.'], ['combined', 'Combined', 'Kanto first, then set sail for Johto with the same team.']];
+      const opts = [['kanto', 'Kanto', 'The original journey — 8 gyms, Lance and Gary.'], ['johto', 'Johto', '8 Johto gyms, Karen and your rival Silver.'], ['hoenn', 'Hoenn', '8 Hoenn gyms, Drake, Champion Steven and your rival May.'], ['combined', 'Combined', 'Kanto, then Johto, then Hoenn — one team the whole way.']];
       ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">Where will your journey begin?</div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">${opts.map(([v, t, sub], k) => `<button class="sy-btn${k ? '' : ' go'}" type="button" data-r="${v}" style="min-width:190px">${t}<br><small style="font-weight:600;opacity:.85">${sub}</small></button>`).join('')}</div><button class="sy-btn" type="button" data-r="" style="margin-top:10px">Cancel</button></div>`;
       ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-r]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; STORY.cutscene = false; done(b.dataset.r || null); };
     });
   }
   const _begin = beginJourney;
   beginJourney = async function (fresh) {
-    if (fresh) { const r = await chooseRegion(); if (!r) return; STORY.nextRegion = r; applyRegion(r === 'johto' ? 'johto' : 'kanto'); }
+    if (fresh) { const r = await chooseRegion(); if (!r) return; STORY.nextRegion = r; applyRegion(r === 'combined' ? 'kanto' : r); }
     else sync();
     return _begin.apply(this, arguments);
   };
+  // Pokédex Adventures ask too (the Pokédex Adventure button and "New run" both start here)
+  if (typeof startDexRun === 'function') { const _dex = startDexRun; startDexRun = async function () { const r = await chooseRegion(); if (!r) return; STORY.nextRegion = r; applyRegion(r === 'combined' ? 'kanto' : r); return _dex.apply(this, arguments); }; }
   const _save = saveStory;
   saveStory = function () {                                       // a new journey takes the chosen story type
     const s = STORY.save; if (s && STORY.nextRegion && !s.region && !s.badges) { s.region = STORY.nextRegion; if (s.region === 'combined') s.phase = 'kanto'; STORY.nextRegion = null; }
     return _save.apply(this, arguments);
   };
   const _open = openStoryScreen;
-  openStoryScreen = function () { sync(); const r = _open.apply(this, arguments); setTimeout(offerJohto, 900); setTimeout(offerRed, 950); return r; };
+  openStoryScreen = function () { sync(); const r = _open.apply(this, arguments); setTimeout(offerJohto, 900); setTimeout(offerHoenn, 920); setTimeout(offerRed, 950); return r; };
   const _render = renderStory;
   renderStory = function () { sync(); const r = _render.apply(this, arguments); try { tagRegion(); } catch (e) { } return r; };
   if (typeof useSlot === 'function') { const _use = useSlot; useSlot = function () { const r = _use.apply(this, arguments); try { sync(); } catch (e) { } return r; }; }
@@ -265,10 +271,10 @@
   const redFile = () => (typeof ALL_TRAINERS !== 'undefined' && ALL_TRAINERS.includes('Red') ? 'Red' : 'Ash');
   let offeringRed = false;
   async function offerRed() {
-    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'johto' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
+    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'hoenn' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
     offeringRed = true;
     try { const ov = $('csOv'); STORY.cutscene = true;
-      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto and Johto. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto, Johto and Hoenn. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
         ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
       STORY.cutscene = false; if (go) await startRed();
     } finally { offeringRed = false; STORY.cutscene = false; }
@@ -293,14 +299,26 @@
     STORY.battle = null; STORY.nextRules = null; const s = STORY.save;
     if (won) { s.redBeaten = Date.now(); s.finishedAt = s.finishedAt || Date.now(); } saveStory();
     showOverlay('ovResults', false); openStoryScreen();
-    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto and Johto — we did it. Grand Champion.']] : [['foe', '…']], b.who);
+    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto, Johto and Hoenn — we did it. Grand Champion.']] : [['foe', '…']], b.who);
     try { renderStory(); } catch (e) { }
   };
+  let offeringH = false;
+  async function offerHoenn() {
+    const s = STORY.save; if (offeringH || !window.HOENN || !s || s.region !== 'combined' || s.phase !== 'johto' || s.badges < TOTAL || !STORY.open || STORY.cutscene || STORY.battle) return;
+    offeringH = true;
+    try { const ov = $('csOv'); STORY.cutscene = true;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">Johto’s Champion, too! A ship to Hoenn leaves from Olivine — warm seas, new gyms, and legends of land and sea.</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Set sail for Hoenn</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+        ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
+      STORY.cutscene = false;
+      if (go) { s.johto = { badges: s.badges, at: Date.now() }; s.phase = 'hoenn'; s.badges = 0; saveStory(); sync(); renderStory(); setTimeout(() => { try { openGymCard(0); } catch (e) { } }, 400); }
+    } finally { offeringH = false; STORY.cutscene = false; }
+  }
   // the Johto badges until their images are added: a generated badge in the badge's colours
-  const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'] };
+  const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'], stone: ['#a8946a', '#e8dcc0'], knuckle: ['#c8783a', '#ffe0b0'], dynamo: ['#ffd84a', '#5a8aff'], heat: ['#ff6a3a', '#ffd060'], balance: ['#d84a4a', '#ffffff'], feather: ['#5ab0ff', '#e8f4ff'], mind: ['#ff7ad0', '#ffd0f0'], rain: ['#3a8aff', '#bfe2ff'] };
   document.addEventListener('error', e => { const im = e.target; if (!im || im.tagName !== 'IMG' || !/story\/badges\/(\w+)\.png/.test(im.src || '')) return; const k = RegExp.$1, c = BADGE_COL[k]; if (!c || im.dataset.fb) return; im.dataset.fb = '1';
     im.src = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" fill="${c[0]}" stroke="${c[1]}" stroke-width="3"/><circle cx="20" cy="20" r="7" fill="${c[1]}" opacity=".85"/></svg>`); }, true);
   // Kanto journeys keep the Kanto Pokédex (151); Johto and Combined show all 251
   window.dexHidesJohto = () => (STORY.region || 'kanto') === 'kanto' && !(STORY.save && STORY.save.region === 'combined');
+  window.dexMaxId = () => { const s = STORY.save; if (s && s.region === 'combined') return 386; return { kanto: 151, johto: 251, hoenn: 386 }[STORY.region || 'kanto'] || 151; };   // the Pokédex a journey shows
   sync();
 })();
