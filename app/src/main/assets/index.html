@@ -584,7 +584,7 @@ Object.defineProperty(TEAM_NAME, 'C', { get() { return TEAM_NAME.A; }, enumerabl
    Section 2: data — roster, types, moves
    ===================================================================== */
 // name|type1|type2|tier   tier → base stat total used for generated stats
-const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L;Chikorita|Grass||B;Bayleef|Grass||M;Meganium|Grass||F;Cyndaquil|Fire||B;Quilava|Fire||M;Typhlosion|Fire||F;Totodile|Water||B;Croconaw|Water||M;Feraligatr|Water||F;Sentret|Normal||b;Furret|Normal||g;Hoothoot|Normal|Flying|b;Noctowl|Normal|Flying|g;Ledyba|Bug|Flying|b;Ledian|Bug|Flying|k;Spinarak|Bug|Poison|b;Ariados|Bug|Poison|k;Crobat|Poison|Flying|F;Chinchou|Water|Electric|b;Lanturn|Water|Electric|f;Pichu|Electric||W;Cleffa|Fairy||W;Igglybuff|Normal|Fairy|W;Togepi|Fairy||W;Togetic|Fairy|Flying|g;Natu|Psychic|Flying|b;Xatu|Psychic|Flying|f;Mareep|Electric||B;Flaaffy|Electric||M;Ampharos|Electric||F;Bellossom|Grass||F;Marill|Water|Fairy|b;Azumarill|Water|Fairy|g;Sudowoodo|Rock||g;Politoed|Water||F;Hoppip|Grass|Flying|b;Skiploom|Grass|Flying|M;Jumpluff|Grass|Flying|g;Aipom|Normal||b;Sunkern|Grass||W;Sunflora|Grass||g;Yanma|Bug|Flying|k;Wooper|Water|Ground|b;Quagsire|Water|Ground|f;Espeon|Psychic||F;Umbreon|Dark||F;Murkrow|Dark|Flying|k;Slowking|Water|Psychic|F;Misdreavus|Ghost||k;Unown|Psychic||W;Wobbuffet|Psychic||g;Girafarig|Normal|Psychic|g;Pineco|Bug||b;Forretress|Bug|Steel|f;Dunsparce|Normal||k;Gligar|Ground|Flying|g;Steelix|Steel|Ground|F;Snubbull|Fairy||b;Granbull|Fairy||f;Qwilfish|Water|Poison|g;Scizor|Bug|Steel|F;Shuckle|Bug|Rock|k;Heracross|Bug|Fighting|F;Sneasel|Dark|Ice|g;Teddiursa|Normal||b;Ursaring|Normal||F;Slugma|Fire||b;Magcargo|Fire|Rock|g;Swinub|Ice|Ground|b;Piloswine|Ice|Ground|f;Corsola|Water|Rock|k;Remoraid|Water||b;Octillery|Water||f;Delibird|Ice|Flying|k;Mantine|Water|Flying|f;Skarmory|Steel|Flying|F;Houndour|Dark|Fire|B;Houndoom|Dark|Fire|F;Kingdra|Water|Dragon|F;Phanpy|Ground||b;Donphan|Ground||F;Porygon2|Normal||F;Stantler|Normal||g;Smeargle|Normal||k;Tyrogue|Fighting||W;Hitmontop|Fighting||g;Smoochum|Ice|Psychic|W;Elekid|Electric||b;Magby|Fire||b;Miltank|Normal||f;Blissey|Normal||F;Raikou|Electric||L;Entei|Fire||L;Suicune|Water||L;Larvitar|Rock|Ground|B;Pupitar|Rock|Ground|M;Tyranitar|Rock|Dark|L;Lugia|Psychic|Flying|X;Ho-Oh|Fire|Flying|X;Celebi|Psychic|Grass|L;Treecko|Grass||B;Grovyle|Grass||M;Sceptile|Grass||F;Torchic|Fire||B;Combusken|Fire|Fighting|M;Blaziken|Fire|Fighting|F;Mudkip|Water||B;Marshtomp|Water|Ground|M;Swampert|Water|Ground|F;Poochyena|Dark||b;Mightyena|Dark||g;Zigzagoon|Normal||b;Linoone|Normal||g;Wurmple|Bug||W;Silcoon|Bug||W;Beautifly|Bug|Flying|k;Cascoon|Bug||W;Dustox|Bug|Poison|k;Lotad|Water|Grass|b;Lombre|Water|Grass|M;Ludicolo|Water|Grass|f;Seedot|Grass||b;Nuzleaf|Grass|Dark|M;Shiftry|Grass|Dark|f;Taillow|Normal|Flying|b;Swellow|Normal|Flying|f;Wingull|Water|Flying|b;Pelipper|Water|Flying|g;Ralts|Psychic|Fairy|b;Kirlia|Psychic|Fairy|M;Gardevoir|Psychic|Fairy|F;Surskit|Bug|Water|b;Masquerain|Bug|Flying|g;Shroomish|Grass||b;Breloom|Grass|Fighting|F;Slakoth|Normal||b;Vigoroth|Normal||M;Slaking|Normal||F;Nincada|Bug|Ground|b;Ninjask|Bug|Flying|g;Shedinja|Bug|Ghost|k;Whismur|Normal||b;Loudred|Normal||M;Exploud|Normal||f;Makuhita|Fighting||b;Hariyama|Fighting||f;Azurill|Normal|Fairy|W;Nosepass|Rock||k;Skitty|Normal||b;Delcatty|Normal||g;Sableye|Dark|Ghost|k;Mawile|Steel|Fairy|k;Aron|Steel|Rock|b;Lairon|Steel|Rock|M;Aggron|Steel|Rock|F;Meditite|Fighting|Psychic|b;Medicham|Fighting|Psychic|f;Electrike|Electric||b;Manectric|Electric||f;Plusle|Electric||k;Minun|Electric||k;Volbeat|Bug||k;Illumise|Bug||k;Roselia|Grass|Poison|k;Gulpin|Poison||b;Swalot|Poison||g;Carvanha|Water|Dark|b;Sharpedo|Water|Dark|f;Wailmer|Water||b;Wailord|Water||f;Numel|Fire|Ground|b;Camerupt|Fire|Ground|f;Torkoal|Fire||g;Spoink|Psychic||b;Grumpig|Psychic||g;Spinda|Normal||k;Trapinch|Ground||b;Vibrava|Ground|Dragon|M;Flygon|Ground|Dragon|F;Cacnea|Grass||b;Cacturne|Grass|Dark|g;Swablu|Normal|Flying|b;Altaria|Dragon|Flying|f;Zangoose|Normal||g;Seviper|Poison||g;Lunatone|Rock|Psychic|g;Solrock|Rock|Psychic|g;Barboach|Water|Ground|b;Whiscash|Water|Ground|g;Corphish|Water||b;Crawdaunt|Water|Dark|f;Baltoy|Ground|Psychic|b;Claydol|Ground|Psychic|f;Lileep|Rock|Grass|b;Cradily|Rock|Grass|f;Anorith|Rock|Bug|b;Armaldo|Rock|Bug|f;Feebas|Water||W;Milotic|Water||F;Castform|Normal||k;Kecleon|Normal||g;Shuppet|Ghost||b;Banette|Ghost||g;Duskull|Ghost||b;Dusclops|Ghost||f;Tropius|Grass|Flying|g;Chimecho|Psychic||k;Absol|Dark||f;Wynaut|Psychic||W;Snorunt|Ice||b;Glalie|Ice||f;Spheal|Ice|Water|b;Sealeo|Ice|Water|M;Walrein|Ice|Water|F;Clamperl|Water||b;Huntail|Water||f;Gorebyss|Water||f;Relicanth|Water|Rock|g;Luvdisc|Water||W;Bagon|Dragon||B;Shelgon|Dragon||M;Salamence|Dragon|Flying|L;Beldum|Steel|Psychic|B;Metang|Steel|Psychic|M;Metagross|Steel|Psychic|L;Regirock|Rock||L;Regice|Ice||L;Registeel|Steel||L;Latias|Dragon|Psychic|L;Latios|Dragon|Psychic|L;Kyogre|Water||X;Groudon|Ground||X;Rayquaza|Dragon|Flying|X;Jirachi|Steel|Psychic|L;Deoxys|Psychic||X;MissingNo.|Bird|Normal|F`;
+const ROSTER_RAW = `Bulbasaur|Grass|Poison|B;Ivysaur|Grass|Poison|M;Venusaur|Grass|Poison|F;Charmander|Fire||B;Charmeleon|Fire||M;Charizard|Fire|Flying|F;Squirtle|Water||B;Wartortle|Water||M;Blastoise|Water||F;Caterpie|Bug||W;Metapod|Bug||W;Butterfree|Bug|Flying|k;Weedle|Bug|Poison|W;Kakuna|Bug|Poison|W;Beedrill|Bug|Poison|k;Pidgey|Normal|Flying|B;Pidgeotto|Normal|Flying|M;Pidgeot|Normal|Flying|f;Rattata|Normal||b;Raticate|Normal||k;Spearow|Normal|Flying|b;Fearow|Normal|Flying|g;Ekans|Poison||b;Arbok|Poison||g;Pikachu|Electric||b;Raichu|Electric||f;Sandshrew|Ground||b;Sandslash|Ground||g;Nidoran♀|Poison||B;Nidorina|Poison||M;Nidoqueen|Poison|Ground|F;Nidoran♂|Poison||B;Nidorino|Poison||M;Nidoking|Poison|Ground|F;Clefairy|Fairy||b;Clefable|Fairy||f;Vulpix|Fire||b;Ninetales|Fire||f;Jigglypuff|Normal|Fairy|b;Wigglytuff|Normal|Fairy|g;Zubat|Poison|Flying|b;Golbat|Poison|Flying|g;Oddish|Grass|Poison|B;Gloom|Grass|Poison|M;Vileplume|Grass|Poison|F;Paras|Bug|Grass|b;Parasect|Bug|Grass|k;Venonat|Bug|Poison|b;Venomoth|Bug|Poison|g;Diglett|Ground||b;Dugtrio|Ground||k;Meowth|Normal||b;Persian|Normal||g;Psyduck|Water||b;Golduck|Water||f;Mankey|Fighting||b;Primeape|Fighting||g;Growlithe|Fire||b;Arcanine|Fire||F;Poliwag|Water||B;Poliwhirl|Water||M;Poliwrath|Water|Fighting|F;Abra|Psychic||B;Kadabra|Psychic||M;Alakazam|Psychic||F;Machop|Fighting||B;Machoke|Fighting||M;Machamp|Fighting||F;Bellsprout|Grass|Poison|B;Weepinbell|Grass|Poison|M;Victreebel|Grass|Poison|F;Tentacool|Water|Poison|b;Tentacruel|Water|Poison|f;Geodude|Rock|Ground|B;Graveler|Rock|Ground|M;Golem|Rock|Ground|F;Ponyta|Fire||b;Rapidash|Fire||f;Slowpoke|Water|Psychic|b;Slowbro|Water|Psychic|f;Magnemite|Electric|Steel|b;Magneton|Electric|Steel|f;Farfetch’d|Normal|Flying|k;Doduo|Normal|Flying|b;Dodrio|Normal|Flying|f;Seel|Water||b;Dewgong|Water|Ice|f;Grimer|Poison||b;Muk|Poison||f;Shellder|Water||b;Cloyster|Water|Ice|F;Gastly|Ghost|Poison|B;Haunter|Ghost|Poison|M;Gengar|Ghost|Poison|F;Onix|Rock|Ground|k;Drowzee|Psychic||b;Hypno|Psychic||f;Krabby|Water||b;Kingler|Water||f;Voltorb|Electric||b;Electrode|Electric||f;Exeggcute|Grass|Psychic|b;Exeggutor|Grass|Psychic|F;Cubone|Ground||b;Marowak|Ground||g;Hitmonlee|Fighting||g;Hitmonchan|Fighting||g;Lickitung|Normal||k;Koffing|Poison||b;Weezing|Poison||f;Rhyhorn|Ground|Rock|b;Rhydon|Ground|Rock|f;Chansey|Normal||g;Tangela|Grass||g;Kangaskhan|Normal||f;Horsea|Water||b;Seadra|Water||g;Goldeen|Water||b;Seaking|Water||g;Staryu|Water||b;Starmie|Water|Psychic|f;Mr. Mime|Psychic|Fairy|g;Scyther|Bug|Flying|f;Jynx|Ice|Psychic|g;Electabuzz|Electric||f;Magmar|Fire||f;Pinsir|Bug||f;Tauros|Normal||f;Magikarp|Water||W;Gyarados|Water|Flying|F;Lapras|Water|Ice|F;Ditto|Normal||b;Eevee|Normal||b;Vaporeon|Water||F;Jolteon|Electric||F;Flareon|Fire||F;Porygon|Normal||k;Omanyte|Rock|Water|b;Omastar|Rock|Water|f;Kabuto|Rock|Water|b;Kabutops|Rock|Water|f;Aerodactyl|Rock|Flying|F;Snorlax|Normal||F;Articuno|Ice|Flying|L;Zapdos|Electric|Flying|L;Moltres|Fire|Flying|L;Dratini|Dragon||B;Dragonair|Dragon||M;Dragonite|Dragon|Flying|L;Mewtwo|Psychic||X;Mew|Psychic||L;Chikorita|Grass||B;Bayleef|Grass||M;Meganium|Grass||F;Cyndaquil|Fire||B;Quilava|Fire||M;Typhlosion|Fire||F;Totodile|Water||B;Croconaw|Water||M;Feraligatr|Water||F;Sentret|Normal||b;Furret|Normal||g;Hoothoot|Normal|Flying|b;Noctowl|Normal|Flying|g;Ledyba|Bug|Flying|b;Ledian|Bug|Flying|k;Spinarak|Bug|Poison|b;Ariados|Bug|Poison|k;Crobat|Poison|Flying|F;Chinchou|Water|Electric|b;Lanturn|Water|Electric|f;Pichu|Electric||W;Cleffa|Fairy||W;Igglybuff|Normal|Fairy|W;Togepi|Fairy||W;Togetic|Fairy|Flying|g;Natu|Psychic|Flying|b;Xatu|Psychic|Flying|f;Mareep|Electric||B;Flaaffy|Electric||M;Ampharos|Electric||F;Bellossom|Grass||F;Marill|Water|Fairy|b;Azumarill|Water|Fairy|g;Sudowoodo|Rock||g;Politoed|Water||F;Hoppip|Grass|Flying|b;Skiploom|Grass|Flying|M;Jumpluff|Grass|Flying|g;Aipom|Normal||b;Sunkern|Grass||W;Sunflora|Grass||g;Yanma|Bug|Flying|k;Wooper|Water|Ground|b;Quagsire|Water|Ground|f;Espeon|Psychic||F;Umbreon|Dark||F;Murkrow|Dark|Flying|k;Slowking|Water|Psychic|F;Misdreavus|Ghost||k;Unown|Psychic||W;Wobbuffet|Psychic||g;Girafarig|Normal|Psychic|g;Pineco|Bug||b;Forretress|Bug|Steel|f;Dunsparce|Normal||k;Gligar|Ground|Flying|g;Steelix|Steel|Ground|F;Snubbull|Fairy||b;Granbull|Fairy||f;Qwilfish|Water|Poison|g;Scizor|Bug|Steel|F;Shuckle|Bug|Rock|k;Heracross|Bug|Fighting|F;Sneasel|Dark|Ice|g;Teddiursa|Normal||b;Ursaring|Normal||F;Slugma|Fire||b;Magcargo|Fire|Rock|g;Swinub|Ice|Ground|b;Piloswine|Ice|Ground|f;Corsola|Water|Rock|k;Remoraid|Water||b;Octillery|Water||f;Delibird|Ice|Flying|k;Mantine|Water|Flying|f;Skarmory|Steel|Flying|F;Houndour|Dark|Fire|B;Houndoom|Dark|Fire|F;Kingdra|Water|Dragon|F;Phanpy|Ground||b;Donphan|Ground||F;Porygon2|Normal||F;Stantler|Normal||g;Smeargle|Normal||k;Tyrogue|Fighting||W;Hitmontop|Fighting||g;Smoochum|Ice|Psychic|W;Elekid|Electric||b;Magby|Fire||b;Miltank|Normal||f;Blissey|Normal||F;Raikou|Electric||L;Entei|Fire||L;Suicune|Water||L;Larvitar|Rock|Ground|B;Pupitar|Rock|Ground|M;Tyranitar|Rock|Dark|L;Lugia|Psychic|Flying|X;Ho-Oh|Fire|Flying|X;Celebi|Psychic|Grass|L;Treecko|Grass||B;Grovyle|Grass||M;Sceptile|Grass||F;Torchic|Fire||B;Combusken|Fire|Fighting|M;Blaziken|Fire|Fighting|F;Mudkip|Water||B;Marshtomp|Water|Ground|M;Swampert|Water|Ground|F;Poochyena|Dark||b;Mightyena|Dark||g;Zigzagoon|Normal||b;Linoone|Normal||g;Wurmple|Bug||W;Silcoon|Bug||W;Beautifly|Bug|Flying|k;Cascoon|Bug||W;Dustox|Bug|Poison|k;Lotad|Water|Grass|b;Lombre|Water|Grass|M;Ludicolo|Water|Grass|f;Seedot|Grass||b;Nuzleaf|Grass|Dark|M;Shiftry|Grass|Dark|f;Taillow|Normal|Flying|b;Swellow|Normal|Flying|f;Wingull|Water|Flying|b;Pelipper|Water|Flying|g;Ralts|Psychic|Fairy|b;Kirlia|Psychic|Fairy|M;Gardevoir|Psychic|Fairy|F;Surskit|Bug|Water|b;Masquerain|Bug|Flying|g;Shroomish|Grass||b;Breloom|Grass|Fighting|F;Slakoth|Normal||b;Vigoroth|Normal||M;Slaking|Normal||F;Nincada|Bug|Ground|b;Ninjask|Bug|Flying|g;Shedinja|Bug|Ghost|k;Whismur|Normal||b;Loudred|Normal||M;Exploud|Normal||f;Makuhita|Fighting||b;Hariyama|Fighting||f;Azurill|Normal|Fairy|W;Nosepass|Rock||k;Skitty|Normal||b;Delcatty|Normal||g;Sableye|Dark|Ghost|k;Mawile|Steel|Fairy|k;Aron|Steel|Rock|b;Lairon|Steel|Rock|M;Aggron|Steel|Rock|F;Meditite|Fighting|Psychic|b;Medicham|Fighting|Psychic|f;Electrike|Electric||b;Manectric|Electric||f;Plusle|Electric||k;Minun|Electric||k;Volbeat|Bug||k;Illumise|Bug||k;Roselia|Grass|Poison|k;Gulpin|Poison||b;Swalot|Poison||g;Carvanha|Water|Dark|b;Sharpedo|Water|Dark|f;Wailmer|Water||b;Wailord|Water||f;Numel|Fire|Ground|b;Camerupt|Fire|Ground|f;Torkoal|Fire||g;Spoink|Psychic||b;Grumpig|Psychic||g;Spinda|Normal||k;Trapinch|Ground||b;Vibrava|Ground|Dragon|M;Flygon|Ground|Dragon|F;Cacnea|Grass||b;Cacturne|Grass|Dark|g;Swablu|Normal|Flying|b;Altaria|Dragon|Flying|f;Zangoose|Normal||g;Seviper|Poison||g;Lunatone|Rock|Psychic|g;Solrock|Rock|Psychic|g;Barboach|Water|Ground|b;Whiscash|Water|Ground|g;Corphish|Water||b;Crawdaunt|Water|Dark|f;Baltoy|Ground|Psychic|b;Claydol|Ground|Psychic|f;Lileep|Rock|Grass|b;Cradily|Rock|Grass|f;Anorith|Rock|Bug|b;Armaldo|Rock|Bug|f;Feebas|Water||W;Milotic|Water||F;Castform|Normal||k;Kecleon|Normal||g;Shuppet|Ghost||b;Banette|Ghost||g;Duskull|Ghost||b;Dusclops|Ghost||f;Tropius|Grass|Flying|g;Chimecho|Psychic||k;Absol|Dark||f;Wynaut|Psychic||W;Snorunt|Ice||b;Glalie|Ice||f;Spheal|Ice|Water|b;Sealeo|Ice|Water|M;Walrein|Ice|Water|F;Clamperl|Water||b;Huntail|Water||f;Gorebyss|Water||f;Relicanth|Water|Rock|g;Luvdisc|Water||W;Bagon|Dragon||B;Shelgon|Dragon||M;Salamence|Dragon|Flying|L;Beldum|Steel|Psychic|B;Metang|Steel|Psychic|M;Metagross|Steel|Psychic|L;Regirock|Rock||L;Regice|Ice||L;Registeel|Steel||L;Latias|Dragon|Psychic|L;Latios|Dragon|Psychic|L;Kyogre|Water||X;Groudon|Ground||X;Rayquaza|Dragon|Flying|X;Jirachi|Steel|Psychic|L;Deoxys|Psychic||X;Turtwig|Grass||B;Grotle|Grass||M;Torterra|Grass|Ground|F;Chimchar|Fire||B;Monferno|Fire|Fighting|M;Infernape|Fire|Fighting|F;Piplup|Water||B;Prinplup|Water||M;Empoleon|Water|Steel|F;Starly|Normal|Flying|b;Staravia|Normal|Flying|M;Staraptor|Normal|Flying|f;Bidoof|Normal||b;Bibarel|Normal|Water|g;Kricketot|Bug||W;Kricketune|Bug||k;Shinx|Electric||b;Luxio|Electric||M;Luxray|Electric||f;Budew|Grass|Poison|W;Roserade|Grass|Poison|f;Cranidos|Rock||b;Rampardos|Rock||f;Shieldon|Rock|Steel|b;Bastiodon|Rock|Steel|f;Burmy|Bug||W;Wormadam|Bug|Grass|k;Mothim|Bug|Flying|k;Combee|Bug|Flying|W;Vespiquen|Bug|Flying|g;Pachirisu|Electric||k;Buizel|Water||b;Floatzel|Water||g;Cherubi|Grass||W;Cherrim|Grass||k;Shellos|Water||b;Gastrodon|Water|Ground|g;Ambipom|Normal||g;Drifloon|Ghost|Flying|b;Drifblim|Ghost|Flying|g;Buneary|Normal||b;Lopunny|Normal||g;Mismagius|Ghost||f;Honchkrow|Dark|Flying|f;Glameow|Normal||b;Purugly|Normal||g;Chingling|Psychic||W;Stunky|Poison|Dark|b;Skuntank|Poison|Dark|g;Bronzor|Steel|Psychic|b;Bronzong|Steel|Psychic|f;Bonsly|Rock||W;Mime Jr.|Psychic|Fairy|W;Happiny|Normal||W;Chatot|Normal|Flying|k;Spiritomb|Ghost|Dark|g;Gible|Dragon|Ground|B;Gabite|Dragon|Ground|M;Garchomp|Dragon|Ground|L;Munchlax|Normal||b;Riolu|Fighting||b;Lucario|Fighting|Steel|F;Hippopotas|Ground||b;Hippowdon|Ground||f;Skorupi|Poison|Bug|b;Drapion|Poison|Dark|f;Croagunk|Poison|Fighting|b;Toxicroak|Poison|Fighting|f;Carnivine|Grass||k;Finneon|Water||W;Lumineon|Water||g;Mantyke|Water|Flying|W;Snover|Grass|Ice|b;Abomasnow|Grass|Ice|f;Weavile|Dark|Ice|F;Magnezone|Electric|Steel|F;Lickilicky|Normal||f;Rhyperior|Ground|Rock|F;Tangrowth|Grass||f;Electivire|Electric||F;Magmortar|Fire||F;Togekiss|Fairy|Flying|F;Yanmega|Bug|Flying|f;Leafeon|Grass||f;Glaceon|Ice||f;Gliscor|Ground|Flying|f;Mamoswine|Ice|Ground|F;Porygon-Z|Normal||F;Gallade|Psychic|Fighting|F;Probopass|Rock|Steel|g;Dusknoir|Ghost||f;Froslass|Ice|Ghost|f;Rotom|Electric|Ghost|g;Uxie|Psychic||L;Mesprit|Psychic||L;Azelf|Psychic||L;Dialga|Steel|Dragon|X;Palkia|Water|Dragon|X;Heatran|Fire|Steel|L;Regigigas|Normal||L;Giratina|Ghost|Dragon|X;Cresselia|Psychic||L;Phione|Water||k;Manaphy|Water||L;Darkrai|Dark||L;Shaymin|Grass||L;Arceus|Normal||X;MissingNo.|Bird|Normal|F`;
 const TIER_BST = { W: 200, b: 300, B: 310, k: 400, M: 405, g: 440, f: 480, F: 530, L: 590, X: 680 };
 const TIER_SIZE = { W: .62, b: .66, B: .64, k: .8, M: .8, g: .84, f: .92, F: .97, L: 1, X: 1 };
 const DEX = ROSTER_RAW.split(';').map((s, i) => { const p = s.split('|'); return { id: i + 1, name: p[0], types: p[2] ? [p[1], p[2]] : [p[1]], tier: p[3] }; });
@@ -613,6 +613,16 @@ const BASE_OVERRIDE = {
   Celebi: [100, 100, 100, 100, 100, 100], Porygon2: [85, 80, 90, 105, 95, 60], Miltank: [95, 80, 105, 40, 70, 100], Slowking: [95, 75, 80, 100, 110, 30],
   Wobbuffet: [190, 33, 58, 33, 58, 33], Shuckle: [20, 10, 230, 10, 230, 5], Donphan: [90, 120, 120, 60, 60, 50], Ursaring: [90, 130, 75, 75, 75, 55],
   Politoed: [90, 75, 75, 90, 100, 70],
+  // Sinnoh (Gen 4): real base stats for the starters, legendaries and stars
+  Torterra: [95, 109, 105, 75, 85, 56], Infernape: [76, 104, 71, 104, 71, 108], Empoleon: [84, 86, 88, 111, 101, 60], Staraptor: [85, 120, 70, 50, 60, 100], Luxray: [80, 120, 79, 95, 79, 70],
+  Roserade: [60, 70, 65, 125, 105, 90], Rampardos: [97, 165, 60, 65, 50, 58], Bastiodon: [60, 52, 168, 47, 138, 30], Garchomp: [108, 130, 95, 80, 85, 102], Lucario: [70, 110, 70, 115, 70, 90],
+  Hippowdon: [108, 112, 118, 68, 72, 47], Drapion: [70, 90, 110, 60, 75, 95], Toxicroak: [83, 106, 65, 86, 65, 85], Abomasnow: [90, 92, 75, 92, 85, 60], Weavile: [70, 120, 65, 45, 85, 125],
+  Magnezone: [70, 70, 115, 130, 90, 60], Rhyperior: [115, 140, 130, 55, 55, 40], Electivire: [75, 123, 67, 95, 85, 95], Magmortar: [75, 95, 67, 125, 95, 83], Togekiss: [85, 50, 95, 120, 115, 80],
+  Gliscor: [75, 95, 125, 45, 75, 95], Mamoswine: [110, 130, 80, 70, 60, 80], 'Porygon-Z': [85, 80, 70, 135, 75, 90], Gallade: [68, 125, 65, 65, 115, 80], Dusknoir: [45, 100, 135, 65, 135, 45],
+  Froslass: [70, 80, 70, 80, 70, 110], Rotom: [50, 50, 77, 95, 77, 91], Uxie: [75, 75, 130, 75, 130, 95], Mesprit: [80, 105, 105, 105, 105, 80], Azelf: [75, 125, 70, 125, 70, 115],
+  Dialga: [100, 120, 120, 150, 100, 90], Palkia: [90, 120, 100, 150, 120, 100], Heatran: [91, 90, 106, 130, 106, 77], Regigigas: [110, 160, 110, 80, 110, 100], Giratina: [150, 100, 120, 100, 120, 90],
+  Cresselia: [120, 70, 120, 75, 130, 85], Manaphy: [100, 100, 100, 100, 100, 100], Darkrai: [70, 90, 90, 135, 90, 125], Shaymin: [100, 100, 100, 100, 100, 100], Arceus: [120, 120, 120, 120, 120, 120],
+  Honchkrow: [100, 125, 52, 105, 52, 71], Mismagius: [60, 60, 60, 105, 105, 105], Spiritomb: [50, 92, 108, 92, 108, 35], Yanmega: [86, 76, 86, 116, 56, 95], Leafeon: [65, 110, 130, 60, 65, 95], Glaceon: [65, 60, 110, 130, 95, 65],
   // Hoenn (Gen 3): real base stats for the starters, legendaries and stars
   Sceptile: [70, 85, 65, 105, 85, 120], Blaziken: [80, 120, 70, 110, 70, 80], Swampert: [100, 110, 90, 85, 90, 60], Gardevoir: [68, 65, 65, 125, 115, 80], Breloom: [60, 130, 80, 60, 60, 70],
   Slaking: [150, 160, 100, 95, 65, 100], Aggron: [70, 110, 180, 60, 60, 50], Flygon: [80, 100, 80, 80, 80, 100], Altaria: [75, 70, 90, 70, 105, 80], Milotic: [95, 60, 79, 100, 125, 81],
@@ -797,6 +807,33 @@ M('Poison Fang', 'Poison', 'P', 50, 100, 0, 'contact', { st: ['tox', 50] });
 M('Needle Arm', 'Grass', 'P', 60, 100, 0, 'contact', { fl: 30 });
 M('Arm Thrust', 'Fighting', 'P', 60, 100, 0, 'contact', {});
 M('Weather Ball', 'Normal', 'S', 80, 100, 0, 'projectile', {});
+// ---- Sinnoh (Gen 4) moves ----
+M('Roar of Time', 'Dragon', 'S', 150, 90, 0, 'burst', { charge: 900 });
+M('Spacial Rend', 'Dragon', 'S', 100, 95, 0, 'slash', { hc: 1 });
+M('Shadow Force', 'Ghost', 'P', 120, 100, 0, 'dash', { charge: 800 });
+M('Magma Storm', 'Fire', 'S', 100, 75, 0, 'burst', { st: ['brn', 30] });
+M('Judgment', 'Normal', 'S', 100, 100, 0, 'burst', {});
+M('Seed Flare', 'Grass', 'S', 120, 85, 0, 'burst', { tg: { spd: -2 }, ch: 40 });
+M('Crush Grip', 'Normal', 'P', 120, 100, 0, 'contact', {});
+M('Draco Meteor', 'Dragon', 'S', 130, 90, 0, 'burst', { self: { spa: -2 }, sch: 100 });
+M('Head Smash', 'Rock', 'P', 150, 80, 0, 'contact', { rc: 1 / 2 });
+M('Wood Hammer', 'Grass', 'P', 120, 100, 0, 'contact', { rc: 1 / 3 });
+M('Bullet Punch', 'Steel', 'P', 40, 100, 1, 'dash', {});
+M('Power Gem', 'Rock', 'S', 80, 100, 0, 'beam', {});
+M('Dark Pulse', 'Dark', 'S', 80, 100, 0, 'projectile', { fl: 20 });
+M('Shadow Sneak', 'Ghost', 'P', 40, 100, 1, 'dash', {});
+M('Vacuum Wave', 'Fighting', 'S', 40, 100, 1, 'projectile', {});
+M('Discharge', 'Electric', 'S', 80, 100, 0, 'burst', { st: ['par', 30] });
+M('Psycho Cut', 'Psychic', 'P', 70, 100, 0, 'slash', { hc: 1 });
+M('Night Slash', 'Dark', 'P', 70, 100, 0, 'slash', { hc: 1 });
+M('Thunder Fang', 'Electric', 'P', 65, 95, 0, 'contact', { st: ['par', 10] });
+M('Ice Fang', 'Ice', 'P', 65, 95, 0, 'contact', { st: ['frz', 10] });
+M('Fire Fang', 'Fire', 'P', 65, 95, 0, 'contact', { st: ['brn', 10] });
+M('Iron Head', 'Steel', 'P', 80, 100, 0, 'contact', { fl: 30 });
+M('Aqua Tail', 'Water', 'P', 90, 90, 0, 'contact', {});
+M('Dragon Rush', 'Dragon', 'P', 100, 75, 0, 'dash', { fl: 20 });
+M('Focus Blast', 'Fighting', 'S', 120, 70, 0, 'projectile', { tg: { spd: -1 }, ch: 10 });
+M('Nasty Plot', 'Dark', 'X', 0, null, 0, 'aura', { self: { spa: 2 } });
 // Johto moves are marked Gen 2; Sacred Fire and Aeroblast are signatures (Ho-Oh, Lugia only). Automatic movesets never give
 // Gen 2 moves to Gen 1 Pokémon (Kanto movesets stay exactly as they were) and never hand out a signature move.
 for (const n of ['Sacred Fire', 'Aeroblast', 'Megahorn', 'Steel Wing', 'Dynamic Punch', 'Zap Cannon', 'Ancient Power', 'Faint Attack', 'Pursuit', 'Icy Wind', 'Spark', 'Twister', 'Moonlight', 'Fury Cutter',
@@ -805,7 +842,10 @@ MOVES['Sacred Fire'].sig = MOVES['Aeroblast'].sig = MOVES['Present'].sig = true;
 for (const n of ['Blaze Kick', 'Leaf Blade', 'Muddy Water', 'Psycho Boost', 'Doom Desire', 'Water Spout', 'Eruption', 'Mist Ball', 'Luster Purge', 'Sky Uppercut', 'Meteor Mash', 'Shadow Punch', 'Hyper Voice', 'Overheat', 'Shock Wave', 'Silver Wind']) MOVES[n].gen = 3;
 for (const n of ['Psycho Boost', 'Doom Desire', 'Mist Ball', 'Luster Purge', 'Water Spout']) MOVES[n].sig = true;
 for (const n of ['Bullet Seed', 'Magical Leaf', 'Rock Tomb', 'Water Pulse', 'Heat Wave', 'Air Cutter', 'Poison Fang', 'Needle Arm', 'Arm Thrust', 'Weather Ball']) MOVES[n].gen = 3;
-MOVES['Weather Ball'].sig = true;   // Castform   // Deoxys, Jirachi, Latias, Latios, Kyogre   // signatures: Ho-Oh, Lugia, Delibird
+MOVES['Weather Ball'].sig = true;   // Castform
+for (const n of ['Roar of Time', 'Spacial Rend', 'Shadow Force', 'Magma Storm', 'Judgment', 'Seed Flare', 'Crush Grip', 'Draco Meteor', 'Head Smash', 'Wood Hammer', 'Bullet Punch', 'Power Gem', 'Dark Pulse', 'Shadow Sneak', 'Vacuum Wave', 'Discharge']) MOVES[n].gen = 4;
+for (const n of ['Roar of Time', 'Spacial Rend', 'Shadow Force', 'Magma Storm', 'Judgment', 'Seed Flare', 'Crush Grip']) MOVES[n].sig = true;
+for (const n of ['Psycho Cut', 'Night Slash', 'Thunder Fang', 'Ice Fang', 'Fire Fang', 'Iron Head', 'Aqua Tail', 'Dragon Rush', 'Focus Blast', 'Nasty Plot']) MOVES[n].gen = 4;   // Dialga, Palkia, Giratina, Heatran, Arceus, Shaymin, Regigigas   // Deoxys, Jirachi, Latias, Latios, Kyogre   // signatures: Ho-Oh, Lugia, Delibird
 let MOVESET_GEN = 1;   // Gen 1: 140 power, 90% accuracy, a charging turn first
 M('Hurricane', 'Flying', 'S', 110, 70, 0, 'wind', { cf: 30 });
 // Psychic
@@ -860,6 +900,17 @@ M('Crunch', 'Dark', 'P', 80, 100, 0, 'contact', { tg: { def: -1 }, ch: 20 });
 
 // Hand-picked movesets for signature teams; every other species gets a generated set.
 const MOVESET_OVERRIDE = {
+  Gallade: ['Psycho Cut', 'Close Combat', 'Night Slash', 'Swords Dance'], Weavile: ['Night Slash', 'Ice Shard', 'Ice Fang', 'Swords Dance'], Honchkrow: ['Night Slash', 'Brave Bird', 'Psycho Cut', 'Nasty Plot'],
+  Floatzel: ['Aqua Tail', 'Aqua Jet', 'Ice Fang', 'Crunch'], Mamoswine: ['Earthquake', 'Ice Fang', 'Ice Shard', 'Stone Edge'], Garchomp: ['Dragon Rush', 'Earthquake', 'Fire Fang', 'Swords Dance'],
+  Drapion: ['Night Slash', 'Poison Jab', 'Ice Fang', 'Swords Dance'], Infernape: ['Flare Blitz', 'Close Combat', 'Thunder Punch', 'Nasty Plot'], Lucario: ['Aura Sphere', 'Flash Cannon', 'Focus Blast', 'Nasty Plot'],
+  Bastiodon: ['Iron Head', 'Stone Edge', 'Earthquake', 'Iron Defense'], Shinx: ['Thunder Fang', 'Bite', 'Quick Attack', 'Thunder Wave'], Glaceon: ['Ice Beam', 'Shadow Ball', 'Focus Blast', 'Calm Mind'],
+  // Sinnoh signatures and new Gen 4 moves
+  Dialga: ['Roar of Time', 'Flash Cannon', 'Draco Meteor', 'Earth Power'], Palkia: ['Spacial Rend', 'Hydro Pump', 'Thunderbolt', 'Draco Meteor'], Giratina: ['Shadow Force', 'Dragon Claw', 'Earthquake', 'Will-O-Wisp'],
+  Heatran: ['Magma Storm', 'Earth Power', 'Flash Cannon', 'Dragon Pulse'], Arceus: ['Judgment', 'Extreme Speed', 'Earthquake', 'Swords Dance'], Shaymin: ['Seed Flare', 'Earth Power', 'Psychic', 'Synthesis'],
+  Regigigas: ['Crush Grip', 'Earthquake', 'Stone Edge', 'Bulk Up'], Darkrai: ['Dark Pulse', 'Ice Beam', 'Thunderbolt', 'Calm Mind'],   Rampardos: ['Head Smash', 'Earthquake', 'Zen Headbutt', 'Swords Dance'], Torterra: ['Wood Hammer', 'Earthquake', 'Stone Edge', 'Synthesis'], 
+  Empoleon: ['Hydro Pump', 'Flash Cannon', 'Ice Beam', 'Drill Peck'],  Roserade: ['Leaf Storm', 'Sludge Bomb', 'Shadow Ball', 'Sleep Powder'],
+  Toxicroak: ['Gunk Shot', 'Close Combat', 'Crunch', 'Bulk Up'], Probopass: ['Power Gem', 'Earth Power', 'Flash Cannon', 'Thunder Wave'], Dusknoir: ['Shadow Sneak', 'Shadow Punch', 'Ice Punch', 'Will-O-Wisp'],
+  Luxray: ['Discharge', 'Crunch', 'Iron Tail', 'Thunder Wave'], Electivire: ['Discharge', 'Cross Chop', 'Ice Punch', 'Thunder Punch'], Bronzong: ['Bullet Punch', 'Psychic', 'Earthquake', 'Iron Defense'],
   Roselia: ['Magical Leaf', 'Sludge Bomb', 'Giga Drain', 'Sleep Powder'], Ludicolo: ['Water Pulse', 'Giga Drain', 'Ice Beam', 'Hydro Pump'],
   Pelipper: ['Water Pulse', 'Air Cutter', 'Hydro Pump', 'Ice Beam'], Altaria: ['Dragon Pulse', 'Heat Wave', 'Air Cutter', 'Dragon Dance'],
   Castform: ['Weather Ball', 'Ice Beam', 'Thunderbolt', 'Flamethrower'], Cacturne: ['Needle Arm', 'Faint Attack', 'Seed Bomb', 'Swords Dance'], Seviper: ['Poison Fang', 'Crunch', 'Earthquake', 'Swords Dance'],
@@ -968,7 +1019,7 @@ function buildMoveset(d, stats) {
 }
 function buildMovesetRaw(d, stats) {
   if (MOVESET_OVERRIDE[d.name]) return MOVESET_OVERRIDE[d.name].slice();
-  MOVESET_GEN = d.id >= 252 ? 3 : d.id >= 152 ? 2 : 1;   // which moves the automatic builder may use (never a later generation's)
+  MOVESET_GEN = d.id >= 387 ? 4 : d.id >= 252 ? 3 : d.id >= 152 ? 2 : 1;   // which moves the automatic builder may use (never a later generation's)
   const r = mulberry(hashStr(d.name) ^ 0xa11ce);
   const pref = stats.atk >= stats.spa ? 'P' : 'S', alt = pref === 'P' ? 'S' : 'P';
   const small = 'Wb B'.includes(d.tier);
@@ -984,7 +1035,7 @@ function buildMovesetRaw(d, stats) {
   add(strong(t1, pref, small ? 'mid' : 'top'));
   if (t2) add(strong(t2, pref, small ? 'mid' : 'top'));
   else {
-    const pri = Object.values(MOVES).find(m => m.type === t1 && m.pri > 0 && m.cat === 'P');
+    const pri = Object.values(MOVES).find(m => m.type === t1 && m.pri > 0 && m.cat === 'P' && !m.sig && !((m.gen || 1) > MOVESET_GEN));   // never a later generation's
     if (pri && pref === 'P' && r() < .6) add(pri.name); else add(strong(t1, alt, 'mid'));
   }
   const cov = COVERAGE[t1] || ['Normal'];
@@ -5252,6 +5303,7 @@ sig('Charm', {
      XXL over 4 m        x1.95   only Onix and Gyarados
    ===================================================================== */
 const HEIGHT_M = { 'MissingNo.': 1.0,
+  /* Sinnoh (Gen 4) */ 'Turtwig': 0.4, 'Grotle': 1.1, 'Torterra': 2.2, 'Chimchar': 0.5, 'Monferno': 0.9, 'Infernape': 1.2, 'Piplup': 0.4, 'Prinplup': 0.8, 'Empoleon': 1.7, 'Starly': 0.3, 'Staravia': 0.6, 'Staraptor': 1.2, 'Bidoof': 0.5, 'Bibarel': 1.0, 'Kricketot': 0.3, 'Kricketune': 1.0, 'Shinx': 0.5, 'Luxio': 0.9, 'Luxray': 1.4, 'Budew': 0.2, 'Roserade': 0.9, 'Cranidos': 0.9, 'Rampardos': 1.6, 'Shieldon': 0.5, 'Bastiodon': 1.3, 'Burmy': 0.2, 'Wormadam': 0.5, 'Mothim': 0.9, 'Combee': 0.3, 'Vespiquen': 1.2, 'Pachirisu': 0.4, 'Buizel': 0.7, 'Floatzel': 1.1, 'Cherubi': 0.4, 'Cherrim': 0.5, 'Shellos': 0.3, 'Gastrodon': 0.9, 'Ambipom': 1.2, 'Drifloon': 0.4, 'Drifblim': 1.2, 'Buneary': 0.4, 'Lopunny': 1.2, 'Mismagius': 0.9, 'Honchkrow': 0.9, 'Glameow': 0.5, 'Purugly': 1.0, 'Chingling': 0.2, 'Stunky': 0.4, 'Skuntank': 1.0, 'Bronzor': 0.5, 'Bronzong': 1.3, 'Bonsly': 0.5, 'Mime Jr.': 0.6, 'Happiny': 0.6, 'Chatot': 0.5, 'Spiritomb': 1.0, 'Gible': 0.7, 'Gabite': 1.4, 'Garchomp': 1.9, 'Munchlax': 0.6, 'Riolu': 0.7, 'Lucario': 1.2, 'Hippopotas': 0.8, 'Hippowdon': 2.0, 'Skorupi': 0.8, 'Drapion': 1.3, 'Croagunk': 0.7, 'Toxicroak': 1.3, 'Carnivine': 1.4, 'Finneon': 0.4, 'Lumineon': 1.2, 'Mantyke': 1.0, 'Snover': 1.0, 'Abomasnow': 2.2, 'Weavile': 1.1, 'Magnezone': 1.2, 'Lickilicky': 1.7, 'Rhyperior': 2.4, 'Tangrowth': 2.0, 'Electivire': 1.8, 'Magmortar': 1.6, 'Togekiss': 1.5, 'Yanmega': 1.9, 'Leafeon': 1.0, 'Glaceon': 0.8, 'Gliscor': 2.0, 'Mamoswine': 2.5, 'Porygon-Z': 0.9, 'Gallade': 1.6, 'Probopass': 1.4, 'Dusknoir': 2.2, 'Froslass': 1.3, 'Rotom': 0.3, 'Uxie': 0.3, 'Mesprit': 0.3, 'Azelf': 0.3, 'Dialga': 5.4, 'Palkia': 4.2, 'Heatran': 1.7, 'Regigigas': 3.7, 'Giratina': 4.5, 'Cresselia': 1.5, 'Phione': 0.4, 'Manaphy': 0.3, 'Darkrai': 1.5, 'Shaymin': 0.2, 'Arceus': 3.2,
   /* Hoenn (Gen 3) */ 'Treecko': 0.5, 'Grovyle': 0.9, 'Sceptile': 1.7, 'Torchic': 0.4, 'Combusken': 0.9, 'Blaziken': 1.9, 'Mudkip': 0.4, 'Marshtomp': 0.7, 'Swampert': 1.5, 'Poochyena': 0.5, 'Mightyena': 1.0, 'Zigzagoon': 0.4, 'Linoone': 0.5, 'Wurmple': 0.3, 'Silcoon': 0.6, 'Beautifly': 1.0, 'Cascoon': 0.7, 'Dustox': 1.2, 'Lotad': 0.5, 'Lombre': 1.2, 'Ludicolo': 1.5, 'Seedot': 0.5, 'Nuzleaf': 1.0, 'Shiftry': 1.3, 'Taillow': 0.3, 'Swellow': 0.7, 'Wingull': 0.6, 'Pelipper': 1.2, 'Ralts': 0.4, 'Kirlia': 0.8, 'Gardevoir': 1.6, 'Surskit': 0.5, 'Masquerain': 0.8, 'Shroomish': 0.4, 'Breloom': 1.2, 'Slakoth': 0.8, 'Vigoroth': 1.4, 'Slaking': 2.0, 'Nincada': 0.5, 'Ninjask': 0.8, 'Shedinja': 0.8, 'Whismur': 0.6, 'Loudred': 1.0, 'Exploud': 1.5, 'Makuhita': 1.0, 'Hariyama': 2.3, 'Azurill': 0.2, 'Nosepass': 1.0, 'Skitty': 0.6, 'Delcatty': 1.1, 'Sableye': 0.5, 'Mawile': 0.6, 'Aron': 0.4, 'Lairon': 0.9, 'Aggron': 2.1, 'Meditite': 0.6, 'Medicham': 1.3, 'Electrike': 0.6, 'Manectric': 1.5, 'Plusle': 0.4, 'Minun': 0.4, 'Volbeat': 0.7, 'Illumise': 0.6, 'Roselia': 0.3, 'Gulpin': 0.4, 'Swalot': 1.7, 'Carvanha': 0.8, 'Sharpedo': 1.8, 'Wailmer': 2.0, 'Wailord': 14.5, 'Numel': 0.7, 'Camerupt': 1.9, 'Torkoal': 0.5, 'Spoink': 0.7, 'Grumpig': 0.9, 'Spinda': 1.1, 'Trapinch': 0.7, 'Vibrava': 1.1, 'Flygon': 2.0, 'Cacnea': 0.4, 'Cacturne': 1.3, 'Swablu': 0.4, 'Altaria': 1.1, 'Zangoose': 1.3, 'Seviper': 2.7, 'Lunatone': 1.0, 'Solrock': 1.2, 'Barboach': 0.4, 'Whiscash': 0.9, 'Corphish': 0.6, 'Crawdaunt': 1.1, 'Baltoy': 0.5, 'Claydol': 1.5, 'Lileep': 1.0, 'Cradily': 1.5, 'Anorith': 0.7, 'Armaldo': 1.5, 'Feebas': 0.6, 'Milotic': 6.2, 'Castform': 0.3, 'Kecleon': 1.0, 'Shuppet': 0.6, 'Banette': 1.1, 'Duskull': 0.8, 'Dusclops': 1.6, 'Tropius': 2.0, 'Chimecho': 0.6, 'Absol': 1.2, 'Wynaut': 0.6, 'Snorunt': 0.7, 'Glalie': 1.5, 'Spheal': 0.8, 'Sealeo': 1.1, 'Walrein': 1.4, 'Clamperl': 0.4, 'Huntail': 1.7, 'Gorebyss': 1.8, 'Relicanth': 1.0, 'Luvdisc': 0.6, 'Bagon': 0.6, 'Shelgon': 1.1, 'Salamence': 1.5, 'Beldum': 0.6, 'Metang': 1.2, 'Metagross': 1.6, 'Regirock': 1.7, 'Regice': 1.8, 'Registeel': 1.9, 'Latias': 1.4, 'Latios': 2.0, 'Kyogre': 4.5, 'Groudon': 3.5, 'Rayquaza': 7.0, 'Jirachi': 0.3, 'Deoxys': 1.7,
   /* Johto (Gen 2) */ 'Chikorita': 0.9, 'Bayleef': 1.2, 'Meganium': 1.8, 'Cyndaquil': 0.5, 'Quilava': 0.9, 'Typhlosion': 1.7, 'Totodile': 0.6, 'Croconaw': 1.1, 'Feraligatr': 2.3, 'Sentret': 0.8, 'Furret': 1.8, 'Hoothoot': 0.7, 'Noctowl': 1.6, 'Ledyba': 1.0, 'Ledian': 1.4, 'Spinarak': 0.5, 'Ariados': 1.1, 'Crobat': 1.8, 'Chinchou': 0.5, 'Lanturn': 1.2, 'Pichu': 0.3, 'Cleffa': 0.3, 'Igglybuff': 0.3, 'Togepi': 0.3, 'Togetic': 0.6, 'Natu': 0.2, 'Xatu': 1.5, 'Mareep': 0.6, 'Flaaffy': 0.8, 'Ampharos': 1.4, 'Bellossom': 0.4, 'Marill': 0.4, 'Azumarill': 0.8, 'Sudowoodo': 1.2, 'Politoed': 1.1, 'Hoppip': 0.4, 'Skiploom': 0.6, 'Jumpluff': 0.8, 'Aipom': 0.8, 'Sunkern': 0.3, 'Sunflora': 0.8, 'Yanma': 1.2, 'Wooper': 0.4, 'Quagsire': 1.4, 'Espeon': 0.9, 'Umbreon': 1.0, 'Murkrow': 0.5, 'Slowking': 2.0, 'Misdreavus': 0.7, 'Unown': 0.5, 'Wobbuffet': 1.3, 'Girafarig': 1.5, 'Pineco': 0.6, 'Forretress': 1.2, 'Dunsparce': 1.5, 'Gligar': 1.1, 'Steelix': 9.2, 'Snubbull': 0.6, 'Granbull': 1.4, 'Qwilfish': 0.5, 'Scizor': 1.8, 'Shuckle': 0.6, 'Heracross': 1.5, 'Sneasel': 0.9, 'Teddiursa': 0.6, 'Ursaring': 1.8, 'Slugma': 0.7, 'Magcargo': 0.8, 'Swinub': 0.4, 'Piloswine': 1.1, 'Corsola': 0.6, 'Remoraid': 0.6, 'Octillery': 0.9, 'Delibird': 0.9, 'Mantine': 2.1, 'Skarmory': 1.7, 'Houndour': 0.6, 'Houndoom': 1.4, 'Kingdra': 1.8, 'Phanpy': 0.5, 'Donphan': 1.1, 'Porygon2': 0.6, 'Stantler': 1.4, 'Smeargle': 1.2, 'Tyrogue': 0.7, 'Hitmontop': 1.4, 'Smoochum': 0.4, 'Elekid': 0.6, 'Magby': 0.7, 'Miltank': 1.2, 'Blissey': 1.5, 'Raikou': 1.9, 'Entei': 2.1, 'Suicune': 2.0, 'Larvitar': 0.6, 'Pupitar': 1.2, 'Tyranitar': 2.0, 'Lugia': 5.2, 'Ho-Oh': 3.8, 'Celebi': 0.6,
   'Bulbasaur': 0.7, 'Ivysaur': 1.0, 'Venusaur': 2.0, 'Charmander': 0.6, 'Charmeleon': 1.1, 'Charizard': 1.7, 'Squirtle': 0.5, 'Wartortle': 1.0, 'Blastoise': 1.6, 'Caterpie': 0.3, 'Metapod': 0.7, 'Butterfree': 1.1, 'Weedle': 0.3, 'Kakuna': 0.6, 'Beedrill': 1.0, 'Pidgey': 0.3, 'Pidgeotto': 1.1, 'Pidgeot': 1.5, 'Rattata': 0.3, 'Raticate': 0.7, 'Spearow': 0.3, 'Fearow': 1.2, 'Ekans': 2.0, 'Arbok': 3.5, 'Pikachu': 0.4, 'Raichu': 0.8, 'Sandshrew': 0.6, 'Sandslash': 1.0, 'Nidoran♀': 0.4, 'Nidorina': 0.8, 'Nidoqueen': 1.3, 'Nidoran♂': 0.5, 'Nidorino': 0.9, 'Nidoking': 1.4, 'Clefairy': 0.6, 'Clefable': 1.3, 'Vulpix': 0.6, 'Ninetales': 1.1, 'Jigglypuff': 0.5, 'Wigglytuff': 1.0, 'Zubat': 0.8, 'Golbat': 1.6, 'Oddish': 0.5, 'Gloom': 0.8, 'Vileplume': 1.2, 'Paras': 0.3, 'Parasect': 1.0, 'Venonat': 1.0, 'Venomoth': 1.5, 'Diglett': 0.2, 'Dugtrio': 0.7, 'Meowth': 0.4, 'Persian': 1.0, 'Psyduck': 0.8, 'Golduck': 1.7, 'Mankey': 0.5, 'Primeape': 1.0, 'Growlithe': 0.7, 'Arcanine': 1.9, 'Poliwag': 0.6, 'Poliwhirl': 1.0, 'Poliwrath': 1.3, 'Abra': 0.9, 'Kadabra': 1.3, 'Alakazam': 1.5, 'Machop': 0.8, 'Machoke': 1.5, 'Machamp': 1.6, 'Bellsprout': 0.7, 'Weepinbell': 1.0, 'Victreebel': 1.7, 'Tentacool': 0.9, 'Tentacruel': 1.6, 'Geodude': 0.4, 'Graveler': 1.0, 'Golem': 1.4, 'Ponyta': 1.0, 'Rapidash': 1.7, 'Slowpoke': 1.2, 'Slowbro': 1.6, 'Magnemite': 0.3, 'Magneton': 1.0, 'Farfetch’d': 0.8, 'Doduo': 1.4, 'Dodrio': 1.8, 'Seel': 1.1, 'Dewgong': 1.7, 'Grimer': 0.9, 'Muk': 1.2, 'Shellder': 0.3, 'Cloyster': 1.5, 'Gastly': 1.3, 'Haunter': 1.6, 'Gengar': 1.5, 'Onix': 8.8, 'Drowzee': 1.0, 'Hypno': 1.6, 'Krabby': 0.4, 'Kingler': 1.3, 'Voltorb': 0.5, 'Electrode': 1.2, 'Exeggcute': 0.4, 'Exeggutor': 2.0, 'Cubone': 0.4, 'Marowak': 1.0, 'Hitmonlee': 1.5, 'Hitmonchan': 1.4, 'Lickitung': 1.2, 'Koffing': 0.6, 'Weezing': 1.2, 'Rhyhorn': 1.0, 'Rhydon': 1.9, 'Chansey': 1.1, 'Tangela': 1.0, 'Kangaskhan': 2.2, 'Horsea': 0.4, 'Seadra': 1.2, 'Goldeen': 0.6, 'Seaking': 1.3, 'Staryu': 0.8, 'Starmie': 1.1, 'Mr. Mime': 1.3, 'Scyther': 1.5, 'Jynx': 1.4, 'Electabuzz': 1.1, 'Magmar': 1.3, 'Pinsir': 1.5, 'Tauros': 1.4, 'Magikarp': 0.9, 'Gyarados': 6.5, 'Lapras': 2.5, 'Ditto': 0.3, 'Eevee': 0.3, 'Vaporeon': 1.0, 'Jolteon': 0.8, 'Flareon': 0.9, 'Porygon': 0.8, 'Omanyte': 0.4, 'Omastar': 1.0, 'Kabuto': 0.5, 'Kabutops': 1.3, 'Aerodactyl': 1.8, 'Snorlax': 2.1, 'Articuno': 1.7, 'Zapdos': 1.6, 'Moltres': 2.0, 'Dratini': 1.8, 'Dragonair': 4.0, 'Dragonite': 2.2, 'Mewtwo': 2.0, 'Mew': 0.4 };
@@ -7760,6 +7812,129 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
 <script>
 'use strict';
 /* =====================================================================
+   Section 39: Sinnoh (Gen 4) move effects — legendary signatures get
+   full cinematics; built on the shared toolkit (FXK) and particles (PFX).
+   ===================================================================== */
+(function sinnohMoveFx() {
+  if (!window.FXK || !window.PFX || !window.PFX3 || typeof MFX === 'undefined') return;
+  const { body, dim, flash, shake, speedLines, shock, star, ribbon, arcPath, linePath, pillar, orb, debris, sparks, puff, glowAt, magicCircle, ghost, EX, later, fx, rnd, N, T } = FXK;
+  const { AURA, hit, windup, ghostEvery, hitPt } = PFX3;
+  const spawn = PFX.spawn;
+  const reg = (names, r) => { for (const n of names.split('|')) { const o = Object.assign({}, MFX[n] || {});
+    for (const k of ['exec', 'impact', 'dash', 'shot']) if (r[k]) { const f = r[k]; o[k] = (...a) => { try { return f(...a); } catch (e) { console.error(e); } }; } MFX[n] = o; } };
+  const slash = (S, strokes, o) => { try { PFX4.slashSet(S, strokes, o); } catch (e) { } };
+  const ring = (x, y, r, col, ms, w) => spawn({ kind: 'fn', x, y, max: ms / 1000, draw: (c, q) => { c.save(); c.strokeStyle = `rgba(${col},${1 - q})`; c.lineWidth = w || 3; c.beginPath(); c.arc(x, y, r * (.4 + q * .8), 0, T); c.stroke(); c.restore(); } });
+
+  // ---- Roar of Time: time distorts, clock rings spin, a diamond-blue blast ----
+  reg('Roar of Time', { exec: S => { const b = body(S); dim(.55, 1500, '0,10,40'); magicCircle(S, '120,170,255', 1400, 1.5); windup(S, '140,190,255', 220, 40); glowAt(b.i, b.j, 50 * b.k, '150,200,255', 900, .8); },
+    impact: S => { const h = hitPt(S); flash('200,225,255', .6); shake(12, 700);
+      for (let k = 0; k < 3; k++) spawn({ kind: 'fn', x: h.x, y: h.y, max: 1.1, draw: (c, q) => { const r = 40 + k * 26; c.save(); c.globalAlpha = 1 - q; c.strokeStyle = '#bfe0ff'; c.lineWidth = 3; c.beginPath(); c.arc(h.x, h.y, r, 0, T); c.stroke();
+        for (let t = 0; t < 12; t++) { const a = t / 12 * T + (k % 2 ? -1 : 1) * q * 4; c.beginPath(); c.moveTo(h.x + Math.cos(a) * (r - 6), h.y + Math.sin(a) * (r - 6)); c.lineTo(h.x + Math.cos(a) * r, h.y + Math.sin(a) * r); c.stroke(); } c.restore(); } });
+      later(150, () => { EX.psychic(h.x, h.y, 1.6); for (let k = 0; k < 4; k++) later(k * 90, () => shock(h.x, h.y, { r1: 90 + k * 40, col: '130,180,255', w: 8, ms: 600 })); sparks(h.x, h.y, 40, { cols: ['#ffffff', '#bfe0ff', '#7ab0ff'], v: [200, 460], grav: 40 }); }); } });
+  // ---- Spacial Rend: space is cut open ----
+  reg('Spacial Rend', { exec: S => { dim(.5, 1100, '30,0,40'); windup(S, '230,150,255', 300, 30); },
+    impact: S => { const h = hitPt(S); flash('255,220,255', .45); shake(9, 500);
+      slash(S, [[-60, -40, 56, 36, 0], [56, -42, -52, 38, 0]], { core: '#ffffff', edge: 'rgba(230,140,255,.95)', glow: 'rgba(200,120,255,A)', w: 22, starCol: '#ffd0ff', heavy: 1 });
+      later(180, () => { for (let k = 0; k < 3; k++) later(k * 80, () => shock(h.x, h.y, { r1: 80 + k * 40, col: k % 2 ? '255,200,240' : '220,160,255', w: 7, ms: 520 })); sparks(h.x, h.y, 30, { cols: ['#ffffff', '#ffc8f0', '#c890ff'], v: [180, 400], grav: 20 }); }); } });
+  // ---- Shadow Force: vanish into shadow, strike from the dark ----
+  reg('Shadow Force', { exec: S => { ghost(S, '#2a1a3a', 700, .8); dim(.6, 1200, '5,0,10'); AURA.smoke(S); },
+    dash: S => { ghostEvery(S, 40, '#3a1a5a', 360, .6); AURA.smoke(S); },
+    impact: S => { const h = hit(S, { size: 1.7, shk: 11, col: '160,100,255', star: '#9a6aff', lines: true, fl: .35, flc: '#2a1040' }); EX.ghost(h.x, h.y, 1.5);
+      for (let k = 0; k < 3; k++) later(k * 90, () => shock(h.x, h.y, { r1: 80 + k * 30, col: '110,60,190', w: 8, ms: 540 })); } });
+  // ---- Magma Storm: a swirling vortex of fire traps the target ----
+  reg('Magma Storm', { exec: S => { windup(S, '255,110,40', 15, 30); dim(.35, 1200, '40,8,0'); },
+    impact: S => { const h = hitPt(S), b = h.b; shake(8, 800);
+      for (let n = 0; n < N(60); n++) later(rnd(0, 700), () => { const a0 = rnd(0, T), r0 = rnd(26, 46) * b.k; spawn({ kind: 'fn', x: b.i, y: b.j, max: .8, draw: (c, q) => { const a = a0 + q * 9, r = r0 * (1 - q * .4), x = b.i + Math.cos(a) * r, y = b.feet - q * b.h * 1.3 + Math.sin(a) * r * .35;
+        c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,${120 + q * 100 | 0},40,${1 - q})`; c.beginPath(); c.arc(x, y, 4 - q * 2, 0, T); c.fill(); c.restore(); } }); });
+      later(500, () => { EX.fire(h.x, h.y, 1.4); shock(h.x, b.feet, { r1: 110, col: '255,120,40', w: 9, squash: .4, ms: 560 }); }); } });
+  // ---- Judgment: golden light-spears rain from above ----
+  reg('Judgment', { exec: S => { const b = body(S); magicCircle(S, '255,230,140', 1300, 1.4); dim(.45, 1300, '20,15,0'); glowAt(b.i, b.j - b.h, 40 * b.k, '255,240,180', 800, .8); },
+    impact: S => { const h = hitPt(S), b = h.b; shake(10, 700); flash('255,245,200', .5);
+      for (let k = 0; k < 9; k++) later(k * 60, () => { const x = b.i + rnd(-60, 60) * b.k; pillar(x, b.feet + rnd(-10, 10), { w: 12 * b.k, h: 240, ms: 420, col: '255,235,150' }); sparks(x, b.feet, 6, { cols: ['#ffffff', '#ffe890'], v: [100, 240], grav: 200 }); });
+      later(500, () => { star(h.x, h.y, { size: 44, col: '#fff2b0' }); shock(h.x, b.feet, { r1: 150, col: '255,230,140', w: 10, squash: .4, ms: 620 }); }); } });
+  // ---- Seed Flare: a green-white shockwave blooms ----
+  reg('Seed Flare', { exec: S => { const b = body(S); windup(S, '190,255,170', 100, 30); glowAt(b.i, b.j, 44 * b.k, '200,255,180', 700, .8); },
+    impact: S => { const h = hitPt(S); flash('230,255,220', .5); shake(8, 520);
+      for (let k = 0; k < 4; k++) later(k * 80, () => shock(h.x, h.y, { r1: 70 + k * 40, col: k % 2 ? '255,255,255' : '150,240,130', w: 8, ms: 560 }));
+      for (let n = 0; n < N(30); n++) { const a = rnd(0, T); spawn({ kind: 'fn', x: h.x, y: h.y, max: .9, draw: (c, q) => { const r = q * 110; c.save(); c.globalAlpha = 1 - q; c.translate(h.x + Math.cos(a) * r, h.y + Math.sin(a) * r * .6); c.rotate(a + q * 6); c.fillStyle = n % 3 ? '#9ae07a' : '#ffffff'; c.beginPath(); c.ellipse(0, 0, 4, 1.8, 0, 0, T); c.fill(); c.restore(); } }); } } });
+  // ---- Crush Grip: giant gripping shockwaves ----
+  reg('Crush Grip', { exec: S => windup(S, '230,230,230', 0, 28), dash: S => { AURA.speed(S, '#ffffff'); ghostEvery(S, 60, '#e0e0e0', 260, .5); },
+    impact: S => { const h = hit(S, { size: 1.8, shk: 12, col: '240,240,240', star: '#ffffff', lines: true, fl: .3, flc: '#ffffff' });
+      for (let k = 0; k < 2; k++) later(k * 140, () => { ring(h.x - 30, h.y, 46, '230,230,230', 400, 6); ring(h.x + 30, h.y, 46, '230,230,230', 400, 6); });
+      later(280, () => { shock(h.x, h.y, { r1: 120, col: '255,255,255', w: 9, ms: 520 }); debris(h.x, h.b.feet, 14); }); } });
+  // ---- Draco Meteor: meteors fall in a rain of dragon fire ----
+  reg('Draco Meteor', { exec: S => { const b = body(S); windup(S, '200,140,255', 280, 30); pillar(b.i, b.feet, { w: 24 * b.k, h: 260, ms: 700, col: '200,150,255' }); dim(.45, 1400, '15,0,30'); },
+    impact: S => { const h = hitPt(S), b = h.b; shake(11, 900);
+      for (let k = 0; k < 6; k++) later(k * 110, () => { const tx = b.i + rnd(-70, 70) * b.k, ty = b.feet + rnd(-10, 10), sx = tx - 120, sy = ty - 300;
+        spawn({ kind: 'fn', x: sx, y: sy, max: .3, draw: (c, q) => { const x = sx + (tx - sx) * q, y = sy + (ty - sy) * q; c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y, 0, x, y, 14); g.addColorStop(0, 'rgba(255,240,220,1)'); g.addColorStop(.4, 'rgba(255,140,90,.9)'); g.addColorStop(1, 'rgba(160,80,255,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, 14, 0, T); c.fill();
+          c.strokeStyle = 'rgba(220,150,255,.7)'; c.lineWidth = 6; c.beginPath(); c.moveTo(x, y); c.lineTo(x - (tx - sx) * .2, y - (ty - sy) * .2); c.stroke(); c.restore(); } });
+        later(300, () => { EX.fire(tx, ty, .8); shock(tx, ty, { r1: 60, col: '220,140,255', w: 6, squash: .4, ms: 420 }); debris(tx, ty, 6); }); }); } });
+  // ---- Head Smash: a crushing rock impact with recoil sparks ----
+  reg('Head Smash', { exec: S => windup(S, '200,170,120', 30, 24), dash: S => { AURA.dust(S); ghostEvery(S, 55, '#c0a070', 240, .45); },
+    impact: S => { const h = hit(S, { size: 1.8, shk: 12, col: '220,190,140', star: '#ffe0a0', lines: true }); debris(h.x, h.y, 20); shock(h.x, h.y, { r1: 110, col: '210,180,130', w: 9, ms: 520 });
+      const a = body(S); sparks(a.i, a.j, 12, { cols: ['#ffffff', '#ffd080'], v: [100, 220], grav: 200 }); } });
+  // ---- Wood Hammer: a heavy wooden strike with splinters ----
+  reg('Wood Hammer', { exec: S => windup(S, '170,120,60', 30, 22), dash: S => { AURA.speed(S, '#a0d070'); ghostEvery(S, 60, '#8a6a3a', 220, .45); },
+    impact: S => { const h = hit(S, { size: 1.6, shk: 10, col: '200,160,100', star: '#c8e08a', lines: true });
+      for (let n = 0; n < N(22); n++) spawn({ kind: 'shard', x: h.x, y: h.y, vx: rnd(-240, 240), vy: rnd(-260, -40), ay: 520, drag: .97, max: .8, r: rnd(1.6, 2.8), a: 1, col: n % 3 ? '#8a5a2a' : '#7ac040', rot: rnd(0, T), vr: rnd(-12, 12) });
+      shock(h.x, h.b.feet, { r1: 90, col: '170,130,80', w: 7, squash: .4, ms: 480 }); } });
+  // ---- Bullet Punch: quick steel jabs ----
+  reg('Bullet Punch', { dash: S => { AURA.speed(S, '#dfe8ff'); ghostEvery(S, 40, '#c8d8ff', 180, .4); },
+    impact: S => { const h0 = hitPt(S); for (let k = 0; k < 3; k++) later(k * 70, () => { const x = h0.x + rnd(-10, 10), y = h0.y + rnd(-10, 6); star(x, y, { size: 14 + k * 4, col: '#e8f0ff' }); sparks(x, y, 8, { cols: ['#ffffff', '#c8d8ff'], v: [140, 260], grav: 160 }); shake(2 + k, 100); }); } });
+  // ---- Power Gem: a prismatic gem beam ----
+  reg('Power Gem', { exec: S => { const a = body(S), t = body(other(S)); windup(S, '255,220,140', 45, 20);
+      ribbon(linePath(a.i, a.j, t.i, t.j, 0), { w: 12, ms: 420, core: '#ffffff', edge: '#ffd060', glow: 'rgba(255,200,90,A)', head: .5 });
+      for (let n = 0; n < N(16); n++) later(rnd(0, 300), () => { const f = rnd(0, 1); spawn({ kind: 'shard', x: a.i + (t.i - a.i) * f, y: a.j + (t.j - a.j) * f, vx: rnd(-40, 40), vy: rnd(-40, 40), drag: .95, max: .5, r: rnd(1.6, 2.6), a: 1, col: `hsl(${rnd(0, 360)},90%,75%)`, rot: rnd(0, T), vr: rnd(-10, 10) }); }); },
+    impact: S => { const h = hitPt(S); star(h.x, h.y, { size: 28, col: '#fff0b0' }); sparks(h.x, h.y, 20, { cols: ['#ffffff', '#ffe080', '#ff9ad0', '#9ad8ff'], v: [140, 300], grav: 60 }); } });
+  // ---- Dark Pulse: dark rings ripple outward ----
+  reg('Dark Pulse', { exec: S => { const b = body(S); dim(.3, 800, '10,0,20'); for (let k = 0; k < 4; k++) later(k * 90, () => ring(b.i, b.j, 50 * b.k, '120,60,170', 520, 5)); },
+    impact: S => { const h = hitPt(S); EX.ghost(h.x, h.y, .9); for (let k = 0; k < 3; k++) later(k * 70, () => shock(h.x, h.y, { r1: 50 + k * 22, col: '100,50,150', w: 5, ms: 420 })); } });
+  // ---- Shadow Sneak: a creeping shadow strike ----
+  reg('Shadow Sneak', { dash: S => { ghostEvery(S, 40, '#2a1a3a', 240, .55); AURA.smoke(S); },
+    impact: S => { const h = hit(S, { size: 1, shk: 4, col: '150,110,220', star: '#9a7aff' }); EX.ghost(h.x, h.y, .6); } });
+  // ---- Vacuum Wave: an air-fist ripple ----
+  reg('Vacuum Wave', { shot: p => { const c = bctx, x = bx(p.x), y = by(p.y), q = (clock.t % 240) / 240; c.save(); c.strokeStyle = 'rgba(230,240,255,.85)'; c.lineWidth = 2.5; for (let k = 0; k < 2; k++) { c.beginPath(); c.arc(x, y, 5 + ((q + k / 2) % 1) * 10, 0, T); c.stroke(); } c.restore(); },
+    impact: S => { const h = hitPt(S); shock(h.x, h.y, { r1: 60, col: '230,240,255', w: 5, ms: 360 }); star(h.x, h.y, { size: 18, col: '#ffffff' }); } });
+  // ======== milestone 3: ten more Sinnoh moves ========
+  const fangs = (S, col, glow, ex) => { const h = hitPt(S); try { PFX3.jaws(S, { col, glow }); } catch (e) { star(h.x, h.y, { size: 22, col }); } later(120, () => ex(h)); shake(4, 220); };
+  // ---- Psycho Cut / Night Slash: a psychic blade, a dark crescent ----
+  reg('Psycho Cut', { dash: S => { AURA.speed(S, '#ff9ae0'); ghostEvery(S, 55, '#e070d0', 200, .4); },
+    impact: S => { const h = hitPt(S); slash(S, [[-40, -30, 36, 26, 16]], { core: '#ffffff', edge: 'rgba(255,120,220,.95)', glow: 'rgba(240,100,210,A)', w: 16, starCol: '#ffc8f0', heavy: .6 }); EX.psychic(h.x, h.y, .7); } });
+  reg('Night Slash', { dash: S => { ghostEvery(S, 45, '#2a1a3a', 220, .5); AURA.smoke(S); },
+    impact: S => { const h = hitPt(S); dim(.3, 400, '10,0,20'); slash(S, [[38, -32, -36, 28, -18]], { core: '#e8d8ff', edge: 'rgba(90,40,140,.95)', glow: 'rgba(70,30,120,A)', w: 18, starCol: '#b090ff', heavy: .7 }); } });
+  // ---- Thunder / Ice / Fire Fang: jaws crackling with an element ----
+  reg('Thunder Fang', { dash: S => AURA.speed(S, '#fff27a'), impact: S => fangs(S, '#fff6a0', 'rgba(255,230,80,A)', h => { EX.electric(h.x, h.y, .7); sparks(h.x, h.y, 14, { cols: ['#ffffff', '#fff27a'], v: [140, 280], grav: 120 }); }) });
+  reg('Ice Fang', { dash: S => AURA.speed(S, '#bfeaff'), impact: S => fangs(S, '#e8f8ff', 'rgba(150,220,255,A)', h => { EX.ice(h.x, h.y, .7); for (let n = 0; n < N(12); n++) spawn({ kind: 'shard', x: h.x, y: h.y, vx: rnd(-160, 160), vy: rnd(-180, 20), ay: 300, drag: .97, max: .6, r: rnd(1.4, 2.4), a: 1, col: n % 2 ? '#ffffff' : '#9adcff', rot: rnd(0, T), vr: rnd(-10, 10) }); }) });
+  reg('Fire Fang', { dash: S => AURA.flame(S), impact: S => fangs(S, '#ffe0b0', 'rgba(255,130,50,A)', h => { EX.fire(h.x, h.y, .7); sparks(h.x, h.y, 14, { cols: ['#ffe080', '#ff7a2a'], v: [120, 260], grav: -40 }); }) });
+  // ---- Iron Head: a steel headbutt with sparks ----
+  reg('Iron Head', { exec: S => windup(S, '210,220,235', 220, 20), dash: S => { AURA.speed(S, '#dfe6f0'); ghostEvery(S, 55, '#c8d0dc', 220, .45); },
+    impact: S => { const h = hit(S, { size: 1.4, shk: 8, col: '220,228,240', star: '#ffffff', lines: true }); sparks(h.x, h.y, 26, { cols: ['#ffffff', '#ffe8a0', '#c8d0dc'], v: [180, 380], grav: 260 }); shock(h.x, h.y, { r1: 80, col: '210,220,235', w: 6, ms: 420 }); } });
+  // ---- Aqua Tail: a swirling water tail ----
+  reg('Aqua Tail', { dash: S => { const b = body(S); spawn({ kind: 'fn', x: b.i, y: b.j, max: .25, draw: (c, q) => { const bb = body(S); c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(120,200,255,${.8 * (1 - q)})`; c.lineWidth = 4; c.beginPath(); c.arc(bb.i, bb.j, 22 * bb.k, clock.t / 60, clock.t / 60 + 4); c.stroke(); c.restore(); } }); },
+    impact: S => { const h = hitPt(S); ribbon(arcPath(h.x, h.y, 34, -2.8, .3, .6), { w: 12, ms: 380, core: '#e8f6ff', edge: '#3a9aff', glow: 'rgba(80,170,255,A)', head: .7 }); EX.water(h.x, h.y, 1); shake(6, 320); } });
+  // ---- Dragon Rush: a charge wrapped in violet dragon energy ----
+  reg('Dragon Rush', { exec: S => { windup(S, '170,120,255', 265, 28); dim(.3, 800, '15,0,30'); },
+    dash: S => { ghostEvery(S, 40, '#9a6aff', 320, .6); const b = body(S); glowAt(b.i, b.j, 34 * b.k, '170,120,255', 160, .7); speedLines(b.i, b.j, '#c8a8ff', 160, 8); },
+    impact: S => { const h = hit(S, { size: 1.7, shk: 11, col: '190,150,255', star: '#d8c0ff', lines: true, fl: .3, flc: '#e8dcff' }); shock(h.x, h.y, { r1: 120, col: '170,120,255', w: 9, ms: 520 }); debris(h.x, h.b.feet, 12); } });
+  // ---- Focus Blast: a glowing orange energy sphere ----
+  reg('Focus Blast', { exec: S => windup(S, '255,170,80', 30, 26),
+    shot: p => { const c = bctx, x = bx(p.x), y = by(p.y); orb(c, x, y, 13, { core: '255,250,220', mid: '255,170,70', rim: '255,120,40', arcs: 2, pulse: .14 }); },
+    impact: S => { const h = hitPt(S); flash('255,210,150', .35); shake(8, 420); EX.fire(h.x, h.y, .6); for (let k = 0; k < 3; k++) later(k * 70, () => shock(h.x, h.y, { r1: 60 + k * 30, col: '255,170,80', w: 6, ms: 440 })); } });
+  // ---- Nasty Plot: dark thought-bubbles swirl around the user's head ----
+  reg('Nasty Plot', { exec: S => { const b = body(S); dim(.25, 900, '15,0,25'); glowAt(b.i, b.j - b.h * .6, 30 * b.k, '150,80,200', 800, .6);
+      for (let n = 0; n < N(10); n++) later(n * 70, () => { const a0 = n * .63; spawn({ kind: 'fn', x: b.i, y: b.j, max: .9, draw: (c, q) => { const bb = body(S), a = a0 + q * 5, x = bb.i + Math.cos(a) * 24 * bb.k, y = bb.j - bb.h * .7 + Math.sin(a) * 9 * bb.k;
+        c.save(); c.globalAlpha = q < .8 ? .85 : (1 - q) / .2 * .85; c.fillStyle = '#5a2a7a'; c.strokeStyle = '#c890ff'; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y, 4 + q * 2, 0, T); c.fill(); c.stroke(); c.restore(); } }); }); } });
+  // ---- Discharge: an electric field bursts outward ----
+  reg('Discharge', { exec: S => { const b = body(S); for (let k = 0; k < 10; k++) later(k * 40, () => { const a = rnd(0, T); spawn({ kind: 'fn', x: b.i, y: b.j, max: .2, draw: (c, q) => { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,245,150,${1 - q})`; c.lineWidth = 2.5; c.beginPath(); c.moveTo(b.i, b.j);
+      for (let s = 1; s <= 5; s++) c.lineTo(b.i + Math.cos(a) * s * 14 + rnd(-6, 6), b.j + Math.sin(a) * s * 10 + rnd(-6, 6)); c.stroke(); c.restore(); } }); }); glowAt(b.i, b.j, 50 * b.k, '255,240,120', 500, .6); },
+    impact: S => { const h = hitPt(S); EX.electric(h.x, h.y, 1.1); shock(h.x, h.y, { r1: 90, col: '255,240,120', w: 6, ms: 420 }); } });
+})();
+
+//# sourceURL=fxgen4.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
    Section 9: HUD and DOM
    ===================================================================== */
 const statusChip = st => st ? `<span class="chip st" style="background:${STATUS_INFO[st].color}">${STATUS_INFO[st].label}</span>` : '';
@@ -9685,7 +9860,7 @@ playCry = function (name) { if (pickBase(name) !== 'MissingNo.') return _playCry
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '17.0';
+const APP_VERSION = '17.2';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -12800,8 +12975,8 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
    - Generation helpers, and Gen 1 / Gen 2 / All tabs in the Pokémon
      chooser (they work together with the search box)
    ===================================================================== */
-const GEN_OF = name => { const d = typeof DEX_BY_NAME !== 'undefined' && DEX_BY_NAME[String(name).split('|')[0]]; return d && d.id >= 252 ? 3 : d && d.id >= 152 ? 2 : 1; };
-const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
+const GEN_OF = name => { const d = typeof DEX_BY_NAME !== 'undefined' && DEX_BY_NAME[String(name).split('|')[0]]; return d && d.id >= 387 ? 4 : d && d.id >= 252 ? 3 : d && d.id >= 152 ? 2 : 1; };
+const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493] };
 (function johtoSupport() {
   const $ = id => document.getElementById(id);
   // ---- catch rates (story mode) ----
@@ -12816,7 +12991,7 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
     Suicune: 3, Larvitar: 45, Pupitar: 45, Tyranitar: 45, Lugia: 3, 'Ho-Oh': 3, Celebi: 45 });
   if (typeof CATCH_RATE !== 'undefined' && typeof DEX !== 'undefined') { const T = { W: 255, b: 190, B: 45, k: 120, M: 120, g: 90, f: 60, F: 45, L: 3, X: 3 };
     for (const d of DEX) if (d.id >= 252 && CATCH_RATE[d.name] == null) CATCH_RATE[d.name] = T[d.tier] || 45;
-    Object.assign(CATCH_RATE, { Feebas: 255, Milotic: 60, Bagon: 45, Shelgon: 45, Salamence: 45, Beldum: 3, Metang: 3, Metagross: 3, Absol: 30, Wailord: 60, Relicanth: 25, Shedinja: 45, Castform: 45 }); }
+    Object.assign(CATCH_RATE, { Gible: 45, Gabite: 45, Garchomp: 45, Riolu: 75, Lucario: 45, Spiritomb: 100, Rotom: 45, Munchlax: 50, Feebas: 255, Milotic: 60, Bagon: 45, Shelgon: 45, Salamence: 45, Beldum: 3, Metang: 3, Metagross: 3, Absol: 30, Wailord: 60, Relicanth: 25, Shedinja: 45, Castform: 45 }); }
   // ---- the chooser: Gen 1 / Gen 2 / Gen 3 / All ----
   let gen = (() => { try { return localStorage.getItem('arena151.pickGen') || 'all'; } catch (e) { return 'all'; } })();
   const css = document.createElement('style'); css.textContent = `
@@ -12828,7 +13003,7 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
     document.querySelectorAll('#stPick .pk-gen button').forEach(x => { x.classList.toggle('on', x.dataset.g === gen); x.setAttribute('aria-pressed', String(x.dataset.g === gen)); }); }
   function mountTabs() { const top = document.querySelector('#stPick .pk-top'); if (!top || top.querySelector('.pk-gen')) return;
     const box = document.createElement('div'); box.className = 'pk-gen'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Generation');
-    box.innerHTML = [['all', 'All'], ['1', 'Gen 1 · Kanto'], ['2', 'Gen 2 · Johto'], ['3', 'Gen 3 · Hoenn']].map(([g, t]) => `<button type="button" data-g="${g}">${t}</button>`).join('');
+    box.innerHTML = [['all', 'All'], ['1', 'Gen 1 · Kanto'], ['2', 'Gen 2 · Johto'], ['3', 'Gen 3 · Hoenn'], ['4', 'Gen 4 · Sinnoh']].map(([g, t]) => `<button type="button" data-g="${g}">${t}</button>`).join('');
     const search = $('stSearch'); if (search) search.after(box); else top.prepend(box);
     box.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; gen = b.dataset.g; try { localStorage.setItem('arena151.pickGen', gen); } catch (x) { } applyGen(); }; }
   if (typeof openMonPicker === 'function') { const _o = openMonPicker; openMonPicker = function () { const r = _o.apply(this, arguments); mountTabs(); applyGen(); return r; }; }
@@ -13036,12 +13211,12 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
     badges: BADGE_FILES.slice(), rivalAt: Object.assign({}, D.RIVAL_AT), rivalBase: D.RIVAL_BASE.map(a => a.slice()), gary: Object.assign({}, D.GARY), rival: D.SCRIPT.rival, champ: D.SCRIPT.champion };
   const fill = (arr, items) => { arr.splice(0, arr.length, ...items); };
   const swapObj = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
-  const regionOf = s => (!s ? 'kanto' : s.region === 'combined' ? (s.phase || 'kanto') : (s.region === 'johto' || s.region === 'hoenn') ? s.region : 'kanto');
+  const regionOf = s => (!s ? 'kanto' : s.region === 'combined' ? (s.phase || 'kanto') : (s.region === 'johto' || s.region === 'hoenn' || s.region === 'sinnoh') ? s.region : 'kanto');
   const JR = { gyms: J, map: JMAP, names: JNAMES, ash: JASH, routes: JROUTES, minors: JMINORS, starters: ['Chikorita', 'Cyndaquil', 'Totodile'],
     badges: ['zephyr', 'hive', 'plain', 'fog', 'storm', 'mineral', 'glacier', 'rising', 'elite', 'champion'], rivalAt: SRIVAL_AT, rivalBase: SRIVAL_BASE, rival: SILVER,
     rivalScript: SRIVAL_SCRIPT, champ: SCHAMP, counter: silverCounter, rivalKey: 'rivalJ' };
   window.REGION_EV = Object.assign(window.REGION_EV || {}, { johto: window.JOHTO_EV });
-  const regionData = R => (R === 'johto' ? JR : R === 'hoenn' ? window.HOENN || null : null);
+  const regionData = R => (R === 'johto' ? JR : R === 'hoenn' ? window.HOENN || null : R === 'sinnoh' ? window.SINNOH || null : null);
   function applyRegion(R) {
     const X = regionData(R); if (!X) R = 'kanto';
     if (STORY.region === R && GYMS[0] === (X ? X.gyms[0] : K.gyms[0])) return;
@@ -13057,6 +13232,7 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
     STORY.region = R; STORY.rivalKey = X ? X.rivalKey : 'rival';
     if (!X && typeof applyStoryBranch === 'function') applyStoryBranch();                          // Kanto: Giovanni or Professor Oak, by the save's choice
     STORY.kanto = true;
+    if (typeof window.onRegionApplied === 'function') try { window.onRegionApplied(R); } catch (e) { }   // later regions hook in here
   }
   window.applyRegion = applyRegion; window.storyRegion = () => STORY.region || 'kanto'; window.syncRegion = () => sync();
   const sync = () => applyRegion(regionOf(STORY.save));
@@ -13066,7 +13242,7 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
   function chooseRegion() {
     return new Promise(done => {
       const ov = $('csOv'); STORY.cutscene = true;
-      const opts = [['kanto', 'Kanto', 'The original journey — 8 gyms, Lance and Gary.'], ['johto', 'Johto', '8 Johto gyms, Karen and your rival Silver.'], ['hoenn', 'Hoenn', '8 Hoenn gyms, Drake, Champion Steven and your rival May.'], ['combined', 'Combined', 'Kanto, then Johto, then Hoenn — one team the whole way.']];
+      const opts = [['kanto', 'Kanto', 'The original journey — 8 gyms, Lance and Gary.'], ['johto', 'Johto', '8 Johto gyms, Karen and your rival Silver.'], ['hoenn', 'Hoenn', '8 Hoenn gyms, Drake, Champion Steven and your rival May.'], ['sinnoh', 'Sinnoh', '8 Sinnoh gyms, Lucian, Champion Cynthia and your rival Barry.'], ['combined', 'Combined', 'Kanto → Johto → Hoenn → Sinnoh — one team the whole way.']];
       ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">Where will your journey begin?</div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">${opts.map(([v, t, sub], k) => `<button class="sy-btn${k ? '' : ' go'}" type="button" data-r="${v}" style="min-width:190px">${t}<br><small style="font-weight:600;opacity:.85">${sub}</small></button>`).join('')}</div><button class="sy-btn" type="button" data-r="" style="margin-top:10px">Cancel</button></div>`;
       ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-r]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; STORY.cutscene = false; done(b.dataset.r || null); };
     });
@@ -13112,10 +13288,10 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
   const redFile = () => (typeof ALL_TRAINERS !== 'undefined' && ALL_TRAINERS.includes('Red') ? 'Red' : 'Ash');
   let offeringRed = false;
   async function offerRed() {
-    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'hoenn' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
+    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'sinnoh' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
     offeringRed = true;
     try { const ov = $('csOv'); STORY.cutscene = true;
-      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto, Johto and Hoenn. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto, Johto, Hoenn and Sinnoh. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
         ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
       STORY.cutscene = false; if (go) await startRed();
     } finally { offeringRed = false; STORY.cutscene = false; }
@@ -13140,7 +13316,7 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
     STORY.battle = null; STORY.nextRules = null; const s = STORY.save;
     if (won) { s.redBeaten = Date.now(); s.finishedAt = s.finishedAt || Date.now(); } saveStory();
     showOverlay('ovResults', false); openStoryScreen();
-    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto, Johto and Hoenn — we did it. Grand Champion.']] : [['foe', '…']], b.who);
+    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto, Johto, Hoenn and Sinnoh — we did it. Grand Champion.']] : [['foe', '…']], b.who);
     try { renderStory(); } catch (e) { }
   };
   let offeringH = false;
@@ -13155,12 +13331,12 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
     } finally { offeringH = false; STORY.cutscene = false; }
   }
   // the Johto badges until their images are added: a generated badge in the badge's colours
-  const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'], stone: ['#a8946a', '#e8dcc0'], knuckle: ['#c8783a', '#ffe0b0'], dynamo: ['#ffd84a', '#5a8aff'], heat: ['#ff6a3a', '#ffd060'], balance: ['#d84a4a', '#ffffff'], feather: ['#5ab0ff', '#e8f4ff'], mind: ['#ff7ad0', '#ffd0f0'], rain: ['#3a8aff', '#bfe2ff'] };
+  const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'], stone: ['#a8946a', '#e8dcc0'], knuckle: ['#c8783a', '#ffe0b0'], dynamo: ['#ffd84a', '#5a8aff'], heat: ['#ff6a3a', '#ffd060'], balance: ['#d84a4a', '#ffffff'], feather: ['#5ab0ff', '#e8f4ff'], mind: ['#ff7ad0', '#ffd0f0'], rain: ['#3a8aff', '#bfe2ff'], coal: ['#5a4a3a', '#c8a070'], forest: ['#4aa04a', '#c8f0a0'], cobble: ['#c8784a', '#ffe0b0'], fen: ['#4a9ad8', '#d0ecff'], relic: ['#9a7ad0', '#e8dcff'], mine: ['#a8b0b8', '#ffffff'], icicle: ['#9adcff', '#ffffff'], beacon: ['#ffd84a', '#fff6c8'] };
   document.addEventListener('error', e => { const im = e.target; if (!im || im.tagName !== 'IMG' || !/story\/badges\/(\w+)\.png/.test(im.src || '')) return; const k = RegExp.$1, c = BADGE_COL[k]; if (!c || im.dataset.fb) return; im.dataset.fb = '1';
     im.src = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" fill="${c[0]}" stroke="${c[1]}" stroke-width="3"/><circle cx="20" cy="20" r="7" fill="${c[1]}" opacity=".85"/></svg>`); }, true);
   // Kanto journeys keep the Kanto Pokédex (151); Johto and Combined show all 251
   window.dexHidesJohto = () => (STORY.region || 'kanto') === 'kanto' && !(STORY.save && STORY.save.region === 'combined');
-  window.dexMaxId = () => { const s = STORY.save; if (s && s.region === 'combined') return 386; return { kanto: 151, johto: 251, hoenn: 386 }[STORY.region || 'kanto'] || 151; };   // the Pokédex a journey shows
+  window.dexMaxId = () => { const s = STORY.save; if (s && s.region === 'combined') return 493; return { kanto: 151, johto: 251, hoenn: 386, sinnoh: 493 }[STORY.region || 'kanto'] || 151; };   // the Pokédex a journey shows
   sync();
 })();
 
@@ -13363,6 +13539,220 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
 })();
 
 //# sourceURL=hoenn.js
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   Section 40: SINNOH — the fourth story region (registers with the region
+   switch in johto.js; Kanto, Johto and Hoenn are untouched)
+   ===================================================================== */
+(function sinnohRegion() {
+  if (typeof STORY === 'undefined' || !window.STORY_DATA || typeof applyRegion !== 'function') return;
+  const D = STORY_DATA, $ = id => document.getElementById(id), arena = (...ids) => ids.find(id => typeof STAGES !== 'undefined' && STAGES[id]) || 'random';
+  const G = (n, rk, style, leader, file, city, type, badge, ar, team, levels, hello, win, lose) => ({ n, rulesKey: rk, style, leader, file, city, type, badge, arena: ar, x: 0, y: 0, team, levels, hello, win, lose });
+  const GYMS_S = [
+    G(1, 's1', 'defensive', 'Roark', 'Roark', 'Oreburgh City', 'Rock', 'Coal Badge', arena('pewter', 'cavern'), ['Geodude', 'Onix', 'Nosepass', 'Bonsly', 'Larvitar', 'Cranidos'], [12, 13, 13, 14, 14, 15],
+      'Welcome to the Oreburgh Gym! I’m Roark, the Gym Leader — and I’ll show you the power of the rocks of the mine!', 'Back to the mines with you!', 'This is embarrassing… You’ve earned the Coal Badge.'),
+    G(2, 's2', 'status', 'Gardenia', 'Gardenia', 'Eterna City', 'Grass', 'Forest Badge', arena('ruins', 'plaza'), ['Cherubi', 'Sunkern', 'Carnivine', 'Tangela', 'Bellsprout', 'Roserade'], [18, 19, 19, 20, 20, 22],
+      'I’m Gardenia, the Eterna Gym Leader! My Grass Pokémon are going to make you work for it!', 'My Grass Pokémon bloomed!', 'Amazing! You’re very good, aren’t you? Here’s the Forest Badge.'),
+    G(3, 's3', 'status', 'Fantina', 'Fantina', 'Hearthome City', 'Ghost', 'Relic Badge', arena('meteor', 'grand'), ['Drifblim', 'Duskull', 'Shuppet', 'Haunter', 'Spiritomb', 'Mismagius'], [24, 25, 25, 26, 27, 28],
+      'Bonjour! I am Fantina! You will see how marvelous my Ghost Pokémon are — they will dazzle you!', 'Magnifique! I win!', 'You are so fantastically strong. I lose. Take the Relic Badge.'),
+    G(4, 's4', 'aggro', 'Maylene', 'Maylene', 'Veilstone City', 'Fighting', 'Cobble Badge', arena('summit', 'plaza'), ['Meditite', 'Machoke', 'Croagunk', 'Hitmonchan', 'Heracross', 'Lucario'], [28, 29, 29, 30, 31, 32],
+      'I’m Maylene. I train barefoot to toughen my feet. Let’s battle — no holding back!', 'Training pays off.', 'I shall admit defeat. You are much too strong. The Cobble Badge is yours.'),
+    G(5, 's5', 'aggro', 'Crasher Wake', 'Crasher_Wake', 'Pastoria City', 'Water', 'Fen Badge', arena('cerulean', 'hall'), ['Quagsire', 'Gyarados', 'Gastrodon', 'Wailmer', 'Lumineon', 'Floatzel'], [31, 32, 32, 33, 34, 35],
+      'I am… Crasher Wake! Watch the power of my Water Pokémon as it crashes over you!', 'WAHAHAH! Washed away!', 'Puwaah! You are strong! Take the Fen Badge!'),
+    G(6, 's6', 'defensive', 'Byron', 'Byron', 'Canalave City', 'Steel', 'Mine Badge', arena('vermilion', 'castle'), ['Magneton', 'Steelix', 'Skarmory', 'Probopass', 'Bronzong', 'Bastiodon'], [36, 37, 37, 38, 39, 40],
+      'Welcome! I am Byron, the father of Roark. My Steel Pokémon have been tempered for years. Bring it on!', 'Hah! Solid as steel!', 'Hmm! Well done, young one. Take the Mine Badge.'),
+    G(7, 's7', 'switcher', 'Candice', 'Candice', 'Snowpoint City', 'Ice', 'Icicle Badge', arena('cavern', 'ice'), ['Sneasel', 'Piloswine', 'Lapras', 'Froslass', 'Jynx', 'Abomasnow'], [40, 41, 41, 42, 43, 44],
+      'I’m Candice! Diamond dust — that’s my focus! Let’s see if your focus is as sharp as mine!', 'Focus, focus!', 'Wow! You’re great! Here — the Icicle Badge!'),
+    G(8, 's8', 'aggro', 'Volkner', 'Volkner', 'Sunyshore City', 'Electric', 'Beacon Badge', arena('vermilion', 'plaza'), ['Raichu', 'Ambipom', 'Octillery', 'Jolteon', 'Luxray', 'Electivire'], [46, 47, 47, 48, 49, 50],
+      'I’m Volkner. I was getting bored with weak challengers… Let’s see if you can light my fire again.', 'Still bored.', '…Hehe. Hahaha! That was the most fun I’ve had in ages. The Beacon Badge is yours.'),
+    G(9, 's9', 'switcher', 'Lucian', 'Lucian', 'Pokémon League', 'Psychic', 'Elite Four', arena('grand', 'hall'), ['Mr. Mime', 'Espeon', 'Girafarig', 'Alakazam', 'Medicham', 'Gallade'], [53, 54, 54, 55, 56, 57],
+      'Welcome. I am Lucian of the Elite Four. You are the last challenger I will face before the Champion — do not disappoint me.', 'A pity. Come back stronger.', 'Congratulations. You have beaten the Elite Four. The Champion awaits.'),
+    G(10, 's10', 'switcher', 'Cynthia', 'Cynthia', 'Pokémon League', 'Champion', 'Champion', arena('hall', 'grand'), ['Spiritomb', 'Roserade', 'Togekiss', 'Lucario', 'Milotic', 'Garchomp'], [58, 60, 60, 60, 60, 64],
+      'I’m Cynthia, the Champion of Sinnoh. As the Champion, I accept your challenge — I won’t hold back.', 'Your journey isn’t over. Come back stronger.', 'That was excellent. Truly, an outstanding battle. You are the new Champion of Sinnoh.')
+  ];
+  GYMS_S[9].pickTeam = () => GYMS_S[9].team.slice();   // Champion Cynthia brings her own team
+  /* ---------- the Sinnoh map (story/sinnoh_map.webp, 2576×1438) ---------- */
+  const MAP = { img: 'story/sinnoh_map.webp', w: 2576, h: 1438, home: { x: 450, y: 1250, city: 'Twinleaf Town' },
+    gyms: { 1: [920, 1020], 2: [1000, 600], 3: [1380, 860], 4: [1900, 700], 5: [1380, 1120], 6: [560, 660], 7: [1120, 140], 8: [2300, 1040], 9: [2220, 660], 10: [2245, 600] },
+    legs: [
+      [[450, 1250], [540, 1235], [620, 1220], [620, 1120], [620, 1040], [780, 1030], [920, 1020]],                          // Routes 201 · 202 → Jubilife → Route 203 → Oreburgh
+      [[920, 1020], [780, 1030], [620, 1040], [650, 900], [690, 770], [820, 660], [1000, 600]],                            // Route 204 → Floaroma → Eterna Forest → Eterna
+      [[1000, 600], [1000, 760], [1100, 860], [1250, 870], [1380, 860]],                                                   // Route 206 → Mt. Coronet → Route 208 → Hearthome
+      [[1380, 860], [1500, 830], [1600, 800], [1750, 760], [1900, 700]],                                                   // Routes 209 · 210 → Solaceon → Route 215 → Veilstone
+      [[1900, 700], [1950, 850], [1920, 1000], [1700, 1080], [1380, 1120]],                                                // Route 214 → Valor Lakefront → Route 213 → Pastoria
+      [[1380, 1120], [1380, 860], [1100, 860], [920, 1020], [620, 1040], [520, 900], [560, 660]],                          // back west → Jubilife → Route 218 → Canalave
+      [[560, 660], [640, 800], [820, 660], [1000, 600], [1320, 560], [1250, 380], [1150, 250], [1120, 140]],               // Eterna → Route 211 → Celestic → Routes 216 · 217 → Snowpoint
+      [[1120, 140], [1200, 360], [1320, 560], [1600, 800], [1920, 1000], [2100, 1060], [2300, 1040]],                      // Mt. Coronet · Spear Pillar → Route 222 → Sunyshore
+      [[2300, 1040], [2330, 900], [2270, 760], [2220, 660]],                                                               // Route 223 → Victory Road → Pokémon League
+      [[2220, 660], [2235, 630], [2245, 600]]                                                                              // the Champion’s room
+    ] };
+  const NAMES = ['Routes 201 · 202 → Jubilife City → Route 203', 'Route 204 → Floaroma → Eterna Forest', 'Route 206 → Mt. Coronet → Route 208', 'Routes 209 · 210 → Solaceon → Route 215',
+    'Route 214 → Valor Lakefront → Route 213', 'Jubilife City → Route 218 → Canalave City', 'Route 211 → Celestic Town → Routes 216 · 217', 'Mt. Coronet · Spear Pillar → Route 222',
+    'Route 223 → Victory Road → Pokémon League', 'Pokémon League · the Champion’s room', 'Fight Area → Stark Mountain'];
+  const ASH = [[2245, 600], [2120, 420], [1980, 240], [1900, 140]];
+  /* ---------- wild Pokémon (Pokédex runs) ---------- */
+  const ROUTES_S = [
+    { leg: 0, name: 'Routes 201 · 202 · 203', scene: 'meadow', mons: [['Starly', 2, 4, 10], ['Bidoof', 2, 4, 10], ['Kricketot', 2, 4, 7], ['Shinx', 3, 5, 7], ['Budew', 3, 5, 5], ['Abra', 4, 5, 3], ['Zubat', 4, 5, 4], ['Machop', 4, 5, 4], ['Psyduck', 4, 5, 2]] },
+    { leg: 1, name: 'Route 204 · Floaroma · Eterna Forest', scene: 'forest', mons: [['Budew', 7, 9, 7], ['Wurmple', 6, 8, 6], ['Burmy', 7, 9, 5], ['Combee', 7, 9, 5], ['Cherubi', 7, 9, 5], ['Buneary', 8, 10, 5], ['Pachirisu', 8, 10, 4], ['Shellos', 8, 10, 5], ['Drifloon', 9, 10, 2], ['Gastly', 8, 10, 4], ['Murkrow', 10, 10, 1]] },
+    { leg: 2, name: 'Route 206 · Mt. Coronet · Route 208', scene: 'cave', mons: [['Geodude', 14, 16, 8], ['Onix', 14, 16, 4], ['Machop', 14, 16, 5], ['Bronzor', 14, 16, 6], ['Zubat', 14, 16, 6], ['Ponyta', 14, 16, 5], ['Stunky', 14, 16, 4], ['Glameow', 14, 16, 4], ['Nosepass', 15, 17, 3], ['Chingling', 15, 17, 3], ['Gible', 16, 16, .8]] },
+    { leg: 3, name: 'Routes 209 · 210 · Lost Tower', scene: 'tower', mons: [['Gastly', 20, 22, 7], ['Duskull', 20, 22, 6], ['Bonsly', 20, 22, 4], ['Mime Jr.', 20, 22, 3], ['Ponyta', 20, 22, 5], ['Roselia', 20, 22, 5], ['Staravia', 20, 22, 6], ['Swablu', 20, 22, 4], ['Chansey', 22, 22, .8], ['Spiritomb', 25, 25, .5]] },
+    { leg: 4, name: 'Routes 214 · 213 · Great Marsh', scene: 'safari', mons: [['Croagunk', 24, 26, 6], ['Skorupi', 24, 26, 5], ['Carnivine', 25, 27, 4], ['Quagsire', 24, 26, 5], ['Yanma', 24, 26, 4], ['Tangela', 24, 26, 4], ['Hippopotas', 24, 26, 5], ['Shellos', 24, 26, 5], ['Buizel', 24, 26, 5], ['Finneon', 24, 26, 5], ['Mesprit', 40, 40, .03]] },
+    { leg: 5, name: 'Route 218 · Iron Island', scene: 'sea', mons: [['Tentacool', 28, 30, 7], ['Finneon', 28, 30, 6], ['Lumineon', 30, 32, 3], ['Wingull', 28, 30, 6], ['Mr. Mime', 30, 30, 2], ['Floatzel', 30, 32, 3], ['Graveler', 30, 32, 5], ['Golbat', 30, 32, 5], ['Steelix', 32, 32, 1], ['Riolu', 30, 30, .6]] },
+    { leg: 6, name: 'Routes 211 · 216 · 217 · Lake Acuity', scene: 'mountain', mons: [['Snover', 34, 36, 9], ['Sneasel', 34, 36, 5], ['Snorunt', 34, 36, 5], ['Swinub', 34, 36, 5], ['Machoke', 34, 36, 4], ['Meditite', 34, 36, 4], ['Chingling', 34, 36, 3], ['Noctowl', 35, 37, 3], ['Abomasnow', 38, 38, 1], ['Uxie', 45, 45, .03]] },
+    { leg: 7, name: 'Route 222 · Sunyshore · Spear Pillar', scene: 'city', mons: [['Luxio', 40, 42, 6], ['Glameow', 40, 42, 4], ['Purugly', 41, 43, 3], ['Floatzel', 40, 42, 5], ['Chatot', 42, 42, 2], ['Pelipper', 40, 42, 5], ['Electabuzz', 41, 43, 3], ['Azelf', 45, 45, .03], ['Dialga', 50, 50, .02], ['Palkia', 50, 50, .02], ['Giratina', 50, 50, .02]] }
+  ].map(r => ({ ...r, mons: r.mons.map(([a, lo, hi, w]) => [a, lo, hi, Math.round(Math.sqrt(w) * 1000) / 1000]) }));
+  /* ---------- optional battles: Sinnoh route trainers ---------- */
+  const T = (id, name, keys, where, at, unlock, ai, ar, team, hello, lose, win) => ({ id, name, keys, where, at, unlock, ai, arena: ar, team, hello, lose, win });
+  const MINORS_S = [
+    T('s-tristan', 'Youngster Tristan', ['youngster'], 'Route 202', [610, 1150], 0, 1, arena('plaza'), [['Starly', 5], ['Bidoof', 5], ['Shinx', 6]], 'I’m going to be the best in Sinnoh! Starting with you!', 'Aww… not yet.', 'Yeah!'),
+    T('s-natalie', 'Picnicker Natalie', ['picnicker', 'lass'], 'Route 204', [660, 880], 0, 2, arena('ruins'), [['Budew', 9], ['Buneary', 9], ['Pachirisu', 10]], 'The flowers in Floaroma are blooming! Let’s battle under them!', 'Petals everywhere…', 'Blooming victory!'),
+    T('s-dennis', 'Hiker Dennis', ['hiker'], 'Mt. Coronet', [1100, 830], 2, 3, arena('cavern', 'meteor'), [['Geodude', 16], ['Onix', 16], ['Machop', 17], ['Bronzor', 17]], 'Mt. Coronet cuts Sinnoh in two. I’ve climbed every inch!', 'Rockslide!', 'Solid as Coronet!'),
+    T('s-ace', 'Ace Trainer Dennis', ['cooltrainermale', 'cooltrainerm', 'acetrainermale', 'acetrainerm'], 'Route 210', [1620, 760], 3, 4, arena('summit'), [['Staravia', 24], ['Ponyta', 24], ['Roselia', 25], ['Machoke', 26]], 'The fog on Route 210 hides strong trainers. Like me!', 'Lost in the fog…', 'Clear skies for me!'),
+    T('s-fisher', 'Fisherman Ned', ['fisherman'], 'Valor Lakefront', [1940, 930], 4, 4, arena('cerulean'), [['Magikarp', 25], ['Shellos', 27], ['Finneon', 27], ['Gyarados', 29]], 'The fish are biting at Lake Valor today!', 'The big one got away…', 'Hooked!'),
+    T('s-sailor', 'Sailor Luther', ['sailor'], 'Route 218', [540, 980], 5, 5, arena('cerulean'), [['Wingull', 30], ['Machoke', 31], ['Tentacool', 31], ['Floatzel', 32]], 'Ahoy! The sea off Canalave is rough — are you?', 'Sunk!', 'Anchors aweigh!'),
+    T('s-skier', 'Skier Edward', ['skier', 'boarder'], 'Route 217', [1180, 320], 6, 6, arena('cavern', 'ice'), [['Snover', 36], ['Sneasel', 36], ['Swinub', 37], ['Glalie', 38]], 'Nothing beats a run down Route 217 in a blizzard!', 'Wiped out!', 'Smooth slopes!'),
+    T('s-veteran', 'Veteran Arthur', ['veteran', 'cooltrainermale', 'cooltrainerm'], 'Victory Road', [2310, 860], 8, 7, arena('castle'), [['Gallade', 48], ['Weavile', 48], ['Staraptor', 49], ['Garchomp', 50]], 'Victory Road tests every trainer who passes. I’m the test.', 'You’re ready.', 'Turn back.')
+  ];
+  /* ---------- twists and scenes ---------- */
+  Object.assign(D.RULES, {
+    s1: { weather: 'sand', title: 'Mine dust', text: 'Dust from the Oreburgh Mine: a permanent SANDSTORM chips every Pokémon that isn’t Rock, Ground or Steel.' },
+    s2: { weather: 'sun', title: 'Greenhouse sun', text: 'Permanent HARSH SUN: Fire moves 50% harder, Water moves 50% weaker.' },
+    s3: { banA: ['Dark'], title: 'Ghostly mist', text: 'A ghostly mist fills Fantina’s stage: your DARK moves are banned.' },
+    s4: { handicap: 4, title: 'Barefoot rules', text: 'Maylene trains with discipline: bring only your first FOUR Pokémon.' },
+    s5: { weather: 'rain', title: 'Crashing waves', text: 'Permanent RAIN: Water moves 50% harder, Fire moves 50% weaker.' },
+    s6: { banA: ['Fire'], title: 'Fireproof gym', text: 'Byron’s gym is built of tempered steel: your FIRE moves are banned.' },
+    s7: { weather: 'hail', title: 'Diamond dust', text: 'Permanent HAIL chips every Pokémon that isn’t Ice.' },
+    s8: { weather: 'rain', title: 'Thunderstorm', text: 'Permanent RAIN: Water moves 50% harder, Fire moves 50% weaker.' },
+    s9: { handicap: 5, title: 'Read your mind', text: 'Lucian reads your plans: bring only your first FIVE Pokémon.' }
+  });
+  Object.assign(D.SCRIPT.gym, {
+    s1: [['foe', 'I’m Roark! Let me show you how tough the rocks of the mine make my Pokémon!'], ['me', 'Let’s dig in.']],
+    s2: [['foe', 'Welcome to my gym! I’m Gardenia — I love Grass Pokémon!'], ['me', 'Show me your garden.']],
+    s3: [['foe', 'Bonjour! I am Fantina! Ghost Pokémon are… how you say… magnifique!'], ['me', 'Let’s see them.']],
+    s4: [['foe', 'I’m Maylene. Strength comes from the heart — and from training.'], ['me', 'I’m ready.']],
+    s5: [['foe', 'I am… CRASHER WAKE!'], ['foe', 'Watch my Water Pokémon crash over you like a tidal wave!'], ['me', 'Bring it!']],
+    s6: [['foe', 'I am Byron! Roark is my son. My Steel Pokémon have been tempered for decades!'], ['me', 'Then let’s test them.']],
+    s7: [['foe', 'I’m Candice! Focus, focus! Diamond dust!'], ['me', 'Focus, then.']],
+    s8: [['foe', 'I’m Volkner. Lately no one gets me fired up… Let’s see if you can.'], ['me', 'I will.']],
+    s9: [['foe', 'Welcome. I am Lucian of the Elite Four.'], ['foe', 'I have read many books… none of them could predict a trainer like you.'], ['me', 'Let’s battle.']]
+  });
+  const CHAMP = { cocky: [['foe', 'Hello. I’m Cynthia, the Champion of Sinnoh.'], ['foe', 'There’s something about you that tells me this will be fun.'], ['me', 'Let’s battle, Cynthia.']] };
+  CHAMP.rattled = CHAMP.cocky; CHAMP.bitter = CHAMP.cocky;
+  /* ---------- Barry: Sinnoh’s rival ---------- */
+  const LINES = { grass: ['Turtwig', 'Grotle', 'Torterra'], fire: ['Chimchar', 'Monferno', 'Infernape'], water: ['Piplup', 'Prinplup', 'Empoleon'] };
+  function barryCounter() {
+    const s = STORY.save, have = new Set([...(s && s.team || []), ...Object.keys((s && s.dex) || {})].map(n => String(n).split('|')[0])), has = (...ns) => ns.some(n => have.has(n));
+    if (has('Turtwig', 'Grotle', 'Torterra', 'Treecko', 'Grovyle', 'Sceptile', 'Chikorita', 'Bayleef', 'Meganium', 'Bulbasaur', 'Ivysaur', 'Venusaur')) return LINES.fire;
+    if (has('Chimchar', 'Monferno', 'Infernape', 'Torchic', 'Combusken', 'Blaziken', 'Cyndaquil', 'Quilava', 'Typhlosion', 'Charmander', 'Charmeleon', 'Charizard')) return LINES.water;
+    if (has('Piplup', 'Prinplup', 'Empoleon', 'Mudkip', 'Marshtomp', 'Swampert', 'Totodile', 'Croconaw', 'Feraligatr', 'Squirtle', 'Wartortle', 'Blastoise')) return LINES.grass;
+    return LINES.water;
+  }
+  const RIVAL_SCRIPT = {
+    before: [
+      { cocky: [['foe', 'Hey! It’s me, Barry! What took you so long?! I’ll fine you a million if you lose!'], ['me', 'Let’s go, Barry!']], rattled: [['foe', 'You beat me last time — I’m not letting that happen again! Hurry up and battle!']], bitter: [['foe', 'Argh, you keep winning! Okay, okay — THIS time for sure!']] },
+      { cocky: [['foe', 'Canalave’s Gym Leader is tough, but first — me! Battle now!']], rattled: [['foe', 'I trained like crazy! My Pokémon are way stronger now!']], bitter: [['foe', 'I’m gonna catch up to you if it’s the last thing I do!']] },
+      { cocky: [['foe', 'Hey! I’m going to the League first — so out of my way!']], rattled: [['foe', 'Before you face the Elite Four, you have to get through me!']], bitter: [['foe', 'This is it! Our last battle before the League — everything I’ve got!']] }
+    ],
+    win: { cocky: [['foe', 'What?! I lost?! I’ll fine you… no wait, I lost…']], rattled: [['foe', 'Argh! Next time for sure!']], bitter: [['foe', 'You’re amazing. Go win it all!']] },
+    lose: { cocky: [['foe', 'Ha! I win! Pay up — a million!']], rattled: [['foe', 'Yes! Told you my training would pay off!']], bitter: [['foe', 'I finally won! …Now go beat the League anyway!']] }
+  };
+  /* ---------- Team Galactic events (before gyms 2, 4, 5, 7 and 8) ---------- */
+  const EV = {
+    1: { id: 'swindworks', title: 'Valley Windworks', arena: arena('summit', 'plaza'), text: 'Team Galactic has taken over the Valley Windworks! Two Galactic battles back to back — no healing between.',
+      before: [['foe', 'Team Galactic needs the energy of the Windworks! Go away, kid!'], ['me', 'Not happening.']],
+      stages: [{ name: 'Galactic Grunt', keys: ['galacticgrunt', 'teamgalacticgrunt', 'galactic'], team: ['Glameow', 'Stunky', 'Zubat'], style: 'aggro' }, { name: 'Commander Mars', keys: ['mars', 'galacticadmin'], team: ['Zubat', 'Purugly', 'Bronzor'], style: 'switcher', line: 'I’m Mars, a Galactic Commander. You’ll regret getting in our way!' }],
+      win: [['foe', 'Fine. We’ve got what we came for anyway.']], lose: [['foe', 'Team Galactic always wins!']] },
+    3: { id: 'svalor', title: 'Lake Valor', format: '1v1', name: 'Commander Saturn', keys: ['saturn', 'galacticadmin'], team: ['Toxicroak'], style: 'aggro', arena: arena('cerulean', 'cavern'),
+      text: 'Team Galactic has drained Lake Valor! A 1v1 duel with Commander Saturn: your lead against his Toxicroak.',
+      before: [['foe', 'The bomb did its job. Azelf is ours.'], ['me', 'You drained the lake?! Battle me!']],
+      win: [['foe', 'Hmph. It doesn’t matter. The boss already has what he needs.']], lose: [['foe', 'Go home, child.']] },
+    4: { id: 'smarsh', title: 'Great Marsh puzzle', format: 'puzzle', name: 'Ruin Maniac', keys: ['ruinmaniac', 'hiker'], team: ['Gastrodon'], fixedTeam: ['Luxray', 'Pachirisu', 'Magnezone', 'Carnivine'], foeScale: 1.6, style: 'defensive', arena: arena('ruins', 'oasis'),
+      text: 'Puzzle battle: a Gastrodon guards the Great Marsh. Your team is fixed — only one of these four can really beat it.',
+      before: [['foe', 'My Gastrodon has never lost in this marsh!'], ['foe', 'Use these Pokémon — if you can figure it out.'], ['me', 'A puzzle? I’m in.']],
+      win: [['foe', 'Grass! Gastrodon is Water and Ground — four times weak! Well played.']], lose: [['foe', 'Electricity just sinks into the mud… think again!']] },
+    6: { id: 'sacuity', title: 'Lake Acuity', arena: arena('cavern', 'ice'), text: 'Team Galactic is capturing Uxie! Two Galactic battles back to back — no healing between.',
+      before: [['foe', 'The Lake Guardians belong to Team Galactic now!'], ['me', 'Let Uxie go!']],
+      stages: [{ name: 'Galactic Grunt', keys: ['galacticgrunt', 'teamgalacticgrunt', 'galactic'], team: ['Croagunk', 'Glameow', 'Golbat'], style: 'aggro' }, { name: 'Commander Jupiter', keys: ['jupiter', 'galacticadmin'], team: ['Golbat', 'Skuntank', 'Bronzor'], style: 'status', line: 'Jupiter, Team Galactic Commander. You’re finished here.' }],
+      win: [['foe', 'Too late. The boss is headed for Spear Pillar.']], lose: [['foe', 'Uxie is ours!']] },
+    7: { id: 'sspear', title: 'Spear Pillar', arena: arena('hall', 'grand'), text: 'Cyrus is tearing open space and time at Spear Pillar! Cyrus, then Giratina from the distortion — back to back, no healing between.',
+      before: [['foe', 'I will create a new world — one without spirit. Dialga and Palkia will obey me.'], ['me', 'I’ll stop you, Cyrus!']],
+      stages: [{ name: 'Galactic Boss Cyrus', keys: ['cyrus'], team: ['Honchkrow', 'Weavile', 'Crobat', 'Gyarados'], style: 'switcher' }, { name: 'Giratina', keys: [], team: ['Giratina'], foeScale: .85, style: 'aggro', line: 'The world distorts — Giratina emerges from the shadows!' }],
+      win: [['me', 'The distortion is closing… Sinnoh is safe.']], lose: [['foe', 'A new world will be born!']] }
+  };
+  /* ---------- evolutions: Sinnoh lines (and Gen 4 evolutions of older Pokémon, Sinnoh only) ---------- */
+  Object.assign(EVO, { Turtwig: ['Grotle', 18], Grotle: ['Torterra', 32], Chimchar: ['Monferno', 14], Monferno: ['Infernape', 36], Piplup: ['Prinplup', 16], Prinplup: ['Empoleon', 36],
+    Starly: ['Staravia', 14], Staravia: ['Staraptor', 34], Bidoof: ['Bibarel', 15], Kricketot: ['Kricketune', 10], Shinx: ['Luxio', 15], Luxio: ['Luxray', 30], Budew: ['Roselia', 15],
+    Cranidos: ['Rampardos', 30], Shieldon: ['Bastiodon', 30], Combee: ['Vespiquen', 21], Buizel: ['Floatzel', 26], Cherubi: ['Cherrim', 25], Shellos: ['Gastrodon', 30], Drifloon: ['Drifblim', 28],
+    Buneary: ['Lopunny', 25], Glameow: ['Purugly', 38], Stunky: ['Skuntank', 34], Bronzor: ['Bronzong', 33], Gible: ['Gabite', 24], Gabite: ['Garchomp', 48], Riolu: ['Lucario', 25],
+    Hippopotas: ['Hippowdon', 34], Skorupi: ['Drapion', 40], Croagunk: ['Toxicroak', 37], Finneon: ['Lumineon', 31], Snover: ['Abomasnow', 40], Chingling: ['Chimecho', 20], Bonsly: ['Sudowoodo', 20],
+    'Mime Jr.': ['Mr. Mime', 20], Happiny: ['Chansey', 20], Munchlax: ['Snorlax', 30], Mantyke: ['Mantine', 25] });
+  const CROSS4 = { Magneton: ['Magnezone', 40], Rhydon: ['Rhyperior', 55], Electabuzz: ['Electivire', 45], Magmar: ['Magmortar', 45], Togetic: ['Togekiss', 40], Yanma: ['Yanmega', 30],
+    Gligar: ['Gliscor', 35], Piloswine: ['Mamoswine', 45], 'Porygon2': ['Porygon-Z', 45], Kirlia: ['Gardevoir', 30], Dusclops: ['Dusknoir', 45], Sneasel: ['Weavile', 35], Murkrow: ['Honchkrow', 35],
+    Misdreavus: ['Mismagius', 35], Aipom: ['Ambipom', 32], Lickitung: ['Lickilicky', 40], Tangela: ['Tangrowth', 40], Nosepass: ['Probopass', 40], Roselia: ['Roserade', 30] };
+  const saved = {};
+  function crossOn(on) { for (const [a, v] of Object.entries(CROSS4)) { if (on) { if (!(a in saved)) saved[a] = EVO[a]; EVO[a] = v; } else if (a in saved) { if (saved[a] === undefined) delete EVO[a]; else EVO[a] = saved[a]; delete saved[a]; } } }
+  window.onRegionApplied = R => crossOn(R === 'sinnoh');   // Gen 4 evolutions of older Pokémon: Sinnoh only
+  /* ---------- register Sinnoh ---------- */
+  window.SINNOH = { gyms: GYMS_S, map: MAP, names: NAMES, ash: ASH, routes: ROUTES_S, minors: MINORS_S, starters: ['Turtwig', 'Chimchar', 'Piplup'],
+    badges: ['coal', 'forest', 'relic', 'cobble', 'fen', 'mine', 'icicle', 'beacon', 'elite', 'champion'], rivalAt: { 2: 0, 5: 1, 8: 2 },
+    rivalBase: [['Starly', 'Buizel', '*1'], ['Staravia', 'Floatzel', 'Roselia', '*1'], ['Staraptor', 'Floatzel', 'Heracross', 'Snorlax', '*2']],
+    rival: { file: 'Barry', leader: 'Barry' }, rivalScript: RIVAL_SCRIPT, champ: CHAMP, counter: barryCounter, rivalKey: 'rivalS', events: EV };
+  window.REGION_EV = Object.assign(window.REGION_EV || {}, { sinnoh: EV });
+  /* ---------- Combined: after Hoenn’s Champion, set sail for Sinnoh ---------- */
+  let offering = false;
+  async function offerSinnoh() {
+    const s = STORY.save; if (offering || !s || s.region !== 'combined' || s.phase !== 'hoenn' || s.badges < TOTAL || !STORY.open || STORY.cutscene || STORY.battle) return;
+    offering = true;
+    try { const ov = $('csOv'); STORY.cutscene = true;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">Hoenn’s Champion as well! A ship leaves Lilycove for Sinnoh — a land of snowy peaks, ancient myths, and Mt. Coronet.</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Set sail for Sinnoh</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+        ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
+      STORY.cutscene = false;
+      if (go) { s.hoenn = { badges: s.badges, at: Date.now() }; s.phase = 'sinnoh'; s.badges = 0; saveStory(); if (typeof syncRegion === 'function') syncRegion(); renderStory(); setTimeout(() => { try { openGymCard(0); } catch (e) { } }, 400); }
+    } finally { offering = false; STORY.cutscene = false; }
+  }
+  const _open = openStoryScreen; openStoryScreen = function () { const r = _open.apply(this, arguments); setTimeout(offerSinnoh, 930); return r; };
+  /* ---------- post-game: Arceus at the Hall of Origin ---------- */
+  let offeringArc = false;
+  async function offerArceus() {
+    const s = STORY.save; if (offeringArc || !s || STORY.region !== 'sinnoh' || s.badges < TOTAL || s.arceus || !STORY.open || STORY.cutscene || STORY.battle) return;
+    offeringArc = true;
+    try { const ov = $('csOv'); STORY.cutscene = true;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">Sinnoh’s Champion! At the summit of Mt. Coronet, a stairway of light appears — leading to the Hall of Origin…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb to the Hall of Origin</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+        ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
+      STORY.cutscene = false; if (go) await climbHall();
+    } finally { offeringArc = false; STORY.cutscene = false; }
+  }
+  async function climbHall() {
+    const s = STORY.save, who = { file: 'Arceus', leader: 'Arceus' };
+    closeModal();
+    await playScene([['foe', '…………'], ['me', 'Arceus — the Original One, who shaped the universe. Everyone, give it everything!']], who, { title: 'Hall of Origin', text: 'Your whole team against Arceus itself — the Pokémon said to have created the world.' });
+    STORY.battle = { gym: 9, arceus: true, level: 13, practice: false };
+    STORY.nextRules = { foeScale: D.diff().scale * 1.8, aiStyle: 'switcher', bonus: typeof storyRuleExtras === 'function' ? storyRuleExtras({ n: 0 }).bonus : null };
+    if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
+    TRSEL.A = s.trainer; TRSEL.B = 'Arceus'; loadTrainer(s.trainer);
+    try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
+    watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
+    $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
+    startBattle(s.team.slice(), ['Arceus'], arena('hall', 'grand')); STORY.battle.G = G; STORY.battle.who = who;
+  }
+  window.climbHallOfOrigin = climbHall;
+  const _res = storyResult;
+  storyResult = async function (won) {
+    const b = STORY.battle; if (!b || !b.arceus) return _res.apply(this, arguments);
+    STORY.battle = null; STORY.nextRules = null; const s = STORY.save;
+    if (won) { s.arceus = Date.now(); if (typeof isDexSave === 'function' && isDexSave(s) && typeof dexAdd === 'function') dexAdd(s, 'Arceus', 80); } saveStory();
+    showOverlay('ovResults', false); openStoryScreen();
+    await playScene(won ? [['me', 'The light is fading… Arceus is coming with us. Unbelievable.']] : [['foe', '…………']], b.who);
+    try { renderStory(); } catch (e) { }
+  };
+  const _open2 = openStoryScreen; openStoryScreen = function () { const r = _open2.apply(this, arguments); setTimeout(offerArceus, 1000); return r; };
+  if (typeof syncRegion === 'function') syncRegion();
+  crossOn(STORY.region === 'sinnoh');
+})();
+
+//# sourceURL=sinnoh.js
 </script>
 <script>
 'use strict';
