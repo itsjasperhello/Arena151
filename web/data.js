@@ -206,10 +206,20 @@ M('Spark', 'Electric', 'P', 65, 100, 0, 'contact', { st: ['par', 30] });
 M('Twister', 'Dragon', 'S', 40, 100, 0, 'wind', { fl: 20 });
 M('Moonlight', 'Fairy', 'X', 0, null, 0, 'heal', { heal: .5 });
 M('Fury Cutter', 'Bug', 'P', 40, 95, 0, 'slash', { hc: 1 });
+M('Synthesis', 'Grass', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Morning Sun', 'Normal', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Milk Drink', 'Normal', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Rollout', 'Rock', 'P', 50, 90, 0, 'contact', {});
+M('Octazooka', 'Water', 'S', 65, 85, 0, 'projectile', { tg: { spe: -1 }, ch: 50 });
+M('Cotton Spore', 'Grass', 'X', 0, 100, 0, 'powder', { tg: { spe: -2 } });
+M('Triple Kick', 'Fighting', 'P', 60, 90, 0, 'contact', { hc: 1 });
+M('Present', 'Normal', 'S', 70, 90, 0, 'projectile', {});
+M('Rapid Spin', 'Normal', 'P', 50, 100, 0, 'contact', { self: { spe: 1 } });
 // Johto moves are marked Gen 2; Sacred Fire and Aeroblast are signatures (Ho-Oh, Lugia only). Automatic movesets never give
 // Gen 2 moves to Gen 1 Pokémon (Kanto movesets stay exactly as they were) and never hand out a signature move.
-for (const n of ['Sacred Fire', 'Aeroblast', 'Megahorn', 'Steel Wing', 'Dynamic Punch', 'Zap Cannon', 'Ancient Power', 'Faint Attack', 'Pursuit', 'Icy Wind', 'Spark', 'Twister', 'Moonlight', 'Fury Cutter']) MOVES[n].gen = 2;
-MOVES['Sacred Fire'].sig = MOVES['Aeroblast'].sig = true;
+for (const n of ['Sacred Fire', 'Aeroblast', 'Megahorn', 'Steel Wing', 'Dynamic Punch', 'Zap Cannon', 'Ancient Power', 'Faint Attack', 'Pursuit', 'Icy Wind', 'Spark', 'Twister', 'Moonlight', 'Fury Cutter',
+  'Synthesis', 'Morning Sun', 'Milk Drink', 'Rollout', 'Octazooka', 'Cotton Spore', 'Triple Kick', 'Present', 'Rapid Spin']) MOVES[n].gen = 2;
+MOVES['Sacred Fire'].sig = MOVES['Aeroblast'].sig = MOVES['Present'].sig = true;   // signatures: Ho-Oh, Lugia, Delibird
 let MOVESET_GEN = 1;   // Gen 1: 140 power, 90% accuracy, a charging turn first
 M('Hurricane', 'Flying', 'S', 110, 70, 0, 'wind', { cf: 30 });
 // Psychic
@@ -264,17 +274,20 @@ M('Crunch', 'Dark', 'P', 80, 100, 0, 'contact', { tg: { def: -1 }, ch: 20 });
 
 // Hand-picked movesets for signature teams; every other species gets a generated set.
 const MOVESET_OVERRIDE = {
+  Meganium: ['Giga Drain', 'Synthesis', 'Body Slam', 'Earthquake'], Bellossom: ['Giga Drain', 'Synthesis', 'Moonblast', 'Sludge Bomb'], Miltank: ['Rollout', 'Milk Drink', 'Body Slam', 'Iron Tail'],
+  Blissey: ['Milk Drink', 'Ice Beam', 'Thunderbolt', 'Flamethrower'], Donphan: ['Rollout', 'Earthquake', 'Rapid Spin', 'Iron Tail'], Octillery: ['Octazooka', 'Flamethrower', 'Ice Beam', 'Psybeam'],
+  Jumpluff: ['Cotton Spore', 'Giga Drain', 'Aerial Ace', 'Sleep Powder'], Forretress: ['Rapid Spin', 'Megahorn', 'Flash Cannon', 'Iron Defense'],
   // Johto signatures and new Gen 2 moves
   'Ho-Oh': ['Sacred Fire', 'Brave Bird', 'Earthquake', 'Recover'], Lugia: ['Aeroblast', 'Psychic', 'Ice Beam', 'Recover'], Celebi: ['Giga Drain', 'Psychic', 'Ancient Power', 'Recover'],
   Heracross: ['Megahorn', 'Close Combat', 'Rock Slide', 'Swords Dance'], Scizor: ['Steel Wing', 'X-Scissor', 'Quick Attack', 'Swords Dance'], Skarmory: ['Steel Wing', 'Drill Peck', 'Aerial Ace', 'Iron Defense'],
-  Tyranitar: ['Crunch', 'Stone Edge', 'Earthquake', 'Dragon Dance'], Umbreon: ['Faint Attack', 'Moonlight', 'Shadow Ball', 'Iron Tail'], Espeon: ['Psychic', 'Dazzling Gleam', 'Shadow Ball', 'Calm Mind'],
+  Tyranitar: ['Crunch', 'Stone Edge', 'Earthquake', 'Dragon Dance'], Umbreon: ['Faint Attack', 'Moonlight', 'Shadow Ball', 'Iron Tail'], Espeon: ['Psychic', 'Dazzling Gleam', 'Shadow Ball', 'Morning Sun'],
   Ampharos: ['Zap Cannon', 'Thunderbolt', 'Dragon Pulse', 'Signal Beam'], Porygon2: ['Zap Cannon', 'Ice Beam', 'Psybeam', 'Recover'], Sneasel: ['Faint Attack', 'Ice Shard', 'Slash', 'Agility'],
   Murkrow: ['Faint Attack', 'Drill Peck', 'Pursuit', 'Agility'], Houndoom: ['Crunch', 'Flamethrower', 'Faint Attack', 'Sludge Bomb'], Houndour: ['Pursuit', 'Ember', 'Bite', 'Faint Attack'],
-  Kingdra: ['Twister', 'Hydro Pump', 'Dragon Pulse', 'Ice Beam'], Piloswine: ['Icy Wind', 'Earthquake', 'Blizzard', 'Rock Slide'], Delibird: ['Icy Wind', 'Drill Peck', 'Blizzard', 'Brave Bird'],
+  Kingdra: ['Twister', 'Hydro Pump', 'Dragon Pulse', 'Ice Beam'], Piloswine: ['Icy Wind', 'Earthquake', 'Blizzard', 'Rock Slide'], Delibird: ['Present', 'Icy Wind', 'Drill Peck', 'Blizzard'],
   Suicune: ['Hydro Pump', 'Ice Beam', 'Icy Wind', 'Calm Mind'], Raikou: ['Thunder', 'Spark', 'Crunch', 'Calm Mind'], Entei: ['Flare Blitz', 'Fire Blast', 'Crunch', 'Extreme Speed'],
   Lanturn: ['Spark', 'Hydro Pump', 'Thunderbolt', 'Ice Beam'], Yanma: ['Ancient Power', 'Bug Buzz', 'Air Slash', 'Quick Attack'], Corsola: ['Ancient Power', 'Surf', 'Recover', 'Ice Beam'],
   Togetic: ['Ancient Power', 'Dazzling Gleam', 'Aerial Ace', 'Charm'], Granbull: ['Play Rough', 'Crunch', 'Dynamic Punch', 'Charm'], Ursaring: ['Body Slam', 'Crunch', 'Dynamic Punch', 'Swords Dance'],
-  Hitmontop: ['Close Combat', 'Dynamic Punch', 'Quick Attack', 'Bulk Up'], Tyrogue: ['Mach Punch', 'Brick Break', 'Tackle', 'Bulk Up'], Pichu: ['Spark', 'Thunder Shock', 'Charm', 'Quick Attack'],
+  Hitmontop: ['Triple Kick', 'Close Combat', 'Rapid Spin', 'Dynamic Punch'], Tyrogue: ['Mach Punch', 'Brick Break', 'Tackle', 'Bulk Up'], Pichu: ['Spark', 'Thunder Shock', 'Charm', 'Quick Attack'],
   Elekid: ['Spark', 'Thunder Punch', 'Quick Attack', 'Thunder Wave'], Ariados: ['Fury Cutter', 'Poison Jab', 'Pin Missile', 'String Shot'], Ledian: ['Fury Cutter', 'Mach Punch', 'Air Slash', 'Agility'],
   Gligar: ['Faint Attack', 'Earthquake', 'X-Scissor', 'Wing Attack'], Sudowoodo: ['Rock Slide', 'Faint Attack', 'Brick Break', 'Rock Throw'], Xatu: ['Psychic', 'Air Slash', 'Faint Attack', 'Calm Mind'],
   'MissingNo.': ['Water Gun', 'Water Gun', 'Sky Attack'],   // exactly as in Red/Blue: three moves, Water Gun twice

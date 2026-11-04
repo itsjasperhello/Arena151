@@ -238,7 +238,7 @@
     return _save.apply(this, arguments);
   };
   const _open = openStoryScreen;
-  openStoryScreen = function () { sync(); const r = _open.apply(this, arguments); setTimeout(offerJohto, 900); return r; };
+  openStoryScreen = function () { sync(); const r = _open.apply(this, arguments); setTimeout(offerJohto, 900); setTimeout(offerRed, 950); return r; };
   const _render = renderStory;
   renderStory = function () { sync(); const r = _render.apply(this, arguments); try { tagRegion(); } catch (e) { } return r; };
   if (typeof useSlot === 'function') { const _use = useSlot; useSlot = function () { const r = _use.apply(this, arguments); try { sync(); } catch (e) { } return r; }; }
@@ -260,6 +260,42 @@
         setTimeout(() => { try { openGymCard(0); } catch (e) { } }, 400); }
     } finally { offering = false; STORY.cutscene = false; }
   }
+  /* ---------- the Combined finale: Red, atop Mt. Silver ---------- */
+  const RED_TEAM = ['Pikachu', 'Espeon', 'Snorlax', 'Venusaur', 'Charizard', 'Blastoise'];
+  const redFile = () => (typeof ALL_TRAINERS !== 'undefined' && ALL_TRAINERS.includes('Red') ? 'Red' : 'Ash');
+  let offeringRed = false;
+  async function offerRed() {
+    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'johto' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
+    offeringRed = true;
+    try { const ov = $('csOv'); STORY.cutscene = true;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto and Johto. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+        ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
+      STORY.cutscene = false; if (go) await startRed();
+    } finally { offeringRed = false; STORY.cutscene = false; }
+  }
+  async function startRed() {
+    const s = STORY.save, who = { file: redFile(), leader: 'Red' };
+    closeModal();
+    await playScene([['foe', '…'], ['foe', '……'], ['me', 'So you’re the legend of Mt. Silver. Let’s battle.']], who, { title: 'Mt. Silver blizzard', text: 'A permanent HAIL storm at the summit chips every Pokémon that isn’t Ice.' });
+    STORY.battle = { gym: 9, red: true, level: 13, practice: false };
+    STORY.nextRules = { foeScale: D.diff().scale, aiStyle: 'switcher', weather: 'hail', bonus: typeof storyRuleExtras === 'function' ? storyRuleExtras({ n: 0 }).bonus : null };
+    if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
+    TRSEL.A = s.trainer; TRSEL.B = who.file; loadTrainer(s.trainer); loadTrainer(who.file);
+    try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
+    watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
+    $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
+    startBattle(s.team.slice(), RED_TEAM.slice(), arena('summit', 'castle')); STORY.battle.G = G; STORY.battle.who = who;
+  }
+  window.climbMtSilver = startRed;
+  const _res = storyResult;
+  storyResult = async function (won) {
+    const b = STORY.battle; if (!b || !b.red) return _res.apply(this, arguments);
+    STORY.battle = null; STORY.nextRules = null; const s = STORY.save;
+    if (won) { s.redBeaten = Date.now(); s.finishedAt = s.finishedAt || Date.now(); } saveStory();
+    showOverlay('ovResults', false); openStoryScreen();
+    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto and Johto — we did it. Grand Champion.']] : [['foe', '…']], b.who);
+    try { renderStory(); } catch (e) { }
+  };
   // the Johto badges until their images are added: a generated badge in the badge's colours
   const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'] };
   document.addEventListener('error', e => { const im = e.target; if (!im || im.tagName !== 'IMG' || !/story\/badges\/(\w+)\.png/.test(im.src || '')) return; const k = RegExp.$1, c = BADGE_COL[k]; if (!c || im.dataset.fb) return; im.dataset.fb = '1';

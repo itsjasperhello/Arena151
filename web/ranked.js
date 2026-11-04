@@ -23,7 +23,8 @@
     const slots = storySlots(); if (!slots.length) return '';
     const best = slots.slice().sort((a, b) => (b.badges || 0) - (a.badges || 0))[0], stars = Math.max(0, ...slots.map(s => Object.values(s.stars || {}).reduce((a, n) => a + n, 0)));
     const champ = slots.find(s => s.finishedAt || s.badges >= 10), rating = get('arena151.rating');
-    return [champ ? (champ.branch === 'rocket' ? 'Rocket Champion' : 'Champion') : `${best.badges || 0} badges`, stars ? `★${stars}` : '', rating ? `Rating ${rating}` : ''].filter(Boolean).join(' · ');
+    const grand = slots.find(s => s.redBeaten);   // beat Red atop Mt. Silver in a Combined journey
+    return [grand ? 'Grand Champion' : champ ? (champ.branch === 'rocket' ? 'Rocket Champion' : 'Champion') : `${best.badges || 0} badges`, stars ? `★${stars}` : '', rating ? `Rating ${rating}` : ''].filter(Boolean).join(' · ');
   }
   if (typeof myInfo === 'function') { const _mi = myInfo; myInfo = function () { return Object.assign(_mi.apply(this, arguments), { title: storyTitle() }); }; }
 

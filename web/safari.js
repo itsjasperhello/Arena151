@@ -285,8 +285,11 @@ function safariEncounter(leg) {
     // The same animated front sprite as in battle: <name>.gif, or <name>_shiny.gif for a shiny (switches in as soon as it has loaded).
     if (w.shiny) loadShiny(w.sp);
     const monFrame = t => { const sp = spriteOf(w.sp, false, w.shiny), r = sp.card || { x: 0, y: 0, s: sp.w };
-      if (sp.custom && sp.front) { const a = ensureAnim(sp.front); return { img: a.frames[animFrameIndex(a, t)], r }; }
-      return { img: sp.frames[Math.floor(t / 350) % sp.frames.length], r }; };
+      if (sp.custom && sp.front) { const a = ensureAnim(sp.front); return { img: drawable(a.frames[animFrameIndex(a, t)]), r }; }
+      return { img: drawable(sp.frames && sp.frames[Math.floor(t / 350) % sp.frames.length]), r }; };
+    // a frame may be an image/canvas or an object holding one (generated sprites); never hand drawImage anything else
+    const BLANK = document.createElement('canvas'); BLANK.width = BLANK.height = 1;
+    function drawable(f) { if (!f) return BLANK; if (f instanceof HTMLCanvasElement || f instanceof HTMLImageElement || (typeof ImageBitmap !== 'undefined' && f instanceof ImageBitmap)) return f; return drawable(f.canvas || f.img || null); }
     const flashC = document.createElement('canvas'), flashX = flashC.getContext('2d');
     const tr = new Image(); tr.src = portraitUrl(sv.trainer);
     const S = { t0: performance.now(), mon: { x: 0, a: 1, white: 0, scale: 1, bob: false, gone: false, hit: 0 }, balls: 3, baits: 2, rocks: 2, turns: 3, eat: 0, angry: 0, rate: CATCH_RATE[w.sp] || 45, rare: w.rare || (CATCH_RATE[w.sp] || 45) < 45, hp: wildHP(w.sp, w.lv), spd: wildSpeed(w.sp, w.lv) };

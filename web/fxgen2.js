@@ -115,6 +115,51 @@
         c.globalCompositeOperation = 'source-over'; c.fillStyle = `rgba(250,250,255,${k})`; c.beginPath(); c.arc(mx, my, r, 0, T); c.fill(); c.fillStyle = `rgba(20,24,60,${.85 * k})`; c.beginPath(); c.arc(mx + r * .45, my - r * .2, r * .85, 0, T); c.fill(); c.restore(); } });
       for (let n = 0; n < N(36); n++) later(rnd(0, 900), () => spawn({ x: b.i + rnd(-30, 30) * b.k, y: b.j - b.h, vx: rnd(-8, 8), vy: rnd(30, 60), drag: 1, max: rnd(.8, 1.2), r: rnd(1.5, 3), a: .9, img: PFX.whiteTex(), add: true })); }
   });
+  // ======== milestone 3: nine more Johto moves ========
+  const healFrame = (S, col, ms) => { const b = body(S); magicCircle(S, col, ms, 1); pillar(b.i, b.feet, { w: 28 * b.k, h: 120, ms: ms * .8, col }); glowAt(b.i, b.j, 40 * b.k, col, ms * .6, .55); return b; };
+  // ---- Synthesis: sunbeams fall, leaves spiral up, a green-gold glow ----
+  reg('Synthesis', { exec: S => { const b = healFrame(S, '190,240,120', 1200); dim(.25, 1100, '10,30,0');
+    for (let n = 0; n < N(26); n++) later(rnd(0, 700), () => spawn({ kind: 'streak', x: b.i + rnd(-50, 50), y: b.j - b.h * 1.4, vx: -20, vy: 220, drag: 1, max: .5, r: 1, a: .7, col: 'rgba(255,240,160,.9)', len: 18, lw: 2, layer: 1 }));
+    for (let n = 0; n < N(22); n++) later(rnd(0, 900), () => { const a0 = rnd(0, T); spawn({ kind: 'fn', x: b.i, y: b.feet, max: 1.1, draw: (c, q) => { const a = a0 + q * 7, r = (14 + q * 26) * b.k, x = b.i + Math.cos(a) * r, y = b.feet - q * b.h * 1.2 + Math.sin(a) * r * .3;
+      c.save(); c.globalAlpha = 1 - q; c.translate(x, y); c.rotate(a); c.fillStyle = '#7ad04a'; c.beginPath(); c.ellipse(0, 0, 4, 2, 0, 0, T); c.fill(); c.restore(); } }); }); } });
+  // ---- Morning Sun: a golden sun rises behind the user ----
+  reg('Morning Sun', { exec: S => { const b = healFrame(S, '255,215,120', 1300); dim(.3, 1200, '30,15,0');
+    fx({ max: 1.3, draw: (c, q) => { const k = q < .25 ? q / .25 : q > .75 ? (1 - q) / .25 : 1, sx = b.i, sy = b.j - b.h * (.4 + q * .7), r = 18 * b.k; c.save(); c.globalCompositeOperation = 'lighter';
+      const g = c.createRadialGradient(sx, sy, 0, sx, sy, r * 3.2); g.addColorStop(0, `rgba(255,250,210,${.95 * k})`); g.addColorStop(.3, `rgba(255,210,110,${.55 * k})`); g.addColorStop(1, 'rgba(255,160,60,0)'); c.fillStyle = g; c.beginPath(); c.arc(sx, sy, r * 3.2, 0, T); c.fill();
+      c.translate(sx, sy); c.rotate(clock.t / 1400); for (let i = 0; i < 10; i++) { c.rotate(T / 10); c.fillStyle = `rgba(255,230,150,${.35 * k})`; c.beginPath(); c.moveTo(r * 1.1, -2); c.lineTo(r * 2.6, 0); c.lineTo(r * 1.1, 2); c.fill(); } c.restore(); } }); } });
+  // ---- Milk Drink: pink-white light, hearts and milky droplets ----
+  reg('Milk Drink', { exec: S => { const b = healFrame(S, '255,200,225', 1100);
+    for (let n = 0; n < N(14); n++) later(rnd(0, 700), () => { const x0 = b.i + rnd(-26, 26) * b.k; spawn({ kind: 'fn', x: x0, y: b.j, max: 1, draw: (c, q) => { c.save(); c.globalAlpha = 1 - q; starShape ? 0 : 0; const x = x0 + Math.sin(q * 6) * 5, y = b.j - q * 50; c.fillStyle = '#ff8ac0'; c.beginPath(); c.moveTo(x, y + 3); c.bezierCurveTo(x - 6, y - 2, x - 3, y - 7, x, y - 3); c.bezierCurveTo(x + 3, y - 7, x + 6, y - 2, x, y + 3); c.fill(); c.restore(); } }); });
+    for (let n = 0; n < N(20); n++) later(rnd(0, 600), () => spawn({ kind: 'drop', x: b.i + rnd(-14, 14), y: b.j - b.h * .8, vx: rnd(-40, 40), vy: rnd(-80, -30), ay: 260, drag: .98, max: .7, r: 1.6, a: .95, col: '#fffaf0' })); } });
+  // ---- Rollout: the user spins into a rolling disc with a dust trail ----
+  reg('Rollout', { exec: S => windup(S, '210,180,120', 35, 18),
+    dash: S => { AURA.dust(S); const b = body(S); spawn({ kind: 'fn', x: b.i, y: b.j, max: .12, draw: (c, q) => { const bb = body(S); c.save(); c.strokeStyle = 'rgba(230,200,140,.85)'; c.lineWidth = 2.5; for (let i = 0; i < 3; i++) { const a = clock.t / 50 + i * 2.1; c.beginPath(); c.arc(bb.i, bb.j, 18 * bb.k, a, a + 1.2); c.stroke(); } c.restore(); } }); },
+    impact: S => { const h = hit(S, { size: 1.3, shk: 8, col: '230,200,140', star: '#ffe0a0', lines: true }); debris(h.x, h.b.feet, 16); shock(h.x, h.b.feet, { r1: 90, col: '220,190,130', w: 7, squash: .4, ms: 460 }); } });
+  // ---- Octazooka: an ink blob that splatters ----
+  reg('Octazooka', { exec: S => windup(S, '60,40,90', 270, 16),
+    shot: p => { const c = bctx, x = bx(p.x), y = by(p.y); c.save(); c.fillStyle = '#2a1e3a'; c.beginPath(); for (let k = 0; k < 9; k++) { const a = k / 9 * T, r = 9 + Math.sin(clock.t / 60 + k * 2) * 2.5; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); c.fill(); c.fillStyle = 'rgba(160,120,220,.6)'; c.beginPath(); c.arc(x - 3, y - 3, 3, 0, T); c.fill(); c.restore();
+      if (Math.random() < .6) spawn({ kind: 'drop', x, y, vx: rnd(-30, 30), vy: rnd(-10, 40), ay: 300, drag: .97, max: .4, r: 1.6, a: .9, col: '#2a1e3a' }); },
+    impact: S => { const h = hitPt(S); shake(4, 260); for (let n = 0; n < N(26); n++) spawn({ kind: 'drop', x: h.x, y: h.y, vx: rnd(-180, 180), vy: rnd(-200, 40), ay: 520, drag: .97, max: .7, r: rnd(1.5, 3), a: .95, col: rnd(0, 1) < .7 ? '#2a1e3a' : '#5a3a8a' });
+      puff(h.x, h.y, 8, { r: [10, 18] }); shock(h.x, h.y, { r1: 60, col: '90,60,140', w: 5, ms: 380 }); } });
+  // ---- Cotton Spore: fluffy cotton drifts over and engulfs the target ----
+  reg('Cotton Spore', { exec: S => { const a = body(S), t = body(other(S));
+    for (let n = 0; n < N(30); n++) later(rnd(0, 600), () => { const x0 = a.i + rnd(-10, 10), y0 = a.j + rnd(-10, 10), tx = t.i + rnd(-26, 26) * t.k, ty = t.j + rnd(-24, 16) * t.k;
+      spawn({ kind: 'fn', x: x0, y: y0, max: rnd(1, 1.4), draw: (c, q) => { const e = Math.min(1, q * 1.6), x = x0 + (tx - x0) * e + Math.sin(q * 9) * 6, y = y0 + (ty - y0) * e - Math.sin(e * Math.PI) * 24, r = 3.5 + q * 2;
+        c.save(); c.globalAlpha = q > .8 ? (1 - q) / .2 : .95; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, '#ffffff'); g.addColorStop(1, 'rgba(240,240,250,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, T); c.fill(); c.restore(); } }); }); } });
+  // ---- Triple Kick: three quick hits ----
+  reg('Triple Kick', { dash: S => { AURA.speed(S, '#ffb070'); ghostEvery(S, 55, '#ffa060', 200, .4); },
+    impact: S => { const h0 = hitPt(S); for (let k = 0; k < 3; k++) later(k * 120, () => { const x = h0.x + [-14, 12, 0][k], y = h0.y + [-10, 6, -2][k]; star(x, y, { size: 16 + k * 6, col: k === 2 ? '#ffd060' : '#ffb070' }); shock(x, y, { r1: 34 + k * 14, col: '255,190,110', w: 4, ms: 300 }); sparks(x, y, 8, { cols: ['#ffffff', '#ffcf80'], v: [120, 240], grav: 200 }); shake(2 + k * 2, 140); }); } });
+  // ---- Present: a wrapped gift box that bursts into confetti ----
+  reg('Present', { shot: p => { const c = bctx, x = bx(p.x), y = by(p.y), r = 7; c.save(); c.translate(x, y); c.rotate(Math.sin(clock.t / 120) * .3);
+      c.fillStyle = '#e8483a'; c.fillRect(-r, -r, r * 2, r * 2); c.fillStyle = '#ffe24a'; c.fillRect(-1.6, -r, 3.2, r * 2); c.fillRect(-r, -1.6, r * 2, 3.2);
+      c.beginPath(); c.ellipse(-3, -r - 2, 3, 2, -.5, 0, T); c.ellipse(3, -r - 2, 3, 2, .5, 0, T); c.fill(); c.restore(); },
+    impact: S => { const h = hitPt(S); flash('255,240,200', .25); for (let n = 0; n < N(36); n++) spawn({ kind: 'shard', x: h.x, y: h.y, vx: rnd(-200, 200), vy: rnd(-240, -40), ay: 380, drag: .97, max: rnd(.6, 1), r: rnd(1.6, 2.6), a: 1, col: ['#ff5a5a', '#ffd84a', '#5ad0ff', '#7ae07a', '#ff8ad0'][n % 5], rot: rnd(0, T), vr: rnd(-10, 10) });
+      star(h.x, h.y, { size: 24, col: '#ffe080' }); shock(h.x, h.y, { r1: 64, col: '255,230,150', w: 5, ms: 380 }); } });
+  // ---- Rapid Spin: a spinning shell vortex and a sparking strike ----
+  reg('Rapid Spin', { exec: S => { const b = body(S); spawn({ kind: 'fn', x: b.i, y: b.j, max: .5, draw: (c, q) => { const bb = body(S); c.save(); c.globalCompositeOperation = 'lighter'; for (let i = 0; i < 4; i++) { const a = clock.t / 40 + i * T / 4; c.strokeStyle = `rgba(220,230,255,${.7 * (1 - q)})`; c.lineWidth = 3; c.beginPath(); c.ellipse(bb.i, bb.j, 22 * bb.k, 8 * bb.k, 0, a, a + 1); c.stroke(); } c.restore(); } }); },
+    dash: S => { AURA.speed(S, '#e0e8ff'); ghostEvery(S, 50, '#d0dcff', 200, .4); },
+    impact: S => { const h = hit(S, { shk: 4, col: '220,230,255', star: '#ffffff' }); sparks(h.x, h.y, 18, { cols: ['#ffffff', '#cfd8ff'], v: [160, 320], grav: 220 }); } });
+
   // ---- Fury Cutter: three escalating green slashes ----
   reg('Fury Cutter', {
     dash: S => { AURA.speed(S, '#c8f080'); ghostEvery(S, 60, '#b8e070', 200, .35); },

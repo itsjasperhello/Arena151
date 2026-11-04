@@ -751,10 +751,20 @@ M('Spark', 'Electric', 'P', 65, 100, 0, 'contact', { st: ['par', 30] });
 M('Twister', 'Dragon', 'S', 40, 100, 0, 'wind', { fl: 20 });
 M('Moonlight', 'Fairy', 'X', 0, null, 0, 'heal', { heal: .5 });
 M('Fury Cutter', 'Bug', 'P', 40, 95, 0, 'slash', { hc: 1 });
+M('Synthesis', 'Grass', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Morning Sun', 'Normal', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Milk Drink', 'Normal', 'X', 0, null, 0, 'heal', { heal: .5 });
+M('Rollout', 'Rock', 'P', 50, 90, 0, 'contact', {});
+M('Octazooka', 'Water', 'S', 65, 85, 0, 'projectile', { tg: { spe: -1 }, ch: 50 });
+M('Cotton Spore', 'Grass', 'X', 0, 100, 0, 'powder', { tg: { spe: -2 } });
+M('Triple Kick', 'Fighting', 'P', 60, 90, 0, 'contact', { hc: 1 });
+M('Present', 'Normal', 'S', 70, 90, 0, 'projectile', {});
+M('Rapid Spin', 'Normal', 'P', 50, 100, 0, 'contact', { self: { spe: 1 } });
 // Johto moves are marked Gen 2; Sacred Fire and Aeroblast are signatures (Ho-Oh, Lugia only). Automatic movesets never give
 // Gen 2 moves to Gen 1 Pokémon (Kanto movesets stay exactly as they were) and never hand out a signature move.
-for (const n of ['Sacred Fire', 'Aeroblast', 'Megahorn', 'Steel Wing', 'Dynamic Punch', 'Zap Cannon', 'Ancient Power', 'Faint Attack', 'Pursuit', 'Icy Wind', 'Spark', 'Twister', 'Moonlight', 'Fury Cutter']) MOVES[n].gen = 2;
-MOVES['Sacred Fire'].sig = MOVES['Aeroblast'].sig = true;
+for (const n of ['Sacred Fire', 'Aeroblast', 'Megahorn', 'Steel Wing', 'Dynamic Punch', 'Zap Cannon', 'Ancient Power', 'Faint Attack', 'Pursuit', 'Icy Wind', 'Spark', 'Twister', 'Moonlight', 'Fury Cutter',
+  'Synthesis', 'Morning Sun', 'Milk Drink', 'Rollout', 'Octazooka', 'Cotton Spore', 'Triple Kick', 'Present', 'Rapid Spin']) MOVES[n].gen = 2;
+MOVES['Sacred Fire'].sig = MOVES['Aeroblast'].sig = MOVES['Present'].sig = true;   // signatures: Ho-Oh, Lugia, Delibird
 let MOVESET_GEN = 1;   // Gen 1: 140 power, 90% accuracy, a charging turn first
 M('Hurricane', 'Flying', 'S', 110, 70, 0, 'wind', { cf: 30 });
 // Psychic
@@ -809,17 +819,20 @@ M('Crunch', 'Dark', 'P', 80, 100, 0, 'contact', { tg: { def: -1 }, ch: 20 });
 
 // Hand-picked movesets for signature teams; every other species gets a generated set.
 const MOVESET_OVERRIDE = {
+  Meganium: ['Giga Drain', 'Synthesis', 'Body Slam', 'Earthquake'], Bellossom: ['Giga Drain', 'Synthesis', 'Moonblast', 'Sludge Bomb'], Miltank: ['Rollout', 'Milk Drink', 'Body Slam', 'Iron Tail'],
+  Blissey: ['Milk Drink', 'Ice Beam', 'Thunderbolt', 'Flamethrower'], Donphan: ['Rollout', 'Earthquake', 'Rapid Spin', 'Iron Tail'], Octillery: ['Octazooka', 'Flamethrower', 'Ice Beam', 'Psybeam'],
+  Jumpluff: ['Cotton Spore', 'Giga Drain', 'Aerial Ace', 'Sleep Powder'], Forretress: ['Rapid Spin', 'Megahorn', 'Flash Cannon', 'Iron Defense'],
   // Johto signatures and new Gen 2 moves
   'Ho-Oh': ['Sacred Fire', 'Brave Bird', 'Earthquake', 'Recover'], Lugia: ['Aeroblast', 'Psychic', 'Ice Beam', 'Recover'], Celebi: ['Giga Drain', 'Psychic', 'Ancient Power', 'Recover'],
   Heracross: ['Megahorn', 'Close Combat', 'Rock Slide', 'Swords Dance'], Scizor: ['Steel Wing', 'X-Scissor', 'Quick Attack', 'Swords Dance'], Skarmory: ['Steel Wing', 'Drill Peck', 'Aerial Ace', 'Iron Defense'],
-  Tyranitar: ['Crunch', 'Stone Edge', 'Earthquake', 'Dragon Dance'], Umbreon: ['Faint Attack', 'Moonlight', 'Shadow Ball', 'Iron Tail'], Espeon: ['Psychic', 'Dazzling Gleam', 'Shadow Ball', 'Calm Mind'],
+  Tyranitar: ['Crunch', 'Stone Edge', 'Earthquake', 'Dragon Dance'], Umbreon: ['Faint Attack', 'Moonlight', 'Shadow Ball', 'Iron Tail'], Espeon: ['Psychic', 'Dazzling Gleam', 'Shadow Ball', 'Morning Sun'],
   Ampharos: ['Zap Cannon', 'Thunderbolt', 'Dragon Pulse', 'Signal Beam'], Porygon2: ['Zap Cannon', 'Ice Beam', 'Psybeam', 'Recover'], Sneasel: ['Faint Attack', 'Ice Shard', 'Slash', 'Agility'],
   Murkrow: ['Faint Attack', 'Drill Peck', 'Pursuit', 'Agility'], Houndoom: ['Crunch', 'Flamethrower', 'Faint Attack', 'Sludge Bomb'], Houndour: ['Pursuit', 'Ember', 'Bite', 'Faint Attack'],
-  Kingdra: ['Twister', 'Hydro Pump', 'Dragon Pulse', 'Ice Beam'], Piloswine: ['Icy Wind', 'Earthquake', 'Blizzard', 'Rock Slide'], Delibird: ['Icy Wind', 'Drill Peck', 'Blizzard', 'Brave Bird'],
+  Kingdra: ['Twister', 'Hydro Pump', 'Dragon Pulse', 'Ice Beam'], Piloswine: ['Icy Wind', 'Earthquake', 'Blizzard', 'Rock Slide'], Delibird: ['Present', 'Icy Wind', 'Drill Peck', 'Blizzard'],
   Suicune: ['Hydro Pump', 'Ice Beam', 'Icy Wind', 'Calm Mind'], Raikou: ['Thunder', 'Spark', 'Crunch', 'Calm Mind'], Entei: ['Flare Blitz', 'Fire Blast', 'Crunch', 'Extreme Speed'],
   Lanturn: ['Spark', 'Hydro Pump', 'Thunderbolt', 'Ice Beam'], Yanma: ['Ancient Power', 'Bug Buzz', 'Air Slash', 'Quick Attack'], Corsola: ['Ancient Power', 'Surf', 'Recover', 'Ice Beam'],
   Togetic: ['Ancient Power', 'Dazzling Gleam', 'Aerial Ace', 'Charm'], Granbull: ['Play Rough', 'Crunch', 'Dynamic Punch', 'Charm'], Ursaring: ['Body Slam', 'Crunch', 'Dynamic Punch', 'Swords Dance'],
-  Hitmontop: ['Close Combat', 'Dynamic Punch', 'Quick Attack', 'Bulk Up'], Tyrogue: ['Mach Punch', 'Brick Break', 'Tackle', 'Bulk Up'], Pichu: ['Spark', 'Thunder Shock', 'Charm', 'Quick Attack'],
+  Hitmontop: ['Triple Kick', 'Close Combat', 'Rapid Spin', 'Dynamic Punch'], Tyrogue: ['Mach Punch', 'Brick Break', 'Tackle', 'Bulk Up'], Pichu: ['Spark', 'Thunder Shock', 'Charm', 'Quick Attack'],
   Elekid: ['Spark', 'Thunder Punch', 'Quick Attack', 'Thunder Wave'], Ariados: ['Fury Cutter', 'Poison Jab', 'Pin Missile', 'String Shot'], Ledian: ['Fury Cutter', 'Mach Punch', 'Air Slash', 'Agility'],
   Gligar: ['Faint Attack', 'Earthquake', 'X-Scissor', 'Wing Attack'], Sudowoodo: ['Rock Slide', 'Faint Attack', 'Brick Break', 'Rock Throw'], Xatu: ['Psychic', 'Air Slash', 'Faint Attack', 'Calm Mind'],
   'MissingNo.': ['Water Gun', 'Water Gun', 'Sky Attack'],   // exactly as in Red/Blue: three moves, Water Gun twice
@@ -7504,6 +7517,51 @@ function groundScar(kind, x, y, extra) {            // called by addScar() in re
         c.globalCompositeOperation = 'source-over'; c.fillStyle = `rgba(250,250,255,${k})`; c.beginPath(); c.arc(mx, my, r, 0, T); c.fill(); c.fillStyle = `rgba(20,24,60,${.85 * k})`; c.beginPath(); c.arc(mx + r * .45, my - r * .2, r * .85, 0, T); c.fill(); c.restore(); } });
       for (let n = 0; n < N(36); n++) later(rnd(0, 900), () => spawn({ x: b.i + rnd(-30, 30) * b.k, y: b.j - b.h, vx: rnd(-8, 8), vy: rnd(30, 60), drag: 1, max: rnd(.8, 1.2), r: rnd(1.5, 3), a: .9, img: PFX.whiteTex(), add: true })); }
   });
+  // ======== milestone 3: nine more Johto moves ========
+  const healFrame = (S, col, ms) => { const b = body(S); magicCircle(S, col, ms, 1); pillar(b.i, b.feet, { w: 28 * b.k, h: 120, ms: ms * .8, col }); glowAt(b.i, b.j, 40 * b.k, col, ms * .6, .55); return b; };
+  // ---- Synthesis: sunbeams fall, leaves spiral up, a green-gold glow ----
+  reg('Synthesis', { exec: S => { const b = healFrame(S, '190,240,120', 1200); dim(.25, 1100, '10,30,0');
+    for (let n = 0; n < N(26); n++) later(rnd(0, 700), () => spawn({ kind: 'streak', x: b.i + rnd(-50, 50), y: b.j - b.h * 1.4, vx: -20, vy: 220, drag: 1, max: .5, r: 1, a: .7, col: 'rgba(255,240,160,.9)', len: 18, lw: 2, layer: 1 }));
+    for (let n = 0; n < N(22); n++) later(rnd(0, 900), () => { const a0 = rnd(0, T); spawn({ kind: 'fn', x: b.i, y: b.feet, max: 1.1, draw: (c, q) => { const a = a0 + q * 7, r = (14 + q * 26) * b.k, x = b.i + Math.cos(a) * r, y = b.feet - q * b.h * 1.2 + Math.sin(a) * r * .3;
+      c.save(); c.globalAlpha = 1 - q; c.translate(x, y); c.rotate(a); c.fillStyle = '#7ad04a'; c.beginPath(); c.ellipse(0, 0, 4, 2, 0, 0, T); c.fill(); c.restore(); } }); }); } });
+  // ---- Morning Sun: a golden sun rises behind the user ----
+  reg('Morning Sun', { exec: S => { const b = healFrame(S, '255,215,120', 1300); dim(.3, 1200, '30,15,0');
+    fx({ max: 1.3, draw: (c, q) => { const k = q < .25 ? q / .25 : q > .75 ? (1 - q) / .25 : 1, sx = b.i, sy = b.j - b.h * (.4 + q * .7), r = 18 * b.k; c.save(); c.globalCompositeOperation = 'lighter';
+      const g = c.createRadialGradient(sx, sy, 0, sx, sy, r * 3.2); g.addColorStop(0, `rgba(255,250,210,${.95 * k})`); g.addColorStop(.3, `rgba(255,210,110,${.55 * k})`); g.addColorStop(1, 'rgba(255,160,60,0)'); c.fillStyle = g; c.beginPath(); c.arc(sx, sy, r * 3.2, 0, T); c.fill();
+      c.translate(sx, sy); c.rotate(clock.t / 1400); for (let i = 0; i < 10; i++) { c.rotate(T / 10); c.fillStyle = `rgba(255,230,150,${.35 * k})`; c.beginPath(); c.moveTo(r * 1.1, -2); c.lineTo(r * 2.6, 0); c.lineTo(r * 1.1, 2); c.fill(); } c.restore(); } }); } });
+  // ---- Milk Drink: pink-white light, hearts and milky droplets ----
+  reg('Milk Drink', { exec: S => { const b = healFrame(S, '255,200,225', 1100);
+    for (let n = 0; n < N(14); n++) later(rnd(0, 700), () => { const x0 = b.i + rnd(-26, 26) * b.k; spawn({ kind: 'fn', x: x0, y: b.j, max: 1, draw: (c, q) => { c.save(); c.globalAlpha = 1 - q; starShape ? 0 : 0; const x = x0 + Math.sin(q * 6) * 5, y = b.j - q * 50; c.fillStyle = '#ff8ac0'; c.beginPath(); c.moveTo(x, y + 3); c.bezierCurveTo(x - 6, y - 2, x - 3, y - 7, x, y - 3); c.bezierCurveTo(x + 3, y - 7, x + 6, y - 2, x, y + 3); c.fill(); c.restore(); } }); });
+    for (let n = 0; n < N(20); n++) later(rnd(0, 600), () => spawn({ kind: 'drop', x: b.i + rnd(-14, 14), y: b.j - b.h * .8, vx: rnd(-40, 40), vy: rnd(-80, -30), ay: 260, drag: .98, max: .7, r: 1.6, a: .95, col: '#fffaf0' })); } });
+  // ---- Rollout: the user spins into a rolling disc with a dust trail ----
+  reg('Rollout', { exec: S => windup(S, '210,180,120', 35, 18),
+    dash: S => { AURA.dust(S); const b = body(S); spawn({ kind: 'fn', x: b.i, y: b.j, max: .12, draw: (c, q) => { const bb = body(S); c.save(); c.strokeStyle = 'rgba(230,200,140,.85)'; c.lineWidth = 2.5; for (let i = 0; i < 3; i++) { const a = clock.t / 50 + i * 2.1; c.beginPath(); c.arc(bb.i, bb.j, 18 * bb.k, a, a + 1.2); c.stroke(); } c.restore(); } }); },
+    impact: S => { const h = hit(S, { size: 1.3, shk: 8, col: '230,200,140', star: '#ffe0a0', lines: true }); debris(h.x, h.b.feet, 16); shock(h.x, h.b.feet, { r1: 90, col: '220,190,130', w: 7, squash: .4, ms: 460 }); } });
+  // ---- Octazooka: an ink blob that splatters ----
+  reg('Octazooka', { exec: S => windup(S, '60,40,90', 270, 16),
+    shot: p => { const c = bctx, x = bx(p.x), y = by(p.y); c.save(); c.fillStyle = '#2a1e3a'; c.beginPath(); for (let k = 0; k < 9; k++) { const a = k / 9 * T, r = 9 + Math.sin(clock.t / 60 + k * 2) * 2.5; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); c.fill(); c.fillStyle = 'rgba(160,120,220,.6)'; c.beginPath(); c.arc(x - 3, y - 3, 3, 0, T); c.fill(); c.restore();
+      if (Math.random() < .6) spawn({ kind: 'drop', x, y, vx: rnd(-30, 30), vy: rnd(-10, 40), ay: 300, drag: .97, max: .4, r: 1.6, a: .9, col: '#2a1e3a' }); },
+    impact: S => { const h = hitPt(S); shake(4, 260); for (let n = 0; n < N(26); n++) spawn({ kind: 'drop', x: h.x, y: h.y, vx: rnd(-180, 180), vy: rnd(-200, 40), ay: 520, drag: .97, max: .7, r: rnd(1.5, 3), a: .95, col: rnd(0, 1) < .7 ? '#2a1e3a' : '#5a3a8a' });
+      puff(h.x, h.y, 8, { r: [10, 18] }); shock(h.x, h.y, { r1: 60, col: '90,60,140', w: 5, ms: 380 }); } });
+  // ---- Cotton Spore: fluffy cotton drifts over and engulfs the target ----
+  reg('Cotton Spore', { exec: S => { const a = body(S), t = body(other(S));
+    for (let n = 0; n < N(30); n++) later(rnd(0, 600), () => { const x0 = a.i + rnd(-10, 10), y0 = a.j + rnd(-10, 10), tx = t.i + rnd(-26, 26) * t.k, ty = t.j + rnd(-24, 16) * t.k;
+      spawn({ kind: 'fn', x: x0, y: y0, max: rnd(1, 1.4), draw: (c, q) => { const e = Math.min(1, q * 1.6), x = x0 + (tx - x0) * e + Math.sin(q * 9) * 6, y = y0 + (ty - y0) * e - Math.sin(e * Math.PI) * 24, r = 3.5 + q * 2;
+        c.save(); c.globalAlpha = q > .8 ? (1 - q) / .2 : .95; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, '#ffffff'); g.addColorStop(1, 'rgba(240,240,250,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, T); c.fill(); c.restore(); } }); }); } });
+  // ---- Triple Kick: three quick hits ----
+  reg('Triple Kick', { dash: S => { AURA.speed(S, '#ffb070'); ghostEvery(S, 55, '#ffa060', 200, .4); },
+    impact: S => { const h0 = hitPt(S); for (let k = 0; k < 3; k++) later(k * 120, () => { const x = h0.x + [-14, 12, 0][k], y = h0.y + [-10, 6, -2][k]; star(x, y, { size: 16 + k * 6, col: k === 2 ? '#ffd060' : '#ffb070' }); shock(x, y, { r1: 34 + k * 14, col: '255,190,110', w: 4, ms: 300 }); sparks(x, y, 8, { cols: ['#ffffff', '#ffcf80'], v: [120, 240], grav: 200 }); shake(2 + k * 2, 140); }); } });
+  // ---- Present: a wrapped gift box that bursts into confetti ----
+  reg('Present', { shot: p => { const c = bctx, x = bx(p.x), y = by(p.y), r = 7; c.save(); c.translate(x, y); c.rotate(Math.sin(clock.t / 120) * .3);
+      c.fillStyle = '#e8483a'; c.fillRect(-r, -r, r * 2, r * 2); c.fillStyle = '#ffe24a'; c.fillRect(-1.6, -r, 3.2, r * 2); c.fillRect(-r, -1.6, r * 2, 3.2);
+      c.beginPath(); c.ellipse(-3, -r - 2, 3, 2, -.5, 0, T); c.ellipse(3, -r - 2, 3, 2, .5, 0, T); c.fill(); c.restore(); },
+    impact: S => { const h = hitPt(S); flash('255,240,200', .25); for (let n = 0; n < N(36); n++) spawn({ kind: 'shard', x: h.x, y: h.y, vx: rnd(-200, 200), vy: rnd(-240, -40), ay: 380, drag: .97, max: rnd(.6, 1), r: rnd(1.6, 2.6), a: 1, col: ['#ff5a5a', '#ffd84a', '#5ad0ff', '#7ae07a', '#ff8ad0'][n % 5], rot: rnd(0, T), vr: rnd(-10, 10) });
+      star(h.x, h.y, { size: 24, col: '#ffe080' }); shock(h.x, h.y, { r1: 64, col: '255,230,150', w: 5, ms: 380 }); } });
+  // ---- Rapid Spin: a spinning shell vortex and a sparking strike ----
+  reg('Rapid Spin', { exec: S => { const b = body(S); spawn({ kind: 'fn', x: b.i, y: b.j, max: .5, draw: (c, q) => { const bb = body(S); c.save(); c.globalCompositeOperation = 'lighter'; for (let i = 0; i < 4; i++) { const a = clock.t / 40 + i * T / 4; c.strokeStyle = `rgba(220,230,255,${.7 * (1 - q)})`; c.lineWidth = 3; c.beginPath(); c.ellipse(bb.i, bb.j, 22 * bb.k, 8 * bb.k, 0, a, a + 1); c.stroke(); } c.restore(); } }); },
+    dash: S => { AURA.speed(S, '#e0e8ff'); ghostEvery(S, 50, '#d0dcff', 200, .4); },
+    impact: S => { const h = hit(S, { shk: 4, col: '220,230,255', star: '#ffffff' }); sparks(h.x, h.y, 18, { cols: ['#ffffff', '#cfd8ff'], v: [160, 320], grav: 220 }); } });
+
   // ---- Fury Cutter: three escalating green slashes ----
   reg('Fury Cutter', {
     dash: S => { AURA.speed(S, '#c8f080'); ghostEvery(S, 60, '#b8e070', 200, .35); },
@@ -9441,7 +9499,7 @@ playCry = function (name) { if (pickBase(name) !== 'MissingNo.') return _playCry
 /* =====================================================================
    Section 17: build info, diagnostics and audio start-up
    ===================================================================== */
-const APP_VERSION = '16.7';
+const APP_VERSION = '16.8';
 // Unlock audio on the very first touch or key, in the capture phase so no other handler can swallow it,
 // and wake it again whenever the app comes back to the foreground.
 const unlockAudio = () => { try { const c = audioCtx(); if (c && c.state !== 'running') c.resume(); } catch (e) { } };
@@ -11299,8 +11357,11 @@ function safariEncounter(leg) {
     // The same animated front sprite as in battle: <name>.gif, or <name>_shiny.gif for a shiny (switches in as soon as it has loaded).
     if (w.shiny) loadShiny(w.sp);
     const monFrame = t => { const sp = spriteOf(w.sp, false, w.shiny), r = sp.card || { x: 0, y: 0, s: sp.w };
-      if (sp.custom && sp.front) { const a = ensureAnim(sp.front); return { img: a.frames[animFrameIndex(a, t)], r }; }
-      return { img: sp.frames[Math.floor(t / 350) % sp.frames.length], r }; };
+      if (sp.custom && sp.front) { const a = ensureAnim(sp.front); return { img: drawable(a.frames[animFrameIndex(a, t)]), r }; }
+      return { img: drawable(sp.frames && sp.frames[Math.floor(t / 350) % sp.frames.length]), r }; };
+    // a frame may be an image/canvas or an object holding one (generated sprites); never hand drawImage anything else
+    const BLANK = document.createElement('canvas'); BLANK.width = BLANK.height = 1;
+    function drawable(f) { if (!f) return BLANK; if (f instanceof HTMLCanvasElement || f instanceof HTMLImageElement || (typeof ImageBitmap !== 'undefined' && f instanceof ImageBitmap)) return f; return drawable(f.canvas || f.img || null); }
     const flashC = document.createElement('canvas'), flashX = flashC.getContext('2d');
     const tr = new Image(); tr.src = portraitUrl(sv.trainer);
     const S = { t0: performance.now(), mon: { x: 0, a: 1, white: 0, scale: 1, bob: false, gone: false, hit: 0 }, balls: 3, baits: 2, rocks: 2, turns: 3, eat: 0, angry: 0, rate: CATCH_RATE[w.sp] || 45, rare: w.rare || (CATCH_RATE[w.sp] || 45) < 45, hp: wildHP(w.sp, w.lv), spd: wildSpeed(w.sp, w.lv) };
@@ -12430,7 +12491,8 @@ const minorBeaten = (m, sv) => !!(sv && sv.minors && sv.minors[m.id]);
     const slots = storySlots(); if (!slots.length) return '';
     const best = slots.slice().sort((a, b) => (b.badges || 0) - (a.badges || 0))[0], stars = Math.max(0, ...slots.map(s => Object.values(s.stars || {}).reduce((a, n) => a + n, 0)));
     const champ = slots.find(s => s.finishedAt || s.badges >= 10), rating = get('arena151.rating');
-    return [champ ? (champ.branch === 'rocket' ? 'Rocket Champion' : 'Champion') : `${best.badges || 0} badges`, stars ? `★${stars}` : '', rating ? `Rating ${rating}` : ''].filter(Boolean).join(' · ');
+    const grand = slots.find(s => s.redBeaten);   // beat Red atop Mt. Silver in a Combined journey
+    return [grand ? 'Grand Champion' : champ ? (champ.branch === 'rocket' ? 'Rocket Champion' : 'Champion') : `${best.badges || 0} badges`, stars ? `★${stars}` : '', rating ? `Rating ${rating}` : ''].filter(Boolean).join(' · ');
   }
   if (typeof myInfo === 'function') { const _mi = myInfo; myInfo = function () { return Object.assign(_mi.apply(this, arguments), { title: storyTitle() }); }; }
 
@@ -12823,7 +12885,7 @@ const GEN_OF = name => { const d = typeof DEX_BY_NAME !== 'undefined' && DEX_BY_
     return _save.apply(this, arguments);
   };
   const _open = openStoryScreen;
-  openStoryScreen = function () { sync(); const r = _open.apply(this, arguments); setTimeout(offerJohto, 900); return r; };
+  openStoryScreen = function () { sync(); const r = _open.apply(this, arguments); setTimeout(offerJohto, 900); setTimeout(offerRed, 950); return r; };
   const _render = renderStory;
   renderStory = function () { sync(); const r = _render.apply(this, arguments); try { tagRegion(); } catch (e) { } return r; };
   if (typeof useSlot === 'function') { const _use = useSlot; useSlot = function () { const r = _use.apply(this, arguments); try { sync(); } catch (e) { } return r; }; }
@@ -12845,6 +12907,42 @@ const GEN_OF = name => { const d = typeof DEX_BY_NAME !== 'undefined' && DEX_BY_
         setTimeout(() => { try { openGymCard(0); } catch (e) { } }, 400); }
     } finally { offering = false; STORY.cutscene = false; }
   }
+  /* ---------- the Combined finale: Red, atop Mt. Silver ---------- */
+  const RED_TEAM = ['Pikachu', 'Espeon', 'Snorlax', 'Venusaur', 'Charizard', 'Blastoise'];
+  const redFile = () => (typeof ALL_TRAINERS !== 'undefined' && ALL_TRAINERS.includes('Red') ? 'Red' : 'Ash');
+  let offeringRed = false;
+  async function offerRed() {
+    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'johto' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
+    offeringRed = true;
+    try { const ov = $('csOv'); STORY.cutscene = true;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto and Johto. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+        ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
+      STORY.cutscene = false; if (go) await startRed();
+    } finally { offeringRed = false; STORY.cutscene = false; }
+  }
+  async function startRed() {
+    const s = STORY.save, who = { file: redFile(), leader: 'Red' };
+    closeModal();
+    await playScene([['foe', '…'], ['foe', '……'], ['me', 'So you’re the legend of Mt. Silver. Let’s battle.']], who, { title: 'Mt. Silver blizzard', text: 'A permanent HAIL storm at the summit chips every Pokémon that isn’t Ice.' });
+    STORY.battle = { gym: 9, red: true, level: 13, practice: false };
+    STORY.nextRules = { foeScale: D.diff().scale, aiStyle: 'switcher', weather: 'hail', bonus: typeof storyRuleExtras === 'function' ? storyRuleExtras({ n: 0 }).bonus : null };
+    if (!STORY.prevTrsel) STORY.prevTrsel = { A: TRSEL.A, B: TRSEL.B };
+    TRSEL.A = s.trainer; TRSEL.B = who.file; loadTrainer(s.trainer); loadTrainer(who.file);
+    try { refreshTrainerLabels(); drawMinis(); } catch (e) { }
+    watchMode = false; syncWatchButton(); START.ctrl.A = 'human';
+    $('timeLimit').value = '0'; $('storyOv').classList.remove('show'); STORY.open = false;
+    startBattle(s.team.slice(), RED_TEAM.slice(), arena('summit', 'castle')); STORY.battle.G = G; STORY.battle.who = who;
+  }
+  window.climbMtSilver = startRed;
+  const _res = storyResult;
+  storyResult = async function (won) {
+    const b = STORY.battle; if (!b || !b.red) return _res.apply(this, arguments);
+    STORY.battle = null; STORY.nextRules = null; const s = STORY.save;
+    if (won) { s.redBeaten = Date.now(); s.finishedAt = s.finishedAt || Date.now(); } saveStory();
+    showOverlay('ovResults', false); openStoryScreen();
+    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto and Johto — we did it. Grand Champion.']] : [['foe', '…']], b.who);
+    try { renderStory(); } catch (e) { }
+  };
   // the Johto badges until their images are added: a generated badge in the badge's colours
   const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'] };
   document.addEventListener('error', e => { const im = e.target; if (!im || im.tagName !== 'IMG' || !/story\/badges\/(\w+)\.png/.test(im.src || '')) return; const k = RegExp.$1, c = BADGE_COL[k]; if (!c || im.dataset.fb) return; im.dataset.fb = '1';
