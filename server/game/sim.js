@@ -746,7 +746,7 @@ function benchFor(S) { return side(S).team.map((m, i) => (m.hp > 0 && i !== side
 function afterFaint(S) {
   if (!teamAlive(S)) { endBattle(teamAlive(foeTeam(S)) ? foeTeam(S) : 'draw'); return; }
   if (G.doubles && !benchFor(S).length) { side(S).state = 'empty'; G.hudDirty = true; return; }   // no one left to send: the partner fights on alone
-  if (controlledByAI(S)) {
+  if (controlledByAI(S) && !(G.humanPick && G.humanPick[S])) {   // story doubles: the player picks the partner's next Pokémon
     const healthy = side(S).team.map((m, i) => (m.hp > 0 ? i : -1)).filter(i => i >= 0);
     const sloppy = healthy.length && Math.random() < aiK(S, .85, 0, 0);
     const pool = G.doubles ? benchFor(S) : healthy; spawnIn(S, sloppy && pool.length ? pool[Math.floor(Math.random() * pool.length)] : (bestSwitchFor(S) ?? pool[0]));

@@ -148,9 +148,10 @@ async function startBattle(picksA, picksB, stageId) {
   setStage(stageId || chooseStage()); resetScene(); const my = epoch; ($('titleStage') || {}).textContent = STAGE.name;
   clock.paused = false; $('pausedTag').classList.remove('show'); $('bPause').textContent = 'Pause';
   G = newBattle(picksA, picksB, { auto: watchMode, timeLimit: Number($('timeLimit').value), rules: RU && (RU.weather || RU.banA) ? { weather: RU.weather || null, banA: RU.banA || null, handicap: RU.handicap || null } : null,
-    doubles: typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle),
-    ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}) });   // four parties in Local doubles
-  G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;   // AI difficulty 1–13 (story mode sets the gym's)
+    doubles: (typeof battleDoubles === 'function' && battleDoubles() && !(typeof STORY !== 'undefined' && STORY.battle)) || !!(RU && RU.doubles),   // a story rule can make a double battle
+    ...(typeof battleDoubles === 'function' && battleDoubles() && NET.mode === 'local' && !(typeof STORY !== 'undefined' && STORY.battle) ? { picksC: readPickers('C').filter(Boolean), picksD: readPickers('D').filter(Boolean) } : {}), ...(RU && RU.doubles && RU.picksD ? { picksD: RU.picksD.slice() } : {}) });   // four parties in Local doubles
+  G.aiLevel = typeof currentAiLevels === 'function' ? currentAiLevels() : null;
+  if (RU && RU.doubles) { G.humanPick = { C: true }; G.dualFoe = RU.dualFoe || null; }   // story doubles: you choose your partner's Pokémon; two foe trainers   // AI difficulty 1–13 (story mode sets the gym's)
   if (typeof placeTrainers === 'function') placeTrainers();   // each trainer stands behind where their Pokémon first appear
   if (RU && RU.aiStyle) G.aiStyle = { B: RU.aiStyle };                    // the trainer's personality
   if (RU && RU.bonus) for (const m of G.sides.A.team) { for (const k in RU.bonus) if (k === 'hp') { m.max = Math.round(m.max * RU.bonus.hp); m.hp = m.max; } else m.stats[k] = Math.round(m.stats[k] * RU.bonus[k]); }   // badge passives
@@ -187,16 +188,22 @@ async function playIntro(my) {
   await Promise.all([anim(520, p => trainerWalk.A = 1 - Ease.outQ(p)), anim(520, p => trainerWalk.B = 1 - Ease.outQ(p))]);
   trainerWalk.A = trainerWalk.B = 0;
 }
+const pickSlot = () => (G && G.doubles && G.humanPick && G.humanPick.C && side('C').state === 'wait' && side('A').state !== 'wait' ? 'C' : 'A');   // whose turn to send someone out
 function onNeedPick() {
-  const grid = $('pickGrid'); grid.innerHTML = '';
-  const busy = G.doubles && slotLive('C') ? side('C').active : -1;   // doubles: the partner's Pokémon is already out
-  side('A').team.forEach((m, i) => { if (m.hp > 0 && i !== busy) grid.appendChild(rosterCard(m, i, 'A', { button: true, pickable: true, onPick: forcePick })); });
+  const grid = $('pickGrid'); grid.innerHTML = ''; const S = pickSlot(), P = partnerOf(S);
+  const busy = G.doubles && slotLive(P) && side(P).team === side(S).team ? side(P).active : -1;   // doubles: the partner's Pokémon is already out
+  const head = document.querySelector('#ovSwitch h2, #ovSwitch .title, #ovSwitch h3'); if (head) { head.dataset.t = head.dataset.t || head.textContent; head.textContent = S === 'C' ? 'Choose your partner’s next Pokémon' : head.dataset.t; }
+  side(S).team.forEach((m, i) => { if (m.hp > 0 && i !== busy) grid.appendChild(rosterCard(m, i, 'A', { button: true, pickable: true, onPick: forcePick })); });
   showOverlay('ovSwitch', true); updateHUD(); autosave();
   const first = grid.querySelector('button'); if (first) first.focus();
 }
 function forcePick(i) {
-  if (!G || G.phase !== 'pick' || side('A').team[i].hp <= 0 || (G.doubles && slotLive('C') && side('C').active === i)) return;
-  showOverlay('ovSwitch', false); G.phase = 'battle'; spawnIn('A', i); updateHUD();
+  const S = pickSlot(), P = partnerOf(S);
+  if (!G || G.phase !== 'pick' || side(S).team[i].hp <= 0 || (G.doubles && slotLive(P) && side(P).team === side(S).team && side(P).active === i)) return;
+  showOverlay('ovSwitch', false); spawnIn(S, i);
+  const other = S === 'A' ? 'C' : 'A';
+  if (G.doubles && side(other).state === 'wait' && (other === 'A' || (G.humanPick && G.humanPick.C))) { onNeedPick(); updateHUD(); return; }   // both fell: pick the other one too
+  G.phase = 'battle'; updateHUD();
 }
 async function onBattleEnd(w, bigTxt) {
   const my = epoch; updateHUD(); autosave();

@@ -19,7 +19,7 @@
       'So you’ve come this far. As a Gym Leader, I won’t hold back — not even for family.', 'You still have a way to go.', '…I lost. You’ve grown strong. The Balance Badge is yours.'),
     G(6, 'h6', 'switcher', 'Winona', 'Winona', 'Fortree City', 'Flying', 'Feather Badge', arena('castle', 'summit'), ['Swellow', 'Pelipper', 'Tropius', 'Skarmory', 'Xatu', 'Altaria'], [30, 31, 31, 32, 33, 34],
       'I have become one with bird Pokémon and have soared the skies. Witness the elegant choreography of my bird Pokémon!', 'Grace and power. Remember them.', 'Never before have I seen a trainer command Pokémon with more grace than I. The Feather Badge is yours.'),
-    G(7, 'h7', 'status', 'Tate & Liza', 'Tate_and_Liza', 'Mossdeep City', 'Psychic', 'Mind Badge', arena('saffron', 'grand'), ['Grumpig', 'Claydol', 'Gardevoir', 'Medicham', 'Lunatone', 'Solrock'], [41, 42, 42, 43, 43, 44],
+    G(7, 'h7', 'status', 'Tate & Liza', 'Tate', 'Mossdeep City', 'Psychic', 'Mind Badge', arena('saffron', 'grand'), ['Grumpig', 'Claydol', 'Gardevoir', 'Medicham', 'Lunatone', 'Solrock'], [41, 42, 42, 43, 43, 44],
       'Hehehe… were you surprised? There are two Gym Leaders! We can read each other’s minds — can you keep up?', 'Our combination was perfect!', 'Looks like the bond between you and your Pokémon is stronger than ours. Take the Mind Badge.'),
     G(8, 'h8', 'defensive', 'Wallace', 'Wallace', 'Sootopolis City', 'Water', 'Rain Badge', arena('cerulean', 'hall'), ['Luvdisc', 'Whiscash', 'Walrein', 'Seaking', 'Ludicolo', 'Milotic'], [40, 42, 43, 43, 44, 46],
       'The elegance with which you saved Sootopolis… let me see it again, in battle with my Water Pokémon.', 'Elegance takes practice.', 'I realize now your authenticity and magnificence as a trainer. The Rain Badge is yours.'),
@@ -28,7 +28,20 @@
     G(10, 'h10', 'switcher', 'Steven', 'Steven', 'Ever Grande City', 'Steel', 'Champion', arena('hall', 'grand'), ['Skarmory', 'Claydol', 'Aggron', 'Cradily', 'Armaldo', 'Metagross'], [57, 57, 58, 59, 59, 62],
       'Welcome. I am Steven, the Champion of the Hoenn League. I wanted to see how far you’d come. Let’s battle.', 'You were strong — but not yet strong enough.', 'I, the Champion, fall in defeat… Kudos to you. You are truly a noble Pokémon trainer.')
   ];
-  GYMS_H[9].pickTeam = () => GYMS_H[9].team.slice();   // Champion Steven brings his own team (not Kanto’s rival logic)
+  GYMS_H[9].pickTeam = () => GYMS_H[9].team.slice();
+  GYMS_H[6].pickTeam = () => ['Solrock', 'Claydol', 'Medicham'];   // Tate's three (Liza's three come in through the gym's double-battle rule)
+  GYMS_H[6].levels = [43, 42, 43];
+  /* ---------- double battles with two foe trainers: draw the second one (Liza) beside the first ---------- */
+  if (typeof drawTrainer === 'function') { const _dt = drawTrainer;
+    drawTrainer = function (S) {
+      const r = _dt.apply(this, arguments);
+      if (S === 'B' && G && G.dualFoe && G.dualFoe.D && typeof TRSEL !== 'undefined' && typeof TRAINER_POS !== 'undefined') {
+        const keep = TRSEL.B, p = TRAINER_POS.B, kx = p.x, ky = p.y;
+        try { TRSEL.B = G.dualFoe.D; p.x = kx + 34; p.y = ky + 46; _dt.call(this, 'B'); } finally { TRSEL.B = keep; p.x = kx; p.y = ky; }
+      }
+      return r; }; }
+  const _sb = startBattle;
+  startBattle = function () { try { const RU = STORY.nextRules; if (RU && RU.dualFoe) { TRSEL.B = RU.dualFoe.B; loadTrainer(RU.dualFoe.B); loadTrainer(RU.dualFoe.D); } } catch (e) { } return _sb.apply(this, arguments); };   // Champion Steven brings his own team (not Kanto’s rival logic)
   /* ---------- the Hoenn map (story/hoenn_map.webp, 2576×1438) ---------- */
   const MAP = { img: 'story/hoenn_map.webp', w: 2576, h: 1438, home: { x: 940, y: 910, city: 'Littleroot Town' },
     gyms: { 1: [530, 660], 2: [820, 1160], 3: [960, 550], 4: [880, 300], 5: [740, 880], 6: [1160, 260], 7: [2000, 360], 8: [1790, 640], 9: [2130, 640], 10: [2160, 555] },
@@ -79,7 +92,7 @@
     h4: { weather: 'sun', title: 'Mt. Chimney heat', text: 'Permanent HARSH SUN: Fire moves 50% harder, Water moves 50% weaker.' },
     h5: { handicap: 4, title: 'A father’s rules', text: 'Norman allows only your first FOUR Pokémon.' },
     h6: { banA: ['Electric', 'Rock'], title: 'Feather dance', text: 'Winona’s birds dance between the clouds: your ELECTRIC and ROCK moves are banned.' },
-    h7: { handicap: 5, title: 'Two minds as one', text: 'Tate & Liza read every move: bring only your first FIVE Pokémon.' },
+    h7: { doubles: true, picksD: ['Lunatone', 'Gardevoir', 'Grumpig'], dualFoe: { B: 'Tate', D: 'Liza' }, title: 'Double battle', text: 'Tate and Liza battle together — a 2v2 DOUBLE BATTLE. Your first Pokémon is yours to control, your second fights beside it under the AI, and when it faints you choose its replacement. Liza brings Lunatone, Gardevoir and Grumpig.' },
     h8: { weather: 'rain', title: 'Rain over Sootopolis', text: 'Permanent RAIN: Water moves 50% harder, Fire moves 50% weaker.' },
     h9: { weather: 'sand', title: 'Dragon’s desert', text: 'A permanent SANDSTORM chips every Pokémon that isn’t Rock, Ground or Steel.' }
   });
