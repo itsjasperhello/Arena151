@@ -195,12 +195,12 @@
     badges: BADGE_FILES.slice(), rivalAt: Object.assign({}, D.RIVAL_AT), rivalBase: D.RIVAL_BASE.map(a => a.slice()), gary: Object.assign({}, D.GARY), rival: D.SCRIPT.rival, champ: D.SCRIPT.champion };
   const fill = (arr, items) => { arr.splice(0, arr.length, ...items); };
   const swapObj = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
-  const regionOf = s => (!s ? 'kanto' : s.region === 'combined' ? (s.phase || 'kanto') : (s.region === 'johto' || s.region === 'hoenn' || s.region === 'sinnoh') ? s.region : 'kanto');
+  const regionOf = s => (!s ? 'kanto' : s.region === 'combined' ? (s.phase || 'kanto') : (s.region === 'johto' || s.region === 'hoenn' || s.region === 'sinnoh' || s.region === 'unova') ? s.region : 'kanto');
   const JR = { gyms: J, map: JMAP, names: JNAMES, ash: JASH, routes: JROUTES, minors: JMINORS, starters: ['Chikorita', 'Cyndaquil', 'Totodile'],
     badges: ['zephyr', 'hive', 'plain', 'fog', 'storm', 'mineral', 'glacier', 'rising', 'elite', 'champion'], rivalAt: SRIVAL_AT, rivalBase: SRIVAL_BASE, rival: SILVER,
     rivalScript: SRIVAL_SCRIPT, champ: SCHAMP, counter: silverCounter, rivalKey: 'rivalJ' };
   window.REGION_EV = Object.assign(window.REGION_EV || {}, { johto: window.JOHTO_EV });
-  const regionData = R => (R === 'johto' ? JR : R === 'hoenn' ? window.HOENN || null : R === 'sinnoh' ? window.SINNOH || null : null);
+  const regionData = R => (R === 'johto' ? JR : R === 'hoenn' ? window.HOENN || null : R === 'sinnoh' ? window.SINNOH || null : R === 'unova' ? window.UNOVA || null : null);
   function applyRegion(R) {
     const X = regionData(R); if (!X) R = 'kanto';
     if (STORY.region === R && GYMS[0] === (X ? X.gyms[0] : K.gyms[0])) return;
@@ -226,7 +226,7 @@
   function chooseRegion() {
     return new Promise(done => {
       const ov = $('csOv'); STORY.cutscene = true;
-      const opts = [['kanto', 'Kanto', 'The original journey — 8 gyms, Lance and Gary.'], ['johto', 'Johto', '8 Johto gyms, Karen and your rival Silver.'], ['hoenn', 'Hoenn', '8 Hoenn gyms, Drake, Champion Steven and your rival May.'], ['sinnoh', 'Sinnoh', '8 Sinnoh gyms, Lucian, Champion Cynthia and your rival Barry.'], ['combined', 'Combined', 'Kanto → Johto → Hoenn → Sinnoh — one team the whole way.']];
+      const opts = [['kanto', 'Kanto', 'The original journey — 8 gyms, Lance and Gary.'], ['johto', 'Johto', '8 Johto gyms, Karen and your rival Silver.'], ['hoenn', 'Hoenn', '8 Hoenn gyms, Drake, Champion Steven and your rival May.'], ['sinnoh', 'Sinnoh', '8 Sinnoh gyms, Lucian, Champion Cynthia and your rival Barry.'], ['unova', 'Unova', '8 Unova gyms, Grimsley, Champion Alder and your rival Cheren.'], ['combined', 'Combined', 'Kanto → Johto → Hoenn → Sinnoh → Unova — one team the whole way.']];
       ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">Where will your journey begin?</div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">${opts.map(([v, t, sub], k) => `<button class="sy-btn${k ? '' : ' go'}" type="button" data-r="${v}" style="min-width:190px">${t}<br><small style="font-weight:600;opacity:.85">${sub}</small></button>`).join('')}</div><button class="sy-btn" type="button" data-r="" style="margin-top:10px">Cancel</button></div>`;
       ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-r]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; STORY.cutscene = false; done(b.dataset.r || null); };
     });
@@ -272,10 +272,10 @@
   const redFile = () => (typeof ALL_TRAINERS !== 'undefined' && ALL_TRAINERS.includes('Red') ? 'Red' : 'Ash');
   let offeringRed = false;
   async function offerRed() {
-    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'sinnoh' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
+    const s = STORY.save; if (offeringRed || !s || s.region !== 'combined' || s.phase !== 'unova' || s.badges < TOTAL || s.redBeaten || !STORY.open || STORY.cutscene || STORY.battle) return;
     offeringRed = true;
     try { const ov = $('csOv'); STORY.cutscene = true;
-      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto, Johto, Hoenn and Sinnoh. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
+      const go = await new Promise(done => { ov.innerHTML = `<div class="box" style="text-align:center"><div class="txt" style="margin-bottom:12px">You’ve conquered Kanto, Johto, Hoenn, Sinnoh and Unova. They say a silent trainer waits at the summit of Mt. Silver…</div><div style="display:flex;gap:10px;justify-content:center"><button class="sy-btn go" type="button" data-g="1">Climb Mt. Silver</button><button class="sy-btn" type="button" data-g="">Not yet</button></div></div>`;
         ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; done(!!b.dataset.g); }; });
       STORY.cutscene = false; if (go) await startRed();
     } finally { offeringRed = false; STORY.cutscene = false; }
@@ -300,7 +300,7 @@
     STORY.battle = null; STORY.nextRules = null; const s = STORY.save;
     if (won) { s.redBeaten = Date.now(); s.finishedAt = s.finishedAt || Date.now(); } saveStory();
     showOverlay('ovResults', false); openStoryScreen();
-    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto, Johto, Hoenn and Sinnoh — we did it. Grand Champion.']] : [['foe', '…']], b.who);
+    await playScene(won ? [['foe', '…!'], ['foe', '…'], ['me', 'Kanto, Johto, Hoenn, Sinnoh and Unova — we did it. Grand Champion.']] : [['foe', '…']], b.who);
     try { renderStory(); } catch (e) { }
   };
   let offeringH = false;
@@ -315,11 +315,11 @@
     } finally { offeringH = false; STORY.cutscene = false; }
   }
   // the Johto badges until their images are added: a generated badge in the badge's colours
-  const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'], stone: ['#a8946a', '#e8dcc0'], knuckle: ['#c8783a', '#ffe0b0'], dynamo: ['#ffd84a', '#5a8aff'], heat: ['#ff6a3a', '#ffd060'], balance: ['#d84a4a', '#ffffff'], feather: ['#5ab0ff', '#e8f4ff'], mind: ['#ff7ad0', '#ffd0f0'], rain: ['#3a8aff', '#bfe2ff'], coal: ['#5a4a3a', '#c8a070'], forest: ['#4aa04a', '#c8f0a0'], cobble: ['#c8784a', '#ffe0b0'], fen: ['#4a9ad8', '#d0ecff'], relic: ['#9a7ad0', '#e8dcff'], mine: ['#a8b0b8', '#ffffff'], icicle: ['#9adcff', '#ffffff'], beacon: ['#ffd84a', '#fff6c8'] };
+  const BADGE_COL = { zephyr: ['#9ec8ff', '#ffffff'], hive: ['#e83a3a', '#ffd84a'], plain: ['#ffd84a', '#ffffff'], fog: ['#7a6ad0', '#d8d0ff'], storm: ['#b07a3a', '#ffd8a0'], mineral: ['#9db4c8', '#ffffff'], glacier: ['#7ad7ff', '#e8f8ff'], rising: ['#4a6ae0', '#ff7a7a'], stone: ['#a8946a', '#e8dcc0'], knuckle: ['#c8783a', '#ffe0b0'], dynamo: ['#ffd84a', '#5a8aff'], heat: ['#ff6a3a', '#ffd060'], balance: ['#d84a4a', '#ffffff'], feather: ['#5ab0ff', '#e8f4ff'], mind: ['#ff7ad0', '#ffd0f0'], rain: ['#3a8aff', '#bfe2ff'], coal: ['#5a4a3a', '#c8a070'], forest: ['#4aa04a', '#c8f0a0'], cobble: ['#c8784a', '#ffe0b0'], fen: ['#4a9ad8', '#d0ecff'], relic: ['#9a7ad0', '#e8dcff'], mine: ['#a8b0b8', '#ffffff'], icicle: ['#9adcff', '#ffffff'], beacon: ['#ffd84a', '#fff6c8'], trio: ['#7ac04a', '#ff7a3a'], basic: ['#c8a070', '#fff0d0'], insect: ['#7ad04a', '#e8ffb0'], bolt: ['#ffd84a', '#3a3a3a'], quake: ['#a07a4a', '#e0c8a0'], jet: ['#5ab0ff', '#ffffff'], freeze: ['#9adcff', '#ffffff'], legend: ['#5a5ad0', '#ffd84a'] };
   document.addEventListener('error', e => { const im = e.target; if (!im || im.tagName !== 'IMG' || !/story\/badges\/(\w+)\.png/.test(im.src || '')) return; const k = RegExp.$1, c = BADGE_COL[k]; if (!c || im.dataset.fb) return; im.dataset.fb = '1';
     im.src = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><polygon points="20,2 36,12 36,28 20,38 4,28 4,12" fill="${c[0]}" stroke="${c[1]}" stroke-width="3"/><circle cx="20" cy="20" r="7" fill="${c[1]}" opacity=".85"/></svg>`); }, true);
   // Kanto journeys keep the Kanto Pokédex (151); Johto and Combined show all 251
   window.dexHidesJohto = () => (STORY.region || 'kanto') === 'kanto' && !(STORY.save && STORY.save.region === 'combined');
-  window.dexMaxId = () => { const s = STORY.save; if (s && s.region === 'combined') return 493; return { kanto: 151, johto: 251, hoenn: 386, sinnoh: 493 }[STORY.region || 'kanto'] || 151; };   // the Pokédex a journey shows
+  window.dexMaxId = () => { const s = STORY.save; if (s && s.region === 'combined') return 649; return { kanto: 151, johto: 251, hoenn: 386, sinnoh: 493, unova: 649 }[STORY.region || 'kanto'] || 151; };   // the Pokédex a journey shows
   sync();
 })();
