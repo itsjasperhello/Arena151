@@ -32,9 +32,18 @@ function decodeGif(buffer) {
   if (b[0] !== 0x47 || b[1] !== 0x49 || b[2] !== 0x46) throw new Error('not a GIF');
   p = 6;
   const u16 = () => { const v = b[p] | (b[p + 1] << 8); p += 2; return v; };
-  const W = u16(), H = u16(), packed = b[p++]; p += 2;
+  let W = u16(), H = u16(); const packed = b[p++]; p += 2;
   let gct = null;
   if (packed & 0x80) { const n = 1 << ((packed & 7) + 1); gct = b.subarray(p, p + n * 3); p += n * 3; }
+  { // pre-scan the frames: grow the canvas to fit any frame that reaches past the declared screen size
+    let q = p; const r16 = () => { const v = b[q] | (b[q + 1] << 8); q += 2; return v; };
+    while (q < b.length) { const blk = b[q++];
+      if (blk === 0x21) { q++; let s; while (q < b.length && (s = b[q++]) !== 0) q += s; continue; }
+      if (blk !== 0x2C) break;
+      const fx = r16(), fy = r16(), fw = r16(), fh = r16(), pk = b[q++]; if (pk & 0x80) q += (1 << ((pk & 7) + 1)) * 3; q++;
+      let s; while (q < b.length && (s = b[q++]) !== 0) q += s;
+      W = Math.max(W, fx + fw); H = Math.max(H, fy + fh); }
+    W = Math.min(Math.max(W, 1), 2048); H = Math.min(Math.max(H, 1), 2048); }
   const frames = [], delays = [], comp = new Uint8ClampedArray(W * H * 4);
   let gce = { disposal: 0, delay: 0, trans: -1 };
   while (p < b.length) {

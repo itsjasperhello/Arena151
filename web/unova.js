@@ -33,13 +33,25 @@
       'I’m Alder, Champion of Unova. Let me feel the bond between you and your Pokémon!', 'A good battle — come again.', 'Bravo! You are the Champion of Unova!')
   ];
   GYMS_U[9].pickTeam = () => GYMS_U[9].team.slice();
+  // which starter line a Pokémon belongs to (every region's starters, by type)
+  const STARTER_TYPE = {};
+  for (const [t, names] of Object.entries({
+    grass: ['Snivy', 'Servine', 'Serperior', 'Turtwig', 'Grotle', 'Torterra', 'Treecko', 'Grovyle', 'Sceptile', 'Chikorita', 'Bayleef', 'Meganium', 'Bulbasaur', 'Ivysaur', 'Venusaur'],
+    fire: ['Tepig', 'Pignite', 'Emboar', 'Chimchar', 'Monferno', 'Infernape', 'Torchic', 'Combusken', 'Blaziken', 'Cyndaquil', 'Quilava', 'Typhlosion', 'Charmander', 'Charmeleon', 'Charizard'],
+    water: ['Oshawott', 'Dewott', 'Samurott', 'Piplup', 'Prinplup', 'Empoleon', 'Mudkip', 'Marshtomp', 'Swampert', 'Totodile', 'Croconaw', 'Feraligatr', 'Squirtle', 'Wartortle', 'Blastoise'] })) for (const n of names) STARTER_TYPE[n] = t;
+  const base = n => String(n || '').split('|')[0];
+  // The journey's own starter decides: the one recorded when it began, else the first starter on the current team,
+  // and only then any starter in the Pokédex (earlier runs keep their Pokédex, so it must not take priority).
   function starterType() {
-    const s = STORY.save, have = new Set([...(s && s.team || []), ...Object.keys((s && s.dex) || {})].map(n => String(n).split('|')[0])), has = (...ns) => ns.some(n => have.has(n));
-    if (has('Snivy', 'Servine', 'Serperior', 'Turtwig', 'Grotle', 'Torterra', 'Treecko', 'Grovyle', 'Sceptile', 'Chikorita', 'Bayleef', 'Meganium', 'Bulbasaur', 'Ivysaur', 'Venusaur')) return 'grass';
-    if (has('Tepig', 'Pignite', 'Emboar', 'Chimchar', 'Monferno', 'Infernape', 'Torchic', 'Combusken', 'Blaziken', 'Cyndaquil', 'Quilava', 'Typhlosion', 'Charmander', 'Charmeleon', 'Charizard')) return 'fire';
-    if (has('Oshawott', 'Dewott', 'Samurott', 'Piplup', 'Prinplup', 'Empoleon', 'Mudkip', 'Marshtomp', 'Swampert', 'Totodile', 'Croconaw', 'Feraligatr', 'Squirtle', 'Wartortle', 'Blastoise')) return 'water';
+    const s = STORY.save; if (!s) return 'grass';
+    if (s.starter && STARTER_TYPE[base(s.starter)]) return STARTER_TYPE[base(s.starter)];
+    for (const n of s.team || []) if (STARTER_TYPE[base(n)]) return STARTER_TYPE[base(n)];
+    for (const n of Object.keys(s.dex || {})) if (STARTER_TYPE[base(n)]) return STARTER_TYPE[base(n)];
     return 'grass';
   }
+  // record the starter when a journey begins (a Pokédex run's first Pokémon is the starter you chose)
+  const _saveS = saveStory;
+  saveStory = function () { const s = STORY.save; if (s && !s.starter && !s.badges && (s.team || []).length && STARTER_TYPE[base(s.team[0])]) s.starter = base(s.team[0]); return _saveS.apply(this, arguments); };
   function pickTrio() { const t = starterType(), who = t === 'grass' ? 'Chili' : t === 'fire' ? 'Cress' : 'Cilan', L = TRIO[who], g = GYMS_U[0];
     Object.assign(g, { leader: who, file: who, type: L.type, team: L.team, hello: L.hello }); }
   const LINES = { grass: ['Snivy', 'Servine', 'Serperior'], fire: ['Tepig', 'Pignite', 'Emboar'], water: ['Oshawott', 'Dewott', 'Samurott'] };

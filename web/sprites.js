@@ -449,11 +449,22 @@ function finishAnim(a) {
   a.cum = []; let t = 0; for (const d of a.delays) { t += d; a.cum.push(t); } a.total = t || 1;
   return a;
 }
+// Does any frame have a visible pixel? (a GIF can decode "successfully" into nothing)
+function framesVisible(frames) {
+  for (const f of frames.slice(0, 4)) { try { const w = f.width, h = f.height; if (!w || !h) continue; const d = f.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+    for (let i = 3; i < d.length; i += 16) if (d[i] > 16) return true; } catch (e) { return true; } }
+  return false;
+}
 // Decoded lazily: bytes are kept until the sprite is first drawn.
 function ensureAnim(a) {
   if (!a || a.frames) return a;
-  try { const g = decodeGif(a.buf); a.frames = g.frames; a.delays = g.delays; a.w = g.W; a.h = g.H; }
-  catch (e) { a.frames = [a.fallbackImg || document.createElement('canvas')]; a.delays = [1e9]; a.w = a.frames[0].width || 1; a.h = a.frames[0].height || 1; }
+  let ok = false;
+  try { const g = decodeGif(a.buf); a.frames = g.frames; a.delays = g.delays; a.w = g.W; a.h = g.H; ok = framesVisible(g.frames); }
+  catch (e) { ok = false; }
+  if (!ok && a.fallbackImg) {   // the decoder failed or drew nothing: use the browser's own copy (it animates by itself)
+    const img = a.fallbackImg; try { liveHolder().appendChild(img); } catch (e) { }
+    a.frames = [img]; a.delays = [1e9]; a.w = img.naturalWidth || 1; a.h = img.naturalHeight || 1; a.live = true;
+  } else if (!ok && !a.frames) { a.frames = [document.createElement('canvas')]; a.delays = [1e9]; a.w = a.h = 1; }
   a.buf = null; return finishAnim(a);
 }
 function animFromImage(img, live) {   // PNG, or a GIF the browser animates by itself (file:// pages)
@@ -545,7 +556,10 @@ function cleanSpriteArt(img) {
 async function loadAnim(base) {
   if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(cleanSpriteArt(png), false); }   // MissingNo.'s front/back art is PNG (cleaned up)
   if (!FILE_MODE) {
-    try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) return { buf: await r.arrayBuffer() }; } catch (e) { }
+    try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) { const buf = await r.arrayBuffer();
+        // the browser decodes the same file too (a PNG or WebP saved as .gif, or a GIF our decoder can't read, still shows)
+        const fallbackImg = await new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = URL.createObjectURL(new Blob([buf])); });
+        return { buf, fallbackImg }; } } catch (e) { }
   } else {
     const gif = await loadImg(base + '.gif'); if (gif) return animFromImage(gif, true);
   }

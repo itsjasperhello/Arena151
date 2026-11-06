@@ -1155,9 +1155,18 @@ function decodeGif(buffer) {
   if (b[0] !== 0x47 || b[1] !== 0x49 || b[2] !== 0x46) throw new Error('not a GIF');
   p = 6;
   const u16 = () => { const v = b[p] | (b[p + 1] << 8); p += 2; return v; };
-  const W = u16(), H = u16(), packed = b[p++]; p += 2;
+  let W = u16(), H = u16(); const packed = b[p++]; p += 2;
   let gct = null;
   if (packed & 0x80) { const n = 1 << ((packed & 7) + 1); gct = b.subarray(p, p + n * 3); p += n * 3; }
+  { // pre-scan the frames: grow the canvas to fit any frame that reaches past the declared screen size
+    let q = p; const r16 = () => { const v = b[q] | (b[q + 1] << 8); q += 2; return v; };
+    while (q < b.length) { const blk = b[q++];
+      if (blk === 0x21) { q++; let s; while (q < b.length && (s = b[q++]) !== 0) q += s; continue; }
+      if (blk !== 0x2C) break;
+      const fx = r16(), fy = r16(), fw = r16(), fh = r16(), pk = b[q++]; if (pk & 0x80) q += (1 << ((pk & 7) + 1)) * 3; q++;
+      let s; while (q < b.length && (s = b[q++]) !== 0) q += s;
+      W = Math.max(W, fx + fw); H = Math.max(H, fy + fh); }
+    W = Math.min(Math.max(W, 1), 2048); H = Math.min(Math.max(H, 1), 2048); }
   const frames = [], delays = [], comp = new Uint8ClampedArray(W * H * 4);
   let gce = { disposal: 0, delay: 0, trans: -1 };
   while (p < b.length) {
@@ -1703,11 +1712,22 @@ function finishAnim(a) {
   a.cum = []; let t = 0; for (const d of a.delays) { t += d; a.cum.push(t); } a.total = t || 1;
   return a;
 }
+// Does any frame have a visible pixel? (a GIF can decode "successfully" into nothing)
+function framesVisible(frames) {
+  for (const f of frames.slice(0, 4)) { try { const w = f.width, h = f.height; if (!w || !h) continue; const d = f.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+    for (let i = 3; i < d.length; i += 16) if (d[i] > 16) return true; } catch (e) { return true; } }
+  return false;
+}
 // Decoded lazily: bytes are kept until the sprite is first drawn.
 function ensureAnim(a) {
   if (!a || a.frames) return a;
-  try { const g = decodeGif(a.buf); a.frames = g.frames; a.delays = g.delays; a.w = g.W; a.h = g.H; }
-  catch (e) { a.frames = [a.fallbackImg || document.createElement('canvas')]; a.delays = [1e9]; a.w = a.frames[0].width || 1; a.h = a.frames[0].height || 1; }
+  let ok = false;
+  try { const g = decodeGif(a.buf); a.frames = g.frames; a.delays = g.delays; a.w = g.W; a.h = g.H; ok = framesVisible(g.frames); }
+  catch (e) { ok = false; }
+  if (!ok && a.fallbackImg) {   // the decoder failed or drew nothing: use the browser's own copy (it animates by itself)
+    const img = a.fallbackImg; try { liveHolder().appendChild(img); } catch (e) { }
+    a.frames = [img]; a.delays = [1e9]; a.w = img.naturalWidth || 1; a.h = img.naturalHeight || 1; a.live = true;
+  } else if (!ok && !a.frames) { a.frames = [document.createElement('canvas')]; a.delays = [1e9]; a.w = a.h = 1; }
   a.buf = null; return finishAnim(a);
 }
 function animFromImage(img, live) {   // PNG, or a GIF the browser animates by itself (file:// pages)
@@ -1799,7 +1819,10 @@ function cleanSpriteArt(img) {
 async function loadAnim(base) {
   if (/^missingno(_shiny)?( \(1\))?$/.test(base)) { const png = await loadImg(base + '.png'); if (png) return animFromImage(cleanSpriteArt(png), false); }   // MissingNo.'s front/back art is PNG (cleaned up)
   if (!FILE_MODE) {
-    try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) return { buf: await r.arrayBuffer() }; } catch (e) { }
+    try { const r = await fetch(spriteUrl(base + '.gif')); if (r.ok) { const buf = await r.arrayBuffer();
+        // the browser decodes the same file too (a PNG or WebP saved as .gif, or a GIF our decoder can't read, still shows)
+        const fallbackImg = await new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = URL.createObjectURL(new Blob([buf])); });
+        return { buf, fallbackImg }; } } catch (e) { }
   } else {
     const gif = await loadImg(base + '.gif'); if (gif) return animFromImage(gif, true);
   }
@@ -13979,13 +14002,25 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5:
       'I’m Alder, Champion of Unova. Let me feel the bond between you and your Pokémon!', 'A good battle — come again.', 'Bravo! You are the Champion of Unova!')
   ];
   GYMS_U[9].pickTeam = () => GYMS_U[9].team.slice();
+  // which starter line a Pokémon belongs to (every region's starters, by type)
+  const STARTER_TYPE = {};
+  for (const [t, names] of Object.entries({
+    grass: ['Snivy', 'Servine', 'Serperior', 'Turtwig', 'Grotle', 'Torterra', 'Treecko', 'Grovyle', 'Sceptile', 'Chikorita', 'Bayleef', 'Meganium', 'Bulbasaur', 'Ivysaur', 'Venusaur'],
+    fire: ['Tepig', 'Pignite', 'Emboar', 'Chimchar', 'Monferno', 'Infernape', 'Torchic', 'Combusken', 'Blaziken', 'Cyndaquil', 'Quilava', 'Typhlosion', 'Charmander', 'Charmeleon', 'Charizard'],
+    water: ['Oshawott', 'Dewott', 'Samurott', 'Piplup', 'Prinplup', 'Empoleon', 'Mudkip', 'Marshtomp', 'Swampert', 'Totodile', 'Croconaw', 'Feraligatr', 'Squirtle', 'Wartortle', 'Blastoise'] })) for (const n of names) STARTER_TYPE[n] = t;
+  const base = n => String(n || '').split('|')[0];
+  // The journey's own starter decides: the one recorded when it began, else the first starter on the current team,
+  // and only then any starter in the Pokédex (earlier runs keep their Pokédex, so it must not take priority).
   function starterType() {
-    const s = STORY.save, have = new Set([...(s && s.team || []), ...Object.keys((s && s.dex) || {})].map(n => String(n).split('|')[0])), has = (...ns) => ns.some(n => have.has(n));
-    if (has('Snivy', 'Servine', 'Serperior', 'Turtwig', 'Grotle', 'Torterra', 'Treecko', 'Grovyle', 'Sceptile', 'Chikorita', 'Bayleef', 'Meganium', 'Bulbasaur', 'Ivysaur', 'Venusaur')) return 'grass';
-    if (has('Tepig', 'Pignite', 'Emboar', 'Chimchar', 'Monferno', 'Infernape', 'Torchic', 'Combusken', 'Blaziken', 'Cyndaquil', 'Quilava', 'Typhlosion', 'Charmander', 'Charmeleon', 'Charizard')) return 'fire';
-    if (has('Oshawott', 'Dewott', 'Samurott', 'Piplup', 'Prinplup', 'Empoleon', 'Mudkip', 'Marshtomp', 'Swampert', 'Totodile', 'Croconaw', 'Feraligatr', 'Squirtle', 'Wartortle', 'Blastoise')) return 'water';
+    const s = STORY.save; if (!s) return 'grass';
+    if (s.starter && STARTER_TYPE[base(s.starter)]) return STARTER_TYPE[base(s.starter)];
+    for (const n of s.team || []) if (STARTER_TYPE[base(n)]) return STARTER_TYPE[base(n)];
+    for (const n of Object.keys(s.dex || {})) if (STARTER_TYPE[base(n)]) return STARTER_TYPE[base(n)];
     return 'grass';
   }
+  // record the starter when a journey begins (a Pokédex run's first Pokémon is the starter you chose)
+  const _saveS = saveStory;
+  saveStory = function () { const s = STORY.save; if (s && !s.starter && !s.badges && (s.team || []).length && STARTER_TYPE[base(s.team[0])]) s.starter = base(s.team[0]); return _saveS.apply(this, arguments); };
   function pickTrio() { const t = starterType(), who = t === 'grass' ? 'Chili' : t === 'fire' ? 'Cress' : 'Cilan', L = TRIO[who], g = GYMS_U[0];
     Object.assign(g, { leader: who, file: who, type: L.type, team: L.team, hello: L.hello }); }
   const LINES = { grass: ['Snivy', 'Servine', 'Serperior'], fire: ['Tepig', 'Pignite', 'Emboar'], water: ['Oshawott', 'Dewott', 'Samurott'] };
