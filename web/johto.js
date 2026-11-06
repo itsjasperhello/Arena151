@@ -231,14 +231,30 @@
       ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-r]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; STORY.cutscene = false; done(b.dataset.r || null); };
     });
   }
+  /* ---------- choosing your character for a new journey (no one is preselected) ---------- */
+  function chooseCharacter() {
+    return new Promise(done => {
+      const ov = $('csOv'); STORY.cutscene = true;
+      const list = (typeof TRAINERS !== 'undefined' ? TRAINERS : ['Ash']).slice();
+      const title = n => (typeof trainerTitle === 'function' ? trainerTitle(n) : String(n).replace(/_/g, ' '));
+      ov.innerHTML = `<div class="box" style="text-align:center;max-width:min(92vw,760px)"><div class="txt" style="margin-bottom:10px">Choose your character</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:min(58vh,460px);overflow:auto;padding:4px">
+        ${list.map(n => `<button class="sy-btn" type="button" data-t="${esc(n)}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;min-height:0">
+          <img src="${portraitUrl(n)}" alt="" style="width:48px;height:64px;object-fit:contain;image-rendering:pixelated" onerror="this.style.visibility='hidden'"><small style="font-weight:700;line-height:1.1">${esc(title(n))}</small></button>`).join('')}</div>
+        <button class="sy-btn" type="button" data-t="" style="margin-top:10px">Cancel</button></div>`;
+      ov.classList.add('show'); ov.onclick = e => { const b = e.target.closest('button[data-t]'); if (!b) return; ov.classList.remove('show'); ov.innerHTML = ''; ov.onclick = null; STORY.cutscene = false; done(b.dataset.t || null); };
+    });
+  }
+  async function pickCharacter() { const t = await chooseCharacter(); if (!t) return false; TRSEL.A = t; try { loadTrainer(t); refreshTrainerLabels(); drawMinis(); } catch (e) { } return true; }
+  window.chooseStoryCharacter = pickCharacter;
   const _begin = beginJourney;
   beginJourney = async function (fresh) {
-    if (fresh) { const r = await chooseRegion(); if (!r) return; STORY.nextRegion = r; applyRegion(r === 'combined' ? 'kanto' : r); }
+    if (fresh) { const r = await chooseRegion(); if (!r) return; if (!(await pickCharacter())) return; STORY.nextRegion = r; applyRegion(r === 'combined' ? 'kanto' : r); }
     else sync();
     return _begin.apply(this, arguments);
   };
   // Pokédex Adventures ask too (the Pokédex Adventure button and "New run" both start here)
-  if (typeof startDexRun === 'function') { const _dex = startDexRun; startDexRun = async function () { const r = await chooseRegion(); if (!r) return; STORY.nextRegion = r; applyRegion(r === 'combined' ? 'kanto' : r); return _dex.apply(this, arguments); }; }
+  if (typeof startDexRun === 'function') { const _dex = startDexRun; startDexRun = async function () { const r = await chooseRegion(); if (!r) return; if (!(await pickCharacter())) return; STORY.nextRegion = r; applyRegion(r === 'combined' ? 'kanto' : r); return _dex.apply(this, arguments); }; }
   const _save = saveStory;
   saveStory = function () {                                       // a new journey takes the chosen story type
     const s = STORY.save; if (s && STORY.nextRegion && !s.region && !s.badges) { s.region = STORY.nextRegion; if (s.region === 'combined') s.phase = 'kanto'; STORY.nextRegion = null; }
