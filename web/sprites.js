@@ -419,7 +419,10 @@ function loadShiny(name) {
 }
 function spriteSlug(name) {
   name = pickBase(name);
-  return name.toLowerCase().replace('♀', '-f').replace('♂', '-m').replace(/[’'.:]/g, '').replace(/\s+/g, '-');
+  // Gen 9 (Paldea, #906 and up): spaces become underscores ("great_tusk"); earlier generations keep hyphens ("tapu-koko")
+  const d = typeof DEX_BY_NAME !== 'undefined' ? DEX_BY_NAME[name] : (typeof DEX !== 'undefined' ? DEX.find(x => x.name === name) : null);
+  const space = d && d.id >= 906 ? '_' : '-';
+  return name.toLowerCase().replace('♀', '-f').replace('♂', '-m').replace(/[’'.:]/g, '').replace(/\s+/g, space);
 }
 const spriteUrl = file => 'sprites/' + encodeURIComponent(file);
 // Bounding box of the opaque pixels across a sample of frames (fails quietly on tainted images).
