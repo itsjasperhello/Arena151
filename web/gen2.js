@@ -4,8 +4,8 @@
    - Generation helpers, and Gen 1 / Gen 2 / All tabs in the Pokémon
      chooser (they work together with the search box)
    ===================================================================== */
-const GEN_OF = name => { const d = typeof DEX_BY_NAME !== 'undefined' && DEX_BY_NAME[String(name).split('|')[0]]; return d && d.id >= 722 ? 7 : d && d.id >= 650 ? 6 : d && d.id >= 494 ? 5 : d && d.id >= 387 ? 4 : d && d.id >= 252 ? 3 : d && d.id >= 152 ? 2 : 1; };
-const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5: [494, 649], 6: [650, 721], 7: [722, 809] };
+const GEN_OF = name => { const d = typeof DEX_BY_NAME !== 'undefined' && DEX_BY_NAME[String(name).split('|')[0]]; return d && d.id >= 810 ? 8 : d && d.id >= 722 ? 7 : d && d.id >= 650 ? 6 : d && d.id >= 494 ? 5 : d && d.id >= 387 ? 4 : d && d.id >= 252 ? 3 : d && d.id >= 152 ? 2 : 1; };
+const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5: [494, 649], 6: [650, 721], 7: [722, 809], 8: [810, 898] };
 (function johtoSupport() {
   const $ = id => document.getElementById(id);
   // ---- catch rates (story mode) ----
@@ -20,7 +20,7 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5:
     Suicune: 3, Larvitar: 45, Pupitar: 45, Tyranitar: 45, Lugia: 3, 'Ho-Oh': 3, Celebi: 45 });
   if (typeof CATCH_RATE !== 'undefined' && typeof DEX !== 'undefined') { const T = { W: 255, b: 190, B: 45, k: 120, M: 120, g: 90, f: 60, F: 45, L: 3, X: 3 };
     for (const d of DEX) if (d.id >= 252 && CATCH_RATE[d.name] == null) CATCH_RATE[d.name] = T[d.tier] || 45;
-    Object.assign(CATCH_RATE, { 'Jangmo-o': 45, Mimikyu: 45, Rockruff: 190, Wimpod: 90, Cosmog: 45, Goomy: 45, Honedge: 180, Noibat: 190, Froakie: 45, Chespin: 45, Fennekin: 45, Axew: 75, Deino: 45, Larvesta: 45, Zorua: 75, Audino: 255, Gible: 45, Gabite: 45, Garchomp: 45, Riolu: 75, Lucario: 45, Spiritomb: 100, Rotom: 45, Munchlax: 50, Feebas: 255, Milotic: 60, Bagon: 45, Shelgon: 45, Salamence: 45, Beldum: 3, Metang: 3, Metagross: 3, Absol: 30, Wailord: 60, Relicanth: 25, Shedinja: 45, Castform: 45 }); }
+    Object.assign(CATCH_RATE, { Dreepy: 45, Rookidee: 255, Applin: 255, Kubfu: 3, 'Jangmo-o': 45, Mimikyu: 45, Rockruff: 190, Wimpod: 90, Cosmog: 45, Goomy: 45, Honedge: 180, Noibat: 190, Froakie: 45, Chespin: 45, Fennekin: 45, Axew: 75, Deino: 45, Larvesta: 45, Zorua: 75, Audino: 255, Gible: 45, Gabite: 45, Garchomp: 45, Riolu: 75, Lucario: 45, Spiritomb: 100, Rotom: 45, Munchlax: 50, Feebas: 255, Milotic: 60, Bagon: 45, Shelgon: 45, Salamence: 45, Beldum: 3, Metang: 3, Metagross: 3, Absol: 30, Wailord: 60, Relicanth: 25, Shedinja: 45, Castform: 45 }); }
   // ---- the chooser: Gen 1 / Gen 2 / Gen 3 / All ----
   let gen = (() => { try { return localStorage.getItem('arena151.pickGen') || 'all'; } catch (e) { return 'all'; } })();
   const css = document.createElement('style'); css.textContent = `
@@ -32,7 +32,7 @@ const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493], 5:
     document.querySelectorAll('#stPick .pk-gen button').forEach(x => { x.classList.toggle('on', x.dataset.g === gen); x.setAttribute('aria-pressed', String(x.dataset.g === gen)); }); }
   function mountTabs() { const top = document.querySelector('#stPick .pk-top'); if (!top || top.querySelector('.pk-gen')) return;
     const box = document.createElement('div'); box.className = 'pk-gen'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Generation');
-    box.innerHTML = [['all', 'All'], ['1', 'Gen 1 · Kanto'], ['2', 'Gen 2 · Johto'], ['3', 'Gen 3 · Hoenn'], ['4', 'Gen 4 · Sinnoh'], ['5', 'Gen 5 · Unova'], ['6', 'Gen 6 · Kalos'], ['7', 'Gen 7 · Alola']].map(([g, t]) => `<button type="button" data-g="${g}">${t}</button>`).join('');
+    box.innerHTML = [['all', 'All'], ['1', 'Gen 1 · Kanto'], ['2', 'Gen 2 · Johto'], ['3', 'Gen 3 · Hoenn'], ['4', 'Gen 4 · Sinnoh'], ['5', 'Gen 5 · Unova'], ['6', 'Gen 6 · Kalos'], ['7', 'Gen 7 · Alola'], ['8', 'Gen 8 · Galar']].map(([g, t]) => `<button type="button" data-g="${g}">${t}</button>`).join('');
     const search = $('stSearch'); if (search) search.after(box); else top.prepend(box);
     box.onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; gen = b.dataset.g; try { localStorage.setItem('arena151.pickGen', gen); } catch (x) { } applyGen(); }; }
   if (typeof openMonPicker === 'function') { const _o = openMonPicker; openMonPicker = function () { const r = _o.apply(this, arguments); mountTabs(); applyGen(); return r; }; }

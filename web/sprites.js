@@ -419,7 +419,7 @@ function loadShiny(name) {
 }
 function spriteSlug(name) {
   name = pickBase(name);
-  return name.toLowerCase().replace('♀', '-f').replace('♂', '-m').replace(/[’'.]/g, '').replace(/\s+/g, '-');
+  return name.toLowerCase().replace('♀', '-f').replace('♂', '-m').replace(/[’'.:]/g, '').replace(/\s+/g, '-');
 }
 const spriteUrl = file => 'sprites/' + encodeURIComponent(file);
 // Bounding box of the opaque pixels across a sample of frames (fails quietly on tainted images).
